@@ -26,11 +26,11 @@ ecosystem in an Electron desktop widget that thrives or decays with prompt quali
 
 Three commits tell the story (from `git log`):
 
-| Commit | What landed |
-|--------|-------------|
-| `96417f0` **project plan** | The strategy/architecture groundwork. |
+| Commit                         | What landed                                                                                                              |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `96417f0` **project plan**     | The strategy/architecture groundwork.                                                                                    |
 | `37d88aa` **full first draft** | The entire system — ~116 files: all 6 packages/apps, 44 tests, Bicep infra, CI, and docs. This is the bulk of the build. |
-| `033b33c` **panel fixes** | Bug fixes to make the widget actually usable (see §6). |
+| `033b33c` **panel fixes**      | Bug fixes to make the widget actually usable (see §6).                                                                   |
 
 The `37d88aa` commit established the full monorepo: `shared-types`, `scoring-engine`
 (with 6 waste detectors + pet-state machine), `ingestion` (scripted/manual/live
@@ -89,14 +89,14 @@ npm run demo
 
 Mapping the [execution plan](../EcoPrompt_Guardians_Master_Design_Doc.md) epics to what's in the repo:
 
-| Epic | Status | Where it lives / what's left |
-|------|--------|------------------------------|
-| **1. Desktop Widget** (SWE #1) | 🟢 Mostly done | `apps/desktop-widget`. Shell, dock/minimize (3 window modes), tray, world rendering, wired to scoring all done. **Left:** richer notifications; design doc's **PixiJS** is currently plain Canvas (`WorldRenderer.tsx`). |
-| **2. Scoring Engine** (SWE #2) | 🟢 Done | `packages/scoring-engine`. Efficiency + waste formulas, long/repeat/retry/tool detectors, score API, score history. Unit-tested. |
-| **3. AI Coach** (SWE #3) | 🟢 Done | `packages/llm-adapters`. Tips, "better version" rewrite, token/latency savings, message library (heuristic), LLM path ready. |
-| **4. Backend & Analytics** (SWE #4) | 🟡 Partial | `apps/api` + `infra/bicep` exist (Azure backend, telemetry, token/score tracking). **Left:** deploy to Azure; **Power BI dashboard, leaderboard, achievements not built.** |
-| **5. Business Case** (Finance — Ethan) | ⚪ Not in code | The numbers it needs are emitted: `estimatedTokensSaved`, `estimatedCostSavedUsd`, waste-by-category (`SessionSummary` / metrics tab). Build the ROI model on top of these. |
-| **6. Pitch & Storytelling** (TPM) | 🟡 Partial | `docs/demo-script.md` + the scripted demo arc are ready. **Left:** deck, video, Q&A. |
+| Epic                                   | Status         | Where it lives / what's left                                                                                                                                                                                             |
+| -------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **1. Desktop Widget** (SWE #1)         | 🟢 Mostly done | `apps/desktop-widget`. Shell, dock/minimize (3 window modes), tray, world rendering, wired to scoring all done. **Left:** richer notifications; design doc's **PixiJS** is currently plain Canvas (`WorldRenderer.tsx`). |
+| **2. Scoring Engine** (SWE #2)         | 🟢 Done        | `packages/scoring-engine`. Efficiency + waste formulas, long/repeat/retry/tool detectors, score API, score history. Unit-tested.                                                                                         |
+| **3. AI Coach** (SWE #3)               | 🟢 Done        | `packages/llm-adapters`. Tips, "better version" rewrite, token/latency savings, message library (heuristic), LLM path ready.                                                                                             |
+| **4. Backend & Analytics** (SWE #4)    | 🟡 Partial     | `apps/api` + `infra/bicep` exist (Azure backend, telemetry, token/score tracking). **Left:** deploy to Azure; **Power BI dashboard, leaderboard, achievements not built.**                                               |
+| **5. Business Case** (Finance — Ethan) | ⚪ Not in code | The numbers it needs are emitted: `estimatedTokensSaved`, `estimatedCostSavedUsd`, waste-by-category (`SessionSummary` / metrics tab). Build the ROI model on top of these.                                              |
+| **6. Pitch & Storytelling** (TPM)      | 🟡 Partial     | `docs/demo-script.md` + the scripted demo arc are ready. **Left:** deck, video, Q&A.                                                                                                                                     |
 
 Legend: 🟢 done · 🟡 partial · ⚪ not started in code
 
@@ -112,7 +112,7 @@ Both were in the widget and are documented here because they're easy to reintrod
    `apps/desktop-widget/src/main/index.ts`. The window was also moved to the
    **top-right** and now uses `showInactive()` so it never steals focus while you type.
 2. **Blank panel / infinite render loop.** Under **Zustand v5**, a selector that
-   returns a *new object* (`useStore(s => ({...}))`) fails `Object.is` equality every
+   returns a _new object_ (`useStore(s => ({...}))`) fails `Object.is` equality every
    render → "Maximum update depth exceeded" → React unmounts → you see only the
    background color. Fixed in `App.tsx` by selecting **individual fields**. Use
    `useShallow` if you ever need to select multiple fields at once.

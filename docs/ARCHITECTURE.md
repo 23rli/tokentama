@@ -22,14 +22,14 @@ strongly-typed contracts.
 
 ## 2. Monorepo layout (npm workspaces)
 
-| Path | Workspace | Role |
-|------|-----------|------|
-| `packages/shared-types` | `@ecoprompt/shared-types` | The data contracts every other package imports. No logic. |
-| `packages/scoring-engine` | `@ecoprompt/scoring-engine` | Pure, deterministic waste/efficiency scoring + pet-state machine. |
-| `packages/ingestion` | `@ecoprompt/ingestion` | Turns raw inputs (manual / scripted / live Copilot files) into `PromptEvent`s. |
-| `packages/llm-adapters` | `@ecoprompt/llm-adapters` | Coaching tips + prompt rewrites (Azure OpenAI / Foundry / OpenAI, with heuristic fallback). |
-| `apps/api` | `@ecoprompt/api` | The backend. Dual-mode: **local Node server** or **Azure Functions**. |
-| `apps/desktop-widget` | `@ecoprompt/desktop-widget` | Electron + React companion. Owns ingestion, talks to the API, renders the world. |
+| Path                      | Workspace                   | Role                                                                                        |
+| ------------------------- | --------------------------- | ------------------------------------------------------------------------------------------- |
+| `packages/shared-types`   | `@ecoprompt/shared-types`   | The data contracts every other package imports. No logic.                                   |
+| `packages/scoring-engine` | `@ecoprompt/scoring-engine` | Pure, deterministic waste/efficiency scoring + pet-state machine.                           |
+| `packages/ingestion`      | `@ecoprompt/ingestion`      | Turns raw inputs (manual / scripted / live Copilot files) into `PromptEvent`s.              |
+| `packages/llm-adapters`   | `@ecoprompt/llm-adapters`   | Coaching tips + prompt rewrites (Azure OpenAI / Foundry / OpenAI, with heuristic fallback). |
+| `apps/api`                | `@ecoprompt/api`            | The backend. Dual-mode: **local Node server** or **Azure Functions**.                       |
+| `apps/desktop-widget`     | `@ecoprompt/desktop-widget` | Electron + React companion. Owns ingestion, talks to the API, renders the world.            |
 
 **Build:** `npm run build` → `tsc --build` using TypeScript project references.
 **Test:** `npm test` → `vitest run` (44 tests / 9 files).
@@ -55,7 +55,7 @@ graph TD
 ```
 
 > Note: the widget depends on `scoring-engine` and `llm-adapters` **directly** so it
-> can score offline, *and* it calls `apps/api` over HTTP when the API is reachable.
+> can score offline, _and_ it calls `apps/api` over HTTP when the API is reachable.
 > That dual path is the single most important thing to understand about this repo.
 
 ---
@@ -64,14 +64,14 @@ graph TD
 
 These are the nouns the whole system passes around. Read these files first.
 
-| Type | File | What it is |
-|------|------|-----------|
-| `PromptEvent` | `packages/shared-types/src/PromptEvent.ts` | One normalized turn: prompt text, response, tool calls, model, tokens, retry count, source (`transcript`/`chat-session`/`manual`/`scripted`). The unit ingestion produces. |
-| `ScorePromptRequest` / `ScorePromptResponse` | `packages/shared-types/src/Score.ts` | Scoring input/output: `overallScore`, `wasteScore`, 5 `subscores`, `petState`, `delta`, waste breakdown across 6 categories, reasons & improvements. |
-| `TipRequest` / `TipResponse` | `packages/shared-types/src/Tip.ts` | Coaching input/output: `shortTip`, `detailedTip`, `rewrittenPrompt`, `estimatedSavings`, `source`. |
-| `SessionSummary` | `packages/shared-types/src/SessionSummary.ts` | Aggregated session metrics (tokens, cost, retries, waste-by-category, estimated savings). |
-| `PetWorldState` | `packages/shared-types/src/PetWorldState.ts` | `thriving → healthy → concerned → critical → collapse → dead`. |
-| `TelemetryEvent` | `packages/shared-types/src/Telemetry.ts` | Named analytics events (prompt_scored, tip_generated, pet_state_changed, …). |
+| Type                                         | File                                          | What it is                                                                                                                                                                 |
+| -------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PromptEvent`                                | `packages/shared-types/src/PromptEvent.ts`    | One normalized turn: prompt text, response, tool calls, model, tokens, retry count, source (`transcript`/`chat-session`/`manual`/`scripted`). The unit ingestion produces. |
+| `ScorePromptRequest` / `ScorePromptResponse` | `packages/shared-types/src/Score.ts`          | Scoring input/output: `overallScore`, `wasteScore`, 5 `subscores`, `petState`, `delta`, waste breakdown across 6 categories, reasons & improvements.                       |
+| `TipRequest` / `TipResponse`                 | `packages/shared-types/src/Tip.ts`            | Coaching input/output: `shortTip`, `detailedTip`, `rewrittenPrompt`, `estimatedSavings`, `source`.                                                                         |
+| `SessionSummary`                             | `packages/shared-types/src/SessionSummary.ts` | Aggregated session metrics (tokens, cost, retries, waste-by-category, estimated savings).                                                                                  |
+| `PetWorldState`                              | `packages/shared-types/src/PetWorldState.ts`  | `thriving → healthy → concerned → critical → collapse → dead`.                                                                                                             |
+| `TelemetryEvent`                             | `packages/shared-types/src/Telemetry.ts`      | Named analytics events (prompt_scored, tip_generated, pet_state_changed, …).                                                                                               |
 
 **Waste categories** (weights): `redundantContext` 30%, `vagueness` 20%, `retryLoop`
 20%, `toolOveruse` 15%, `verbosityMismatch` 10%, `ignoredCoaching` 5%.
@@ -91,7 +91,7 @@ learningAdoption.
 - **Detectors** (`src/heuristics/*`): six `Detector`s, each returning a severity
   (0..1) + reason + improvement: `redundantContext`, `vagueness`, `retryLoop`,
   `toolOveruse`, `verbosityMismatch`, `coachingAdoption`. `structuredPrompt` is a
-  positive signal that *reduces* effective vagueness.
+  positive signal that _reduces_ effective vagueness.
 - **`wasteScore.ts` / `subscores.ts`** (`src/calculators/`): weight + clamp detector
   output into the final numbers.
 - **`petStateMachine.ts`** (`src/transitions/`): `scoreToState()` thresholds and
@@ -112,13 +112,14 @@ duplicated.
 `packages/ingestion` exposes three **adapters** behind one interface
 (`IngestionAdapter`: `start()`, `stop()`, `onPromptEvent(handler)`):
 
-| Adapter | File | Source | Availability |
-|---------|------|--------|--------------|
-| `ScriptedScenarioAdapter` | `src/adapters/ScriptedScenarioAdapter.ts` | Pre-baked `DEMO_SCRIPT` steps (`next`/`play`/`pause`/`reset`) | Always — drives the demo arc |
-| `ManualEntryAdapter` | `src/adapters/ManualEntryAdapter.ts` | A prompt the user types/pastes in the widget | Always |
-| `TranscriptTailAdapter` | `src/adapters/TranscriptTailAdapter.ts` | **Live local Copilot chat files on disk** (chokidar file-watch) | Only if Copilot session files exist locally |
+| Adapter                   | File                                      | Source                                                          | Availability                                |
+| ------------------------- | ----------------------------------------- | --------------------------------------------------------------- | ------------------------------------------- |
+| `ScriptedScenarioAdapter` | `src/adapters/ScriptedScenarioAdapter.ts` | Pre-baked `DEMO_SCRIPT` steps (`next`/`play`/`pause`/`reset`)   | Always — drives the demo arc                |
+| `ManualEntryAdapter`      | `src/adapters/ManualEntryAdapter.ts`      | A prompt the user types/pastes in the widget                    | Always                                      |
+| `TranscriptTailAdapter`   | `src/adapters/TranscriptTailAdapter.ts`   | **Live local Copilot chat files on disk** (chokidar file-watch) | Only if Copilot session files exist locally |
 
 Supporting pieces:
+
 - **`copilotPaths.ts` / `copilotReader.ts` / `transcriptParser.ts` /
   `chatSessionParser.ts`** read and merge VS Code Copilot's on-disk
   `transcripts/*.jsonl` + `chatSessions/*.jsonl` into `PromptEvent`s (real output
@@ -137,6 +138,7 @@ Supporting pieces:
 ## 6. LLM adapters (coaching)
 
 `packages/llm-adapters`:
+
 - **`coach.ts`** — `generateTip()`: tries the LLM if configured, **always** falls back
   to the heuristic coach (never throws).
 - **`heuristicCoach.ts`** — deterministic per-category tips + a `heuristicRewrite()`
@@ -152,21 +154,22 @@ Supporting pieces:
 
 The **same handlers** are exposed two ways:
 
-| | Local | Azure |
-|---|-------|-------|
-| Entry | `src/server.ts` (`createApiServer()`, plain Node `http`) | `src/index.ts` → registers `src/functions/*.ts` (Azure Functions v4) |
-| Start | `npm run start` → `node dist/src/server.js` on port `7071` | `func start` / deployed Function App |
+|       | Local                                                      | Azure                                                                |
+| ----- | ---------------------------------------------------------- | -------------------------------------------------------------------- |
+| Entry | `src/server.ts` (`createApiServer()`, plain Node `http`)   | `src/index.ts` → registers `src/functions/*.ts` (Azure Functions v4) |
+| Start | `npm run start` → `node dist/src/server.js` on port `7071` | `func start` / deployed Function App                                 |
 
 Both wrap the shared logic in **`src/core/handlers.ts`**:
 
-| Endpoint | Method | Handler | Does |
-|----------|--------|---------|------|
-| `/api/health` | GET | `handleHealth` | Reports `{ status, storage, coachConfigured, telemetryConfigured }` |
-| `/api/scorePrompt` | POST | `handleScorePrompt` | Scores via `scoring-engine`, persists a `ScoreRecord`, emits telemetry |
-| `/api/generateTip` | POST | `handleGenerateTip` | Coaches via `llm-adapters` |
-| `/api/sessionSummary` | POST | `handleSessionSummary` | Aggregates a session (`core/summary.ts`) |
+| Endpoint              | Method | Handler                | Does                                                                   |
+| --------------------- | ------ | ---------------------- | ---------------------------------------------------------------------- |
+| `/api/health`         | GET    | `handleHealth`         | Reports `{ status, storage, coachConfigured, telemetryConfigured }`    |
+| `/api/scorePrompt`    | POST   | `handleScorePrompt`    | Scores via `scoring-engine`, persists a `ScoreRecord`, emits telemetry |
+| `/api/generateTip`    | POST   | `handleGenerateTip`    | Coaches via `llm-adapters`                                             |
+| `/api/sessionSummary` | POST   | `handleSessionSummary` | Aggregates a session (`core/summary.ts`)                               |
 
 Backing services (swap via env vars):
+
 - **`lib/storage.ts`** — `createScoreStore()` returns `TableScoreStore` (Azure Table
   Storage) when `ECO_STORAGE_CONNECTION_STRING` is set, otherwise `InMemoryScoreStore`.
 - **`lib/telemetry.ts`** — sends to **Application Insights** when
@@ -238,14 +241,14 @@ changes. The scripted mode is what powers the 1–3 minute demo arc
 
 ## 10. Configuration cheat-sheet (all env vars)
 
-| Variable | Read by | Effect |
-|----------|---------|--------|
-| `ECO_API_URL` | widget `apiClient.ts` | API base URL (default `http://localhost:7071/api`). Point this at Azure to go cloud. |
-| `ECO_API_PORT` | `apps/api/server.ts` | Local server port (default 7071). |
-| `ECO_STORAGE_CONNECTION_STRING` | `apps/api/lib/storage.ts` | Set → Azure Table Storage; unset → in-memory. |
-| `APPLICATIONINSIGHTS_CONNECTION_STRING` | `apps/api/lib/telemetry.ts` | Set → App Insights telemetry. |
-| `ECO_LLM_PROVIDER` / `ECO_LLM_ENDPOINT` / `ECO_LLM_API_KEY` / `ECO_LLM_DEPLOYMENT` / `ECO_LLM_API_VERSION` / `ECO_LLM_TIMEOUT_MS` | `llm-adapters/config.ts` | Configure the LLM coach. All unset → heuristic coach. |
-| `ECO_COPILOT_WORKSPACE_STORAGE` | `ingestion/copilotPaths.ts` | Override where live Copilot files are read from. |
+| Variable                                                                                                                          | Read by                     | Effect                                                                               |
+| --------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------ |
+| `ECO_API_URL`                                                                                                                     | widget `apiClient.ts`       | API base URL (default `http://localhost:7071/api`). Point this at Azure to go cloud. |
+| `ECO_API_PORT`                                                                                                                    | `apps/api/server.ts`        | Local server port (default 7071).                                                    |
+| `ECO_STORAGE_CONNECTION_STRING`                                                                                                   | `apps/api/lib/storage.ts`   | Set → Azure Table Storage; unset → in-memory.                                        |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING`                                                                                           | `apps/api/lib/telemetry.ts` | Set → App Insights telemetry.                                                        |
+| `ECO_LLM_PROVIDER` / `ECO_LLM_ENDPOINT` / `ECO_LLM_API_KEY` / `ECO_LLM_DEPLOYMENT` / `ECO_LLM_API_VERSION` / `ECO_LLM_TIMEOUT_MS` | `llm-adapters/config.ts`    | Configure the LLM coach. All unset → heuristic coach.                                |
+| `ECO_COPILOT_WORKSPACE_STORAGE`                                                                                                   | `ingestion/copilotPaths.ts` | Override where live Copilot files are read from.                                     |
 
 See [.env.example](../.env.example) and
 [apps/api/local.settings.example.json](../apps/api/local.settings.example.json).

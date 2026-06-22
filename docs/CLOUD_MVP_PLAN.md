@@ -51,17 +51,17 @@ fundamentally local: the **Electron shell** and the **on-disk Copilot ingestion*
 
 ## 2. The local-only blockers (and how to remove each)
 
-| # | Local-only thing | Where | Why it blocks cloud | Resolution |
-|---|------------------|-------|---------------------|------------|
-| 1 | **In-memory score store** | `apps/api/lib/storage.ts` (`InMemoryScoreStore`) | Data dies on restart, not shared | Set `ECO_STORAGE_CONNECTION_STRING` → `TableScoreStore` (already implemented). Optionally upgrade to Cosmos DB for richer queries. |
-| 2 | **Local Node server** | `apps/api/server.ts` | A process on localhost | Deploy `apps/api/functions/*` to the **Azure Function App** (already authored). Stop using `server.ts` in production. |
-| 3 | **Heuristic-only coach** | `llm-adapters` default | No real LLM coaching | Deploy Azure OpenAI/Foundry, set `ECO_LLM_*` app settings. |
-| 4 | **No telemetry sink** | `apps/api/lib/telemetry.ts` | Metrics go nowhere | Set `APPLICATIONINSIGHTS_CONNECTION_STRING` (Bicep already provisions App Insights). |
-| 5 | **On-disk Copilot ingestion** | `packages/ingestion` `TranscriptTailAdapter` + `copilot*` readers | Reads files on the user's PC — impossible from the cloud | Replace the *source*, not the pipeline: a **VS Code extension / browser extension / IDE hook** captures each turn and `POST`s a `PromptEvent` to the cloud API. (See §4.) |
-| 6 | **Electron desktop shell** | `apps/desktop-widget/src/main` | A native app installed per machine | For a pure-cloud MVP, host the **renderer as a web app** (Static Web App) that calls the API over HTTPS. Keep Electron as an optional "native overlay" skin later. (See §3.) |
-| 7 | **No authentication** | Functions use `authLevel: 'function'` keys | Can't safely expose multi-user | Add **Entra ID (Easy Auth)** on the Function App / SWA; carry `userId` from the token, not the client. |
-| 8 | **CORS `*` + open function keys** | `infra/bicep/main.bicep`, function `authLevel` | Demo-grade security | Lock CORS to the UI origin; move secrets to **Key Vault**; use Managed Identity for storage/OpenAI. |
-| 9 | **No analytics dashboard** | — (Epic 4) | Success metrics can't be shown | Build **Power BI** over App Insights/Table, or a small web dashboard reading `sessionSummary`. |
+| #   | Local-only thing                  | Where                                                             | Why it blocks cloud                                      | Resolution                                                                                                                                                                   |
+| --- | --------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **In-memory score store**         | `apps/api/lib/storage.ts` (`InMemoryScoreStore`)                  | Data dies on restart, not shared                         | Set `ECO_STORAGE_CONNECTION_STRING` → `TableScoreStore` (already implemented). Optionally upgrade to Cosmos DB for richer queries.                                           |
+| 2   | **Local Node server**             | `apps/api/server.ts`                                              | A process on localhost                                   | Deploy `apps/api/functions/*` to the **Azure Function App** (already authored). Stop using `server.ts` in production.                                                        |
+| 3   | **Heuristic-only coach**          | `llm-adapters` default                                            | No real LLM coaching                                     | Deploy Azure OpenAI/Foundry, set `ECO_LLM_*` app settings.                                                                                                                   |
+| 4   | **No telemetry sink**             | `apps/api/lib/telemetry.ts`                                       | Metrics go nowhere                                       | Set `APPLICATIONINSIGHTS_CONNECTION_STRING` (Bicep already provisions App Insights).                                                                                         |
+| 5   | **On-disk Copilot ingestion**     | `packages/ingestion` `TranscriptTailAdapter` + `copilot*` readers | Reads files on the user's PC — impossible from the cloud | Replace the _source_, not the pipeline: a **VS Code extension / browser extension / IDE hook** captures each turn and `POST`s a `PromptEvent` to the cloud API. (See §4.)    |
+| 6   | **Electron desktop shell**        | `apps/desktop-widget/src/main`                                    | A native app installed per machine                       | For a pure-cloud MVP, host the **renderer as a web app** (Static Web App) that calls the API over HTTPS. Keep Electron as an optional "native overlay" skin later. (See §3.) |
+| 7   | **No authentication**             | Functions use `authLevel: 'function'` keys                        | Can't safely expose multi-user                           | Add **Entra ID (Easy Auth)** on the Function App / SWA; carry `userId` from the token, not the client.                                                                       |
+| 8   | **CORS `*` + open function keys** | `infra/bicep/main.bicep`, function `authLevel`                    | Demo-grade security                                      | Lock CORS to the UI origin; move secrets to **Key Vault**; use Managed Identity for storage/OpenAI.                                                                          |
+| 9   | **No analytics dashboard**        | — (Epic 4)                                                        | Success metrics can't be shown                           | Build **Power BI** over App Insights/Table, or a small web dashboard reading `sessionSummary`.                                                                               |
 
 ---
 
@@ -111,7 +111,7 @@ change.
 
 - ✅ **Azure Functions handlers** — `apps/api/src/functions/{scorePrompt,generateTip,sessionSummary,health}.ts`
 - ✅ **Bicep infra** — `infra/bicep/main.bicep` provisions Storage + `scores` table,
-  Log Analytics, App Insights, a Consumption Function App, and *optionally* Azure
+  Log Analytics, App Insights, a Consumption Function App, and _optionally_ Azure
   OpenAI. Wires `ECO_STORAGE_CONNECTION_STRING`, `APPLICATIONINSIGHTS_CONNECTION_STRING`,
   `FUNCTIONS_WORKER_RUNTIME=node`.
 - ✅ **Table Storage adapter** — `TableScoreStore` in `lib/storage.ts`.
@@ -175,13 +175,13 @@ localhost.**
 
 ## 8. Recommended sequencing
 
-| Phase | Outcome | Work |
-|-------|---------|------|
-| **P0 — Backend in cloud** | API serves from Azure with persistent storage + telemetry | §6 steps 1–2 (infra + `func publish`) |
-| **P1 — LLM coaching** | Real tips/rewrites from Azure OpenAI | §6 step 3 |
-| **P2 — Hosted UI** | Web client (scripted + manual) on Static Web App, no local app | §3 |
-| **P3 — Auth + hardening** | Multi-user safe | §7 |
-| **P4 — Live ingestion** | Real prompt capture via extension | §4 option B |
-| **P5 — Analytics** | Power BI / dashboard over telemetry (Epic 4) | new work |
+| Phase                     | Outcome                                                        | Work                                  |
+| ------------------------- | -------------------------------------------------------------- | ------------------------------------- |
+| **P0 — Backend in cloud** | API serves from Azure with persistent storage + telemetry      | §6 steps 1–2 (infra + `func publish`) |
+| **P1 — LLM coaching**     | Real tips/rewrites from Azure OpenAI                           | §6 step 3                             |
+| **P2 — Hosted UI**        | Web client (scripted + manual) on Static Web App, no local app | §3                                    |
+| **P3 — Auth + hardening** | Multi-user safe                                                | §7                                    |
+| **P4 — Live ingestion**   | Real prompt capture via extension                              | §4 option B                           |
+| **P5 — Analytics**        | Power BI / dashboard over telemetry (Epic 4)                   | new work                              |
 
 P0–P2 is the smallest path to "a true MVP that does not run locally at all."

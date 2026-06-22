@@ -15,13 +15,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "types": ["node", "vite/client", "electron-vite/node"],
-    "baseUrl": ".",
     "paths": {
       "@ecoprompt/shared-types": ["../../packages/shared-types/src/index.ts"],
       "@ecoprompt/scoring-engine": ["../../packages/scoring-engine/src/index.ts"],
       "@ecoprompt/ingestion": ["../../packages/ingestion/src/index.ts"],
       "@ecoprompt/llm-adapters": ["../../packages/llm-adapters/src/index.ts"],
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["./src/shared/*"]
     }
   },
   "include": ["src", "electron.vite.config.ts"]
