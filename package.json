@@ -78,6 +78,12 @@
         "icon": "$(debug-restart)"
       },
       {
+        "command": "ecoprompt.rescan",
+        "title": "Scan recent Copilot prompts",
+        "category": "EcoPrompt",
+        "icon": "$(sync)"
+      },
+      {
         "command": "ecoprompt.setLlmApiKey",
         "title": "Set coaching LLM API key",
         "category": "EcoPrompt"
@@ -85,6 +91,11 @@
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "ecoprompt.rescan",
+          "when": "view == ecoprompt.dashboard",
+          "group": "navigation@0"
+        },
         {
           "command": "ecoprompt.scorePrompt",
           "when": "view == ecoprompt.dashboard",

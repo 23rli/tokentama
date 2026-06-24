@@ -3,6 +3,8 @@ import type { CoachConfig, CoachProvider } from '@ecoprompt/llm-adapters';
 import { GuardianStore } from './state/guardianStore';
 import { ScoreService } from './core/scoreService';
 import { CopilotWatcher } from './capture/CopilotWatcher';
+import { findActiveSession } from './capture/copilotPaths';
+import { readSessionEvents } from './capture/copilotReader';
 import { StatusBar } from './status/statusBar';
 import { DashboardViewProvider } from './webview/DashboardViewProvider';
 
@@ -38,6 +40,7 @@ export function activate(context: vscode.ExtensionContext): void {
   statusBar.update(store.getState());
 
   let watcher: CopilotWatcher | undefined;
+  let announcedCapture = false;
   const startWatcher = (): void => {
     if (watcher) return;
     watcher = new CopilotWatcher((event) => {
@@ -46,6 +49,12 @@ export function activate(context: vscode.ExtensionContext): void {
           .slice(0, 60)
           .replace(/\s+/g, ' ')}…"`,
       );
+      if (!announcedCapture) {
+        announcedCapture = true;
+        void vscode.window.showInformationMessage(
+          'EcoPrompt Guardian is now auto-grading your Copilot prompts.',
+        );
+      }
       void scoreService.scoreEvent(event, 'copilot');
     });
     watcher.start();
@@ -90,6 +99,7 @@ export function activate(context: vscode.ExtensionContext): void {
       store.reset();
       void vscode.window.showInformationMessage('EcoPrompt ecosystem reset.');
     }),
+    vscode.commands.registerCommand('ecoprompt.rescan', () => rescanCopilot(scoreService, log)),
     vscode.commands.registerCommand('ecoprompt.setLlmApiKey', () => setLlmApiKey(context)),
   );
 
@@ -155,6 +165,37 @@ function registerChatParticipant(
   } catch (err) {
     log(`Failed to register chat participant: ${String(err)}`);
   }
+}
+
+async function rescanCopilot(
+  scoreService: ScoreService,
+  log: (message: string) => void,
+): Promise<void> {
+  const active = findActiveSession();
+  if (!active) {
+    log('rescan: no active Copilot session found on disk.');
+    void vscode.window.showInformationMessage(
+      'EcoPrompt: no Copilot chat sessions found on disk yet. Send a Copilot prompt first.',
+    );
+    return;
+  }
+  const recent = readSessionEvents(active)
+    .filter((e) => e.promptText.trim())
+    .slice(-3);
+  if (recent.length === 0) {
+    void vscode.window.showInformationMessage(
+      'EcoPrompt: the latest Copilot session has no prompts to score yet.',
+    );
+    return;
+  }
+  for (const event of recent) {
+    await scoreService.scoreEvent(event, 'copilot');
+  }
+  log(`rescan: scored ${recent.length} recent prompt(s) from session ${active.sessionId}.`);
+  await vscode.commands.executeCommand('ecoprompt.dashboard.focus');
+  void vscode.window.showInformationMessage(
+    `EcoPrompt scored your ${recent.length} most recent Copilot prompt(s).`,
+  );
 }
 
 async function scoreManualPrompt(scoreService: ScoreService): Promise<void> {
