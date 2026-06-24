@@ -45,4 +45,6 @@ export interface ParsedChatSession {
   sessionId: string;
   model?: ModelInfo;
   requests: ParsedChatRequest[];
+  /** Total number of requests in the session (incl. ones with no extractable prompt). */
+  requestCount?: number;
 }

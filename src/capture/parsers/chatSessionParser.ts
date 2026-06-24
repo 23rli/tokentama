@@ -101,5 +101,33 @@ export function parseChatSession(content: string): ParsedChatSession {
     });
   });
 
-  return { sessionId: state?.sessionId ?? '', model, requests };
+  return { sessionId: state?.sessionId ?? '', model, requests, requestCount: reqArr.length };
+}
+
+/**
+ * Extract prompts from the kind:0 snapshot(s), keyed by request index. The
+ * snapshot preserves the ORIGINAL request order + messages — including the
+ * session's first prompt — which the later kind:1/kind:2 patches reorganize and
+ * overwrite. First snapshot wins per index.
+ */
+export function parseEarlyPrompts(content: string): Map<number, string> {
+  const byIndex = new Map<number, string>();
+  const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  for (const line of lines) {
+    let parsed: ChatLine;
+    try {
+      parsed = JSON.parse(line) as ChatLine;
+    } catch {
+      continue;
+    }
+    if (parsed.kind !== 0) continue;
+    const requests = (parsed.v as { requests?: unknown })?.requests;
+    if (!Array.isArray(requests)) continue;
+    requests.forEach((req: unknown, idx: number) => {
+      if (byIndex.has(idx)) return;
+      const text = promptFromRequest(req);
+      if (text) byIndex.set(idx, text);
+    });
+  }
+  return byIndex;
 }

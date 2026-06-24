@@ -20,6 +20,7 @@ import { readSessionEvents } from './copilotReader';
 export class CopilotWatcher implements vscode.Disposable {
   private watcher?: vscode.FileSystemWatcher;
   private readonly seen = new Set<string>();
+  private readonly pendingSince = new Map<string, number>();
   private readonly root = getWorkspaceStorageRoot();
   private debounce?: ReturnType<typeof setTimeout>;
   private poll?: ReturnType<typeof setInterval>;
@@ -63,7 +64,7 @@ export class CopilotWatcher implements vscode.Disposable {
       /* watcher unavailable — polling still covers us */
     }
 
-    this.poll = setInterval(() => this.refresh(), 4000);
+    this.poll = setInterval(() => this.refresh(), 1500);
   }
 
   private scheduleRefresh(): void {
@@ -78,18 +79,30 @@ export class CopilotWatcher implements vscode.Disposable {
     } catch {
       return;
     }
-    if (!active || active.modifiedMs <= this.lastMtime) return;
-    this.lastMtime = active.modifiedMs;
+    if (!active) return;
+    // Process when the session changed OR while we're still waiting on a turn's
+    // real tokens (so the grace-period fallback below can fire even if idle).
+    const changed = active.modifiedMs > this.lastMtime;
+    if (!changed && this.pendingSince.size === 0) return;
+    if (changed) this.lastMtime = active.modifiedMs;
 
+    const now = Date.now();
     for (const ev of readSessionEvents(active)) {
       if (!ev.promptText.trim()) continue;
       const key = `${ev.sessionId}:${ev.turnIndex}`;
       if (this.seen.has(key)) continue;
-      // Prefer REAL metered tokens: if Copilot hasn't written them yet, leave the
-      // turn unseen and retry on the next change (chatSession writes bump the
-      // session mtime, which re-triggers this refresh within a second or two).
-      if (ev.tokens && ev.tokens.estimated) continue;
+
+      // Prefer REAL metered tokens, but don't wait forever — emit with estimates
+      // after a short grace so the prompt always appears promptly.
+      const hasRealTokens = !(ev.tokens && ev.tokens.estimated);
+      if (!hasRealTokens) {
+        const since = this.pendingSince.get(key) ?? now;
+        this.pendingSince.set(key, since);
+        if (now - since < 3000) continue;
+      }
+
       this.seen.add(key);
+      this.pendingSince.delete(key);
       this.onEvent(ev);
     }
   }

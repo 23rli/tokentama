@@ -32,6 +32,11 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     };
     view.webview.html = buildDashboardHtml(view.webview, this.extensionUri);
     view.webview.onDidReceiveMessage((msg: WebviewMessage) => this.onMessage(msg));
+    // Re-send the latest state whenever the panel becomes visible again, so it
+    // never shows stale data after being hidden.
+    view.onDidChangeVisibility(() => {
+      if (view.visible) this.post({ type: 'state', state: this.store.getState() });
+    });
   }
 
   private onMessage(msg: WebviewMessage): void {
