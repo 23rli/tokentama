@@ -56,6 +56,7 @@ export class ScoreService {
       promptText: event.promptText,
       tip,
       tokens: event.tokens,
+      model: event.model,
     });
     this.log?.(
       `scored (${source}): overall ${Math.round(resp.overallScore)} · waste ${Math.round(

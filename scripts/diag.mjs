@@ -30,6 +30,13 @@ await esbuild.build({
         const withPrompt = events.filter((e) => e.promptText.trim());
         const real = withPrompt.filter((e) => e.tokens && !e.tokens.estimated);
         console.log('events:', events.length, 'withPrompt:', withPrompt.length, 'REAL tokens:', real.length);
+        const m = withPrompt[0]?.model;
+        console.log(
+          'model:',
+          m
+            ? \`\${m.name ?? m.id} (\${m.category ?? '?'}/\${m.priceCategory ?? '?'}) per1M in/out/cacheR=\${m.inputPer1M}/\${m.outputPer1M}/\${m.cacheReadPer1M} ctx=\${m.contextMaxTokens} reasoning=\${(m.reasoningEfforts || []).join(',')} think=\${m.maxThinkingBudget}\`
+            : 'none',
+        );
         for (const e of real.slice(0, 2).concat(withPrompt.slice(-1))) {
           const t = e.tokens ? \`in=\${e.tokens.inputTokens} out=\${e.tokens.outputTokens} cr=\${e.tokens.copilotCredits ?? '?'} real=\${!e.tokens.estimated}\` : 'no tokens';
           console.log('  turn ' + e.turnIndex + ': "' + e.promptText.slice(0, 45).replace(/\\s+/g, ' ') + '" [' + t + ']');

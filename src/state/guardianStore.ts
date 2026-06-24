@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { ScorePromptResponse, Subscores, TokenEstimate } from '@ecoprompt/shared-types';
+import type { ScorePromptResponse, Subscores, TokenEstimate, ModelInfo } from '@ecoprompt/shared-types';
 import { scoreToState } from '@ecoprompt/scoring-engine';
 import type {
   GuardianState,
@@ -30,6 +30,7 @@ interface PersistShape {
   lastEvent?: ScoredEventView;
   lastSubscores?: Subscores;
   tip?: TipView;
+  model?: ModelInfo;
   lastOverallBySession: Record<string, number>;
 }
 
@@ -40,6 +41,8 @@ export interface RecordScoreOptions {
   tip?: TipView;
   /** Authoritative token estimate from the captured event (carries real credits). */
   tokens?: TokenEstimate;
+  /** The session's selected model + pricing, when known. */
+  model?: ModelInfo;
 }
 
 /**
@@ -113,6 +116,7 @@ export class GuardianStore {
     this.data.lastEvent = event;
     this.data.lastSubscores = resp.subscores;
     this.data.tip = opts.tip;
+    if (opts.model) this.data.model = opts.model;
     this.data.lastOverallBySession[opts.sessionId] = resp.overallScore;
 
     this.data.records.push({
@@ -166,6 +170,7 @@ export class GuardianStore {
       tip: this.data.tip,
       history: this.data.history,
       metrics,
+      model: this.data.model,
       captureEnabled: this._captureEnabled,
     };
   }

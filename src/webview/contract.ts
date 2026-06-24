@@ -2,9 +2,9 @@
  * Shared message + state contract between the extension host and the webview.
  * Types only — safe to import from both the Node host and the browser webview.
  */
-import type { PetWorldState, Subscores, WasteComponent } from '@ecoprompt/shared-types';
+import type { PetWorldState, Subscores, WasteComponent, ModelInfo } from '@ecoprompt/shared-types';
 
-export type { PetWorldState, Subscores, WasteComponent } from '@ecoprompt/shared-types';
+export type { PetWorldState, Subscores, WasteComponent, ModelInfo } from '@ecoprompt/shared-types';
 
 /** A single scored prompt, flattened for display in the webview. */
 export interface ScoredEventView {
@@ -76,6 +76,8 @@ export interface GuardianState {
   tip?: TipView;
   history: ScorePoint[];
   metrics: SuccessMetrics;
+  /** The session's selected model + its pricing/capabilities, when known. */
+  model?: ModelInfo;
   captureEnabled: boolean;
 }
 

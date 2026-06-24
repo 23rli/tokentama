@@ -14,8 +14,20 @@ export interface ModelInfo {
   id: string;
   family: string;
   vendor?: string;
+  name?: string;
   maxInputTokens?: number;
   maxOutputTokens?: number;
+  /** Picker labels from models.json (e.g. 'powerful', 'high'). */
+  category?: string;
+  priceCategory?: string;
+  /** Credits per 1M tokens (from models.json billing.token_prices.default). */
+  inputPer1M?: number;
+  outputPer1M?: number;
+  cacheReadPer1M?: number;
+  cacheWritePer1M?: number;
+  contextMaxTokens?: number;
+  reasoningEfforts?: string[];
+  maxThinkingBudget?: number;
 }
 
 /**

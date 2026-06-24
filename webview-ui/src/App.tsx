@@ -3,6 +3,7 @@ import type { GuardianState, HostMessage } from '../../src/webview/contract';
 import { post } from './vscodeApi';
 import { PetStage } from './components/PetStage';
 import { ScoreHeader } from './components/ScoreHeader';
+import { ModelCard } from './components/ModelCard';
 import { MetricsGrid } from './components/MetricsGrid';
 import { WasteBreakdown } from './components/WasteBreakdown';
 import { CoachingPanel } from './components/CoachingPanel';
@@ -28,6 +29,7 @@ export function App() {
     <div class="app">
       <PetStage world={state.world} />
       <ScoreHeader state={state} />
+      <ModelCard model={state.model} />
 
       <div class="actions">
         <button class="primary" onClick={() => post({ type: 'scorePrompt' })}>
