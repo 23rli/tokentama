@@ -27,7 +27,7 @@ export function App() {
 
   return (
     <div class="app">
-      <PetStage world={state.world} />
+      <PetStage world={state.world} score={state.overallScore} />
       <ScoreHeader state={state} />
       <ModelCard model={state.model} />
 

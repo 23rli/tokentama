@@ -35,25 +35,432 @@ body {
   gap: 6px;
 }
 
-.petstage-svg {
+.petstage-scene {
+  --cw: 56px;
+  position: relative;
   width: 100%;
-  height: auto;
+  height: 150px;
   border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #16412e, #0f2a1f);
+  transition: background 600ms ease;
+}
+
+.scene-thriving {
+  background: linear-gradient(180deg, #8fd6ff 0%, #cdeeff 55%, #eafaff 100%);
+}
+.scene-healthy {
+  background: linear-gradient(180deg, #7cc0ee 0%, #bfe2f5 60%, #e2f3fb 100%);
+}
+.scene-concerned {
+  background: linear-gradient(180deg, #9aa7ad 0%, #b9c0bf 60%, #cfcfc4 100%);
+}
+.scene-critical {
+  background: linear-gradient(180deg, #7a6b50 0%, #9c8a63 55%, #b6a079 100%);
+}
+.scene-collapse {
+  background: linear-gradient(180deg, #4a3526 0%, #3a2a1d 60%, #2a1d13 100%);
+}
+.scene-dead {
+  background: linear-gradient(180deg, #1f1f22 0%, #161616 60%, #0d0d0d 100%);
+}
+
+.scene-stars {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 600ms ease;
+  background-image:
+    radial-gradient(1.4px 1.4px at 20% 24%, #d6ffe9 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 68% 16%, #d6ffe9 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 44% 33%, #d6ffe9 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 84% 40%, #d6ffe9 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 12% 48%, #d6ffe9 50%, transparent 52%);
+}
+/* Stars only appear in the dystopian night (dead). Good states are sunny daytime. */
+.scene-dead .scene-stars {
+  opacity: 0.4;
+}
+
+/* Sun: bright and high when healthy, sinking & reddening as it worsens, gone at the end. */
+.scene-sun {
+  position: absolute;
+  top: 16px;
+  right: 22px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  pointer-events: none;
+  transition: top 700ms ease, background 700ms ease, box-shadow 700ms ease, opacity 700ms ease,
+    transform 700ms ease;
+  background: radial-gradient(circle at 50% 50%, #fff6c4 0%, #ffe066 55%, #ffcf3a 100%);
+  box-shadow: 0 0 22px 10px rgba(255, 222, 102, 0.55);
+  opacity: 0;
+}
+.scene-thriving .scene-sun {
+  opacity: 1;
+}
+.scene-healthy .scene-sun {
+  opacity: 0.95;
+  top: 20px;
+}
+.scene-concerned .scene-sun {
+  opacity: 0.7;
+  top: 30px;
+  background: radial-gradient(circle at 50% 50%, #fff0d0 0%, #ffd27a 60%, #e9b15a 100%);
+  box-shadow: 0 0 18px 8px rgba(233, 177, 90, 0.4);
+}
+.scene-critical .scene-sun {
+  opacity: 0.6;
+  top: 44px;
+  transform: scale(0.9);
+  background: radial-gradient(circle at 50% 50%, #ffd2a0 0%, #ff9a52 60%, #d75f33 100%);
+  box-shadow: 0 0 16px 7px rgba(215, 95, 51, 0.4);
+}
+.scene-collapse .scene-sun,
+.scene-dead .scene-sun {
+  opacity: 0;
+}
+
+/* Smog/haze wash that thickens as the world turns dystopian. */
+.scene-haze {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 600ms ease;
+  background: linear-gradient(180deg, rgba(90, 74, 48, 0) 0%, rgba(60, 45, 28, 0.45) 100%);
+}
+.scene-concerned .scene-haze {
+  opacity: 0.4;
+}
+.scene-critical .scene-haze {
+  opacity: 0.6;
+}
+.scene-collapse .scene-haze {
+  opacity: 0.8;
+  background: linear-gradient(180deg, rgba(40, 28, 18, 0) 0%, rgba(30, 18, 10, 0.7) 100%);
+}
+.scene-dead .scene-haze {
+  opacity: 0.9;
+  background: linear-gradient(180deg, rgba(10, 10, 12, 0) 0%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+.scene-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34px;
+  background: rgba(0, 0, 0, 0.28);
+  border-top: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Landscape: lake + greenery that droughts as health drops ---------- */
+/* All driven by --fill (0..1), set per render from the score. */
+
+/* Far-bank greenery near the horizon line. */
+.scene-scenery {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 30px;
+  height: 56px;
+  pointer-events: none;
+  transition: opacity 600ms ease, filter 600ms ease;
+  /* Wither: lush & full at high fill, faded & brown at low fill. */
+  opacity: calc(0.35 + 0.65 * var(--fill, 1));
+  filter: saturate(calc(0.2 + 0.9 * var(--fill, 1)));
+}
+
+/* A row of tree canopies (overlapping blobs) on a low hill. */
+.scene-trees {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  height: 48px;
+  background-repeat: no-repeat;
+  background-image:
+    radial-gradient(14px 16px at 12% 70%, var(--foliage, #2f8f4e) 60%, transparent 62%),
+    radial-gradient(18px 20px at 26% 60%, var(--foliage, #2f8f4e) 60%, transparent 62%),
+    radial-gradient(12px 14px at 38% 74%, var(--foliage, #2f8f4e) 60%, transparent 62%),
+    radial-gradient(20px 22px at 62% 58%, var(--foliage, #2f8f4e) 60%, transparent 62%),
+    radial-gradient(13px 15px at 76% 72%, var(--foliage, #2f8f4e) 60%, transparent 62%),
+    radial-gradient(16px 18px at 90% 64%, var(--foliage, #2f8f4e) 60%, transparent 62%);
+}
+/* Thin trunks under the canopies. */
+.scene-trees::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 18px;
+  background-repeat: no-repeat;
+  background-image:
+    linear-gradient(var(--trunk, #5b3b21), var(--trunk, #5b3b21)),
+    linear-gradient(var(--trunk, #5b3b21), var(--trunk, #5b3b21)),
+    linear-gradient(var(--trunk, #5b3b21), var(--trunk, #5b3b21));
+  background-size: 3px 14px, 3px 16px, 3px 12px;
+  background-position: 26% 100%, 62% 100%, 90% 100%;
+}
+
+/* A soft band of grass along the bank. */
+.scene-grass {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  background: linear-gradient(180deg, var(--grass, #2c7a3f), transparent);
+  opacity: 0.85;
+}
+
+/* Dry cracked riverbed — always present; the lake shrinks to reveal it. */
+.scene-riverbed {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  width: 86%;
+  height: 30px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: opacity 700ms ease;
+  /* More visible as the water recedes. */
+  opacity: calc(0.85 - 0.7 * var(--fill, 1));
+  background:
+    radial-gradient(ellipse at 50% 45%, #6b4a2e 0%, #4a3320 70%, transparent 72%);
+}
+/* Cracks across the dry bed. */
+.scene-riverbed::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-image:
+    linear-gradient(60deg, transparent 48%, rgba(20, 12, 6, 0.55) 49%, transparent 51%),
+    linear-gradient(-40deg, transparent 47%, rgba(20, 12, 6, 0.45) 48%, transparent 50%),
+    linear-gradient(15deg, transparent 49%, rgba(20, 12, 6, 0.4) 50%, transparent 51%);
+}
+
+/* The lake: a pool that shrinks (width + height) toward the centre as fill drops. */
+.scene-river {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(30% + 62% * var(--fill, 1));
+  height: calc(9px + 34px * var(--fill, 1));
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: none;
+  transition: width 700ms ease, height 700ms ease, opacity 600ms ease, background 600ms ease;
+  background: radial-gradient(ellipse at 50% 35%, var(--water-top, #38b6e6) 0%, var(--water-bot, #135d86) 80%);
+  opacity: calc(0.4 + 0.6 * var(--fill, 1));
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18) inset, 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Per-state palette: lush green & blue when healthy -> olive -> brown drought. */
+.scene-thriving {
+  --foliage: #36c25e;
+  --trunk: #5b3b21;
+  --grass: #2fae53;
+  --water-top: #aee7ff;
+  --water-bot: #4db8ec;
+}
+.scene-healthy {
+  --foliage: #3aa856;
+  --trunk: #573620;
+  --grass: #2c8f46;
+  --water-top: #9bdcf5;
+  --water-bot: #3aa6d6;
+}
+.scene-concerned {
+  --foliage: #8f9a3c;
+  --trunk: #5a4320;
+  --grass: #7c863a;
+  --water-top: #6fa6a0;
+  --water-bot: #2f4a46;
+}
+.scene-critical {
+  --foliage: #9a7438;
+  --trunk: #4f3318;
+  --grass: #7a5c2e;
+  --water-top: #8a8470;
+  --water-bot: #3a3528;
+}
+.scene-collapse {
+  --foliage: #7a5a3a;
+  --trunk: #3f2a16;
+  --grass: #5c4427;
+  --water-top: #6a5a4a;
+  --water-bot: #2a1f17;
+}
+.scene-dead {
+  --foliage: #555047;
+  --trunk: #332a20;
+  --grass: #3a352c;
+  --water-top: #4a4a4a;
+  --water-bot: #222222;
+}
+
+
+/* Red flash overlay that pulses when Clippy drops a level. */
+.scene-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 64, 48, 0.85), rgba(120, 0, 0, 0.55));
+  mix-blend-mode: screen;
+}
+.petstage-scene--hit .scene-flash {
+  animation: scene-flash 700ms ease-out;
+}
+.petstage-scene--death .scene-flash {
+  animation: scene-flash-death 1400ms ease-out;
+}
+/* Light camera shake on the whole scene during a hit. */
+.petstage-scene--hit {
+  animation: scene-shake 700ms ease-in-out;
+}
+.petstage-scene--death {
+  animation: scene-shake 1400ms ease-in-out;
+}
+
+@keyframes scene-flash {
+  0% { opacity: 0; }
+  12% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+@keyframes scene-flash-death {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  40% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+@keyframes scene-shake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-4px, 2px); }
+  30% { transform: translate(4px, -2px); }
+  45% { transform: translate(-3px, 1px); }
+  60% { transform: translate(3px, -1px); }
+  75% { transform: translate(-2px, 1px); }
+}
+
+.clippy-walker {
+  position: absolute;
+  bottom: 26px;
+  left: 0;
+  width: var(--cw);
+  height: var(--cw);
+  will-change: left, transform;
+  animation: clippy-walk var(--lap, 6s) linear infinite;
+}
+
+.clippy-sprite {
   display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.35));
 }
 
-.pet-body.breathe {
-  transform-origin: 120px 100px;
-  animation: breathe 3.4s ease-in-out infinite;
-}
-
-@keyframes breathe {
-  0%,
-  100% {
-    transform: scale(1);
+@keyframes clippy-walk {
+  0% {
+    left: 0;
+    transform: scaleX(1);
+  }
+  48% {
+    left: calc(100% - var(--cw));
+    transform: scaleX(1);
   }
   50% {
-    transform: scale(1.03);
+    left: calc(100% - var(--cw));
+    transform: scaleX(-1);
+  }
+  98% {
+    left: 0;
+    transform: scaleX(-1);
+  }
+  100% {
+    left: 0;
+    transform: scaleX(1);
+  }
+}
+
+/* Collapsed / dormant: Clippy stops moving and tips over. */
+.clippy-walker--down {
+  animation: none;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%) rotate(92deg);
+  opacity: 0.85;
+}
+.scene-collapse .clippy-sprite {
+  filter: saturate(0.6) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
+}
+.scene-dead .clippy-sprite {
+  filter: grayscale(1) brightness(0.8) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
+}
+
+/* Clippy flinches and flashes white when taking a hit. */
+.clippy-walker--hit .clippy-sprite {
+  animation: clippy-hit 700ms ease-out;
+}
+/* Final blow: Clippy convulses, drains to gray, and slumps. */
+.clippy-walker--death .clippy-sprite {
+  animation: clippy-death 1400ms ease-in forwards;
+}
+
+@keyframes clippy-hit {
+  0% {
+    transform: translateX(0) rotate(0);
+    filter: brightness(3) saturate(0) drop-shadow(0 4px 3px rgba(0, 0, 0, 0.35));
+  }
+  20% { transform: translateX(6px) rotate(8deg); }
+  40% { transform: translateX(-5px) rotate(-7deg); }
+  60% { transform: translateX(4px) rotate(5deg); }
+  80% { transform: translateX(-2px) rotate(-3deg); }
+  100% {
+    transform: translateX(0) rotate(0);
+    filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.35));
+  }
+}
+
+@keyframes clippy-death {
+  0% {
+    transform: translateY(0) rotate(0) scale(1);
+    filter: brightness(3) saturate(0) drop-shadow(0 4px 3px rgba(0, 0, 0, 0.35));
+  }
+  15% { transform: translateY(-4px) rotate(6deg) scale(1.02); }
+  30% { transform: translateY(0) rotate(-6deg) scale(1); }
+  45% { transform: translateY(-2px) rotate(4deg) scale(1); }
+  60% {
+    transform: translateY(2px) rotate(-2deg) scale(0.98);
+    filter: grayscale(0.6) brightness(1) drop-shadow(0 3px 3px rgba(0, 0, 0, 0.4));
+  }
+  100% {
+    transform: translateY(6px) rotate(0) scale(0.94);
+    filter: grayscale(1) brightness(0.7) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clippy-walker {
+    animation: none;
+    left: calc(50% - var(--cw) / 2);
+  }
+  .petstage-scene--hit,
+  .petstage-scene--death,
+  .petstage-scene--hit .scene-flash,
+  .petstage-scene--death .scene-flash,
+  .clippy-walker--hit .clippy-sprite,
+  .clippy-walker--death .clippy-sprite {
+    animation: none;
   }
 }
 

@@ -9,6 +9,7 @@ export function buildDashboardHtml(webview: vscode.Webview, extensionUri: vscode
   const styleUri = webview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, 'dist', 'webview.css'),
   );
+  const mediaUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media'));
 
   const csp = [
     `default-src 'none'`,
@@ -29,6 +30,7 @@ export function buildDashboardHtml(webview: vscode.Webview, extensionUri: vscode
   </head>
   <body>
     <div id="root"></div>
+    <script nonce="${nonce}">window.__ECO_MEDIA__ = "${mediaUri}";</script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
   </body>
 </html>`;

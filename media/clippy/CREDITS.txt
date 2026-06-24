@@ -1,0 +1,10 @@
+Clippy animation assets (yellow_*.gif) in this folder are reused from the
+vscode-pets project:
+
+  https://github.com/tonybaloney/vscode-pets
+
+License: MIT.
+Clippy media assets created by Marc Duiker (https://twitter.com/marcduiker).
+
+These GIFs are included unmodified under the terms of the MIT License. See the
+vscode-pets repository for the full license text and credits.
