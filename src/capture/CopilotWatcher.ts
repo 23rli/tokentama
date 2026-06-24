@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { join } from 'node:path';
 import type { PromptEvent } from '@ecoprompt/shared-types';
 import { findActiveSession, getWorkspaceStorageRoot, listCopilotSessions } from './copilotPaths';
 import { readSessionEvents } from './copilotReader';
@@ -7,6 +8,10 @@ import { readSessionEvents } from './copilotReader';
  * Best-effort, read-only live capture of GitHub Copilot Chat. Reads the
  * append-only transcript `.jsonl` files under VS Code's per-workspace storage
  * and emits a PromptEvent for each newly completed user turn.
+ *
+ * When `onlyHash` is provided (this window's workspace-storage hash), capture is
+ * scoped to THIS window's Copilot sessions — so it never picks up chats from
+ * other VS Code windows that share the same user-data directory.
  *
  * Watching files outside the workspace can be unreliable, so a lightweight
  * mtime-guarded poll backs up the file-system watcher. Everything degrades
@@ -20,21 +25,24 @@ export class CopilotWatcher implements vscode.Disposable {
   private poll?: ReturnType<typeof setInterval>;
   private lastMtime = 0;
 
-  constructor(private readonly onEvent: (event: PromptEvent) => void) {}
+  constructor(
+    private readonly onEvent: (event: PromptEvent) => void,
+    private readonly onlyHash?: string,
+  ) {}
 
   isAvailable(): boolean {
     try {
-      return listCopilotSessions(this.root).length > 0;
+      return listCopilotSessions(this.root, this.onlyHash).length > 0;
     } catch {
       return false;
     }
   }
 
   start(): void {
-    // Mark every existing turn across all sessions as seen, so only turns that
-    // happen AFTER capture starts are emitted (no history replay).
+    // Mark existing in-scope turns as seen, so only turns that happen AFTER
+    // capture starts are emitted (no history replay).
     try {
-      for (const session of listCopilotSessions(this.root)) {
+      for (const session of listCopilotSessions(this.root, this.onlyHash)) {
         for (const ev of readSessionEvents(session)) {
           this.seen.add(`${ev.sessionId}:${ev.turnIndex}`);
         }
@@ -45,7 +53,8 @@ export class CopilotWatcher implements vscode.Disposable {
     }
 
     try {
-      const pattern = new vscode.RelativePattern(vscode.Uri.file(this.root), '**/*.jsonl');
+      const base = this.onlyHash ? join(this.root, this.onlyHash) : this.root;
+      const pattern = new vscode.RelativePattern(vscode.Uri.file(base), '**/*.jsonl');
       this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
       const onChange = (): void => this.scheduleRefresh();
       this.watcher.onDidCreate(onChange);
@@ -65,7 +74,7 @@ export class CopilotWatcher implements vscode.Disposable {
   private refresh(): void {
     let active;
     try {
-      active = findActiveSession(this.root);
+      active = findActiveSession(this.root, this.onlyHash);
     } catch {
       return;
     }
@@ -76,6 +85,10 @@ export class CopilotWatcher implements vscode.Disposable {
       if (!ev.promptText.trim()) continue;
       const key = `${ev.sessionId}:${ev.turnIndex}`;
       if (this.seen.has(key)) continue;
+      // Prefer REAL metered tokens: if Copilot hasn't written them yet, leave the
+      // turn unseen and retry on the next change (chatSession writes bump the
+      // session mtime, which re-triggers this refresh within a second or two).
+      if (ev.tokens && ev.tokens.estimated) continue;
       this.seen.add(key);
       this.onEvent(ev);
     }

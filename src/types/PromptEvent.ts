@@ -28,6 +28,8 @@ export interface TokenEstimate {
   outputTokens: number;
   cachedTokens?: number;
   estimatedCostUsd: number;
+  /** Real Copilot credits metered for the turn, when available from disk. */
+  copilotCredits?: number;
   estimated: boolean;
 }
 

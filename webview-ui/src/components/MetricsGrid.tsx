@@ -49,7 +49,10 @@ export function MetricsGrid({ metrics }: { metrics: SuccessMetrics }) {
     {
       label: 'CO₂e avoided',
       value: `${metrics.sustainabilityCo2eGrams.toFixed(1)}g`,
-      hint: `${metrics.sustainabilityWhSaved.toFixed(1)} Wh · ${fmtUsd(metrics.totalCostUsd)}`,
+      hint:
+        metrics.totalCredits > 0
+          ? `${metrics.sustainabilityWhSaved.toFixed(1)} Wh · ${Math.round(metrics.totalCredits)} cr`
+          : `${metrics.sustainabilityWhSaved.toFixed(1)} Wh · ${fmtUsd(metrics.totalCostUsd)}`,
       tone: metrics.sustainabilityCo2eGrams > 0 ? 'good' : 'neutral',
     },
   ];

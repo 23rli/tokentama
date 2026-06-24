@@ -28,9 +28,11 @@ await esbuild.build({
       if (active) {
         const events = readSessionEvents(active);
         const withPrompt = events.filter((e) => e.promptText.trim());
-        console.log('events:', events.length, 'with prompt text:', withPrompt.length);
-        for (const e of withPrompt.slice(-3)) {
-          console.log('  turn ' + e.turnIndex + ': "' + e.promptText.slice(0, 90).replace(/\\s+/g, ' ') + '" resp=' + (e.responseText ? e.responseText.length : 0) + ' tools=' + e.toolCalls.length);
+        const real = withPrompt.filter((e) => e.tokens && !e.tokens.estimated);
+        console.log('events:', events.length, 'withPrompt:', withPrompt.length, 'REAL tokens:', real.length);
+        for (const e of real.slice(0, 2).concat(withPrompt.slice(-1))) {
+          const t = e.tokens ? \`in=\${e.tokens.inputTokens} out=\${e.tokens.outputTokens} cr=\${e.tokens.copilotCredits ?? '?'} real=\${!e.tokens.estimated}\` : 'no tokens';
+          console.log('  turn ' + e.turnIndex + ': "' + e.promptText.slice(0, 45).replace(/\\s+/g, ' ') + '" [' + t + ']');
         }
       }
     `,

@@ -43,11 +43,15 @@ function findModelsJson(root: string, hash: string, sessionId: string): string |
 }
 
 /** Enumerate all Copilot chat sessions on disk, newest transcript first. */
-export function listCopilotSessions(root = getWorkspaceStorageRoot()): CopilotSessionPaths[] {
+export function listCopilotSessions(
+  root = getWorkspaceStorageRoot(),
+  onlyHash?: string,
+): CopilotSessionPaths[] {
   const sessions: CopilotSessionPaths[] = [];
   if (!existsSync(root)) return sessions;
 
   for (const hash of safeReaddir(root)) {
+    if (onlyHash && hash !== onlyHash) continue;
     const transcriptsDir = join(root, hash, 'GitHub.copilot-chat', 'transcripts');
     if (!existsSync(transcriptsDir)) continue;
     const chatSessionsDir = join(root, hash, 'chatSessions');
@@ -73,6 +77,7 @@ export function listCopilotSessions(root = getWorkspaceStorageRoot()): CopilotSe
 /** The most recently active Copilot chat session, if any. */
 export function findActiveSession(
   root = getWorkspaceStorageRoot(),
+  onlyHash?: string,
 ): CopilotSessionPaths | undefined {
-  return listCopilotSessions(root)[0];
+  return listCopilotSessions(root, onlyHash)[0];
 }

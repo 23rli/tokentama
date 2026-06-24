@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
+import * as path from 'node:path';
 import type { CoachConfig, CoachProvider } from '@ecoprompt/llm-adapters';
 import { GuardianStore } from './state/guardianStore';
 import { ScoreService } from './core/scoreService';
 import { CopilotWatcher } from './capture/CopilotWatcher';
-import { findActiveSession } from './capture/copilotPaths';
+import { findActiveSession, listCopilotSessions } from './capture/copilotPaths';
 import { readSessionEvents } from './capture/copilotReader';
 import { StatusBar } from './status/statusBar';
 import { DashboardViewProvider } from './webview/DashboardViewProvider';
@@ -18,6 +19,13 @@ export function activate(context: vscode.ExtensionContext): void {
   const log = (message: string): void =>
     output.appendLine(`[${new Date().toLocaleTimeString()}] ${message}`);
   log('EcoPrompt Guardians activated.');
+
+  const workspaceHash = deriveWorkspaceHash(context);
+  log(
+    workspaceHash
+      ? `Capture scoped to this window's workspace storage (${workspaceHash}).`
+      : 'No workspace folder open — capture tracks the most recent Copilot session in ANY window. Open a folder for window-scoped capture.',
+  );
 
   const getCoachConfig = async (): Promise<CoachConfig> => {
     const cfg = vscode.workspace.getConfiguration('ecoprompt.coaching');
@@ -43,6 +51,12 @@ export function activate(context: vscode.ExtensionContext): void {
   let announcedCapture = false;
   const startWatcher = (): void => {
     if (watcher) return;
+    if (!workspaceHash) {
+      log(
+        'Ambient capture paused: this window has no folder open, so there is no window-scoped Copilot session. Open a folder (the dev host opens the sandbox/ folder via F5), or use @ecoprompt / Score this prompt.',
+      );
+      return;
+    }
     watcher = new CopilotWatcher((event) => {
       log(
         `capture: turn ${event.turnIndex} — "${event.promptText
@@ -56,7 +70,7 @@ export function activate(context: vscode.ExtensionContext): void {
         );
       }
       void scoreService.scoreEvent(event, 'copilot');
-    });
+    }, workspaceHash);
     watcher.start();
     context.subscriptions.push(watcher);
     log(
@@ -99,7 +113,12 @@ export function activate(context: vscode.ExtensionContext): void {
       store.reset();
       void vscode.window.showInformationMessage('EcoPrompt ecosystem reset.');
     }),
-    vscode.commands.registerCommand('ecoprompt.rescan', () => rescanCopilot(scoreService, log)),
+    vscode.commands.registerCommand('ecoprompt.rescan', () =>
+      rescanCopilot(scoreService, log, workspaceHash),
+    ),
+    vscode.commands.registerCommand('ecoprompt.diagnostics', () =>
+      showCaptureDiagnostics(workspaceHash, output),
+    ),
     vscode.commands.registerCommand('ecoprompt.setLlmApiKey', () => setLlmApiKey(context)),
   );
 
@@ -167,11 +186,57 @@ function registerChatParticipant(
   }
 }
 
+function deriveWorkspaceHash(context: vscode.ExtensionContext): string | undefined {
+  // context.storageUri = .../User/workspaceStorage/<hash>/<extensionId>
+  const storage = context.storageUri?.fsPath;
+  if (!storage) return undefined;
+  return path.basename(path.dirname(storage));
+}
+
+async function showCaptureDiagnostics(
+  workspaceHash: string | undefined,
+  output: vscode.OutputChannel,
+): Promise<void> {
+  const lines: string[] = ['', '=== EcoPrompt capture diagnostics ==='];
+  lines.push(
+    `scoped workspace hash: ${workspaceHash ?? '(none — empty window, reading globally)'}`,
+  );
+  try {
+    const scoped = listCopilotSessions(undefined, workspaceHash);
+    lines.push(`Copilot sessions in scope: ${scoped.length}`);
+
+    const active = findActiveSession(undefined, workspaceHash);
+    if (active) {
+      const events = readSessionEvents(active).filter((e) => e.promptText.trim());
+      const real = events.filter((e) => e.tokens && !e.tokens.estimated);
+      lines.push(`active session: ${active.sessionId} (hash ${active.workspaceHash})`);
+      lines.push(`  prompts: ${events.length} · with real tokens: ${real.length}`);
+      const last = events[events.length - 1];
+      if (last) lines.push(`  latest prompt: "${last.promptText.slice(0, 70).replace(/\s+/g, ' ')}"`);
+    } else {
+      lines.push('active session: none in scope — open Copilot Chat in THIS window and send a prompt.');
+    }
+
+    const globalActive = findActiveSession();
+    if (globalActive && globalActive.workspaceHash !== active?.workspaceHash) {
+      lines.push(
+        `note: the globally-newest Copilot session is in a DIFFERENT window (hash ${globalActive.workspaceHash}); scoping is correctly excluding it.`,
+      );
+    }
+  } catch (err) {
+    lines.push(`error: ${String(err)}`);
+  }
+
+  for (const line of lines) output.appendLine(line);
+  output.show(true);
+}
+
 async function rescanCopilot(
   scoreService: ScoreService,
   log: (message: string) => void,
+  onlyHash?: string,
 ): Promise<void> {
-  const active = findActiveSession();
+  const active = findActiveSession(undefined, onlyHash);
   if (!active) {
     log('rescan: no active Copilot session found on disk.');
     void vscode.window.showInformationMessage(

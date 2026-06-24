@@ -9,6 +9,7 @@ export interface ScoredRecord {
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
+  credits: number;
   delta: number;
 }
 
@@ -67,6 +68,7 @@ export function computeMetrics(
 
   const totalTokens = records.reduce((a, r) => a + r.inputTokens + r.outputTokens, 0);
   const totalCostUsd = records.reduce((a, r) => a + r.costUsd, 0);
+  const totalCredits = records.reduce((a, r) => a + (r.credits ?? 0), 0);
 
   return {
     tokenReductionPct,
@@ -81,5 +83,6 @@ export function computeMetrics(
     tipsApplied: counters.tipsApplied,
     totalTokens,
     totalCostUsd,
+    totalCredits,
   };
 }

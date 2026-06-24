@@ -15,6 +15,10 @@ export interface ScoredEventView {
   inputTokens: number;
   outputTokens: number;
   estimatedCostUsd: number;
+  /** Real Copilot credits for this turn, when read from disk. */
+  copilotCredits?: number;
+  /** True when token counts are real (from chatSessions), not estimated. */
+  tokensReal?: boolean;
   wasteBreakdown: WasteComponent[];
   reasons: string[];
   improvements: string[];
@@ -58,6 +62,8 @@ export interface SuccessMetrics {
   tipsApplied: number;
   totalTokens: number;
   totalCostUsd: number;
+  /** Sum of real Copilot credits across the session (0 if none were real). */
+  totalCredits: number;
 }
 
 /** Full snapshot of guardian state pushed to the webview. */

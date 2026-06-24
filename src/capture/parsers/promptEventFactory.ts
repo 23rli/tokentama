@@ -23,6 +23,8 @@ export interface BuildPromptEventInput {
   /** Use a real token count when available (e.g. chatSession completionTokens). */
   inputTokensOverride?: number;
   outputTokensOverride?: number;
+  /** Real Copilot credits metered for the turn, when available from disk. */
+  copilotCredits?: number;
 }
 
 /** Build a normalized, self-contained PromptEvent with token + cost estimates. */
@@ -49,7 +51,8 @@ export function buildPromptEvent(input: BuildPromptEventInput): PromptEvent {
       inputTokens,
       outputTokens,
       estimatedCostUsd,
-      estimated: input.outputTokensOverride == null,
+      copilotCredits: input.copilotCredits,
+      estimated: input.inputTokensOverride == null,
     },
     retryCountInSession: input.retryCountInSession,
     adoptedPreviousTip: input.adoptedPreviousTip,

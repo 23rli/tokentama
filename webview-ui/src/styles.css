@@ -257,6 +257,11 @@ button.ghost:hover {
   color: var(--vscode-badge-foreground);
 }
 
+.pill-real {
+  background: var(--vscode-charts-green, #3fb950);
+  color: #07210f;
+}
+
 .waste-preview {
   margin: 0 0 10px;
   font-size: 12px;

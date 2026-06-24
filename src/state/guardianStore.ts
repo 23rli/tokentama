@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { ScorePromptResponse, Subscores } from '@ecoprompt/shared-types';
+import type { ScorePromptResponse, Subscores, TokenEstimate } from '@ecoprompt/shared-types';
 import { scoreToState } from '@ecoprompt/scoring-engine';
 import type {
   GuardianState,
@@ -38,6 +38,8 @@ export interface RecordScoreOptions {
   source: 'manual' | 'copilot';
   promptText: string;
   tip?: TipView;
+  /** Authoritative token estimate from the captured event (carries real credits). */
+  tokens?: TokenEstimate;
 }
 
 /**
@@ -90,7 +92,7 @@ export class GuardianStore {
     const prev = this.data.health;
     this.data.health = prev * 0.6 + resp.overallScore * 0.4;
 
-    const tokens = resp.tokens;
+    const tokens = opts.tokens ?? resp.tokens;
     const event: ScoredEventView = {
       promptPreview: opts.promptText.replace(/\s+/g, ' ').trim().slice(0, 180),
       overallScore: resp.overallScore,
@@ -99,6 +101,8 @@ export class GuardianStore {
       inputTokens: tokens?.inputTokens ?? 0,
       outputTokens: tokens?.outputTokens ?? 0,
       estimatedCostUsd: tokens?.estimatedCostUsd ?? 0,
+      copilotCredits: tokens?.copilotCredits,
+      tokensReal: tokens ? !tokens.estimated : false,
       wasteBreakdown: resp.wasteBreakdown,
       reasons: resp.reasons,
       improvements: resp.improvements,
@@ -119,6 +123,7 @@ export class GuardianStore {
       inputTokens: event.inputTokens,
       outputTokens: event.outputTokens,
       costUsd: event.estimatedCostUsd,
+      credits: event.copilotCredits ?? 0,
       delta: resp.delta,
     });
     if (this.data.records.length > MAX_RECORDS) this.data.records.shift();

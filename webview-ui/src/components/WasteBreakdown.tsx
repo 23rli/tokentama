@@ -21,9 +21,14 @@ export function WasteBreakdown({ lastEvent }: { lastEvent?: ScoredEventView }) {
 
       <div class="waste-meta">
         <span class={`pill source-${lastEvent.source}`}>{lastEvent.source}</span>
+        <span class={`pill ${lastEvent.tokensReal ? 'pill-real' : ''}`}>
+          {lastEvent.tokensReal ? 'real tokens' : 'estimated'}
+        </span>
         <span class="muted">
-          {fmtNum(lastEvent.inputTokens)} in · {fmtNum(lastEvent.outputTokens)} out ·{' '}
-          {fmtUsd(lastEvent.estimatedCostUsd)}
+          {fmtNum(lastEvent.inputTokens)} in · {fmtNum(lastEvent.outputTokens)} out
+          {lastEvent.copilotCredits != null
+            ? ` · ${lastEvent.copilotCredits.toFixed(1)} cr`
+            : ` · ${fmtUsd(lastEvent.estimatedCostUsd)}`}
         </span>
       </div>
 
