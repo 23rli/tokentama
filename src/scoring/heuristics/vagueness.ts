@@ -1,5 +1,5 @@
 import type { Detector, DetectorInput, DetectorResult } from './types';
-import { tokenizeWords, clamp01 } from '../text/similarity';
+import { tokenizeWords, clamp01, ramp } from '../text/similarity';
 
 const VAGUE_PHRASES = [
   'do this',
@@ -50,32 +50,43 @@ export const vaguenessDetector: Detector = {
     const lower = text.toLowerCase();
     const tokens = tokenizeWords(text);
     const length = tokens.length;
+    const triggers: string[] = [];
 
-    let score = 0;
-    if (length <= 6) score += 0.5;
-    else if (length <= 12) score += 0.25;
+    // Smooth length penalty: 0 at >=16 words, ramping to 0.45 at <=3 words, so
+    // near-identical prompts get near-identical scores (no threshold cliffs).
+    const lengthPenalty = ramp(16 - length, 0, 13) * 0.45;
+    if (length <= 8) triggers.push('very short');
 
-    const vagueHits = VAGUE_PHRASES.filter((p) => lower.includes(p)).length;
-    score += Math.min(0.4, vagueHits * 0.2);
+    const hitPhrases = VAGUE_PHRASES.filter((p) => lower.includes(p));
+    const vaguePenalty = Math.min(0.4, hitPhrases.length * 0.2);
+    if (hitPhrases.length) triggers.push(`vague wording ("${hitPhrases.slice(0, 2).join('", "')}")`);
 
-    if (!DELIVERABLE_WORDS.some((w) => lower.includes(w))) score += 0.2;
+    const hasDeliverable = DELIVERABLE_WORDS.some((w) => lower.includes(w));
+    if (!hasDeliverable) triggers.push('no output format');
 
     const pronouns = (lower.match(/\b(it|this|that|those|these|them)\b/g) ?? []).length;
-    if (length > 0 && pronouns / length > 0.15) score += 0.2;
+    const pronounRatio = length > 0 ? pronouns / length : 0;
+    const pronounPenalty = ramp(pronounRatio, 0.1, 0.3) * 0.18;
+    if (pronounRatio > 0.18) triggers.push('refers to "it/this" without naming a target');
 
-    if (!TASK_VERB.test(text)) score += 0.2;
+    const hasVerb = TASK_VERB.test(text);
+    if (!hasVerb) triggers.push('no clear task verb');
 
-    const severity = clamp01(score);
+    const severity = clamp01(
+      lengthPenalty +
+        vaguePenalty +
+        (hasDeliverable ? 0 : 0.18) +
+        pronounPenalty +
+        (hasVerb ? 0 : 0.18),
+    );
+
     return {
       category: 'vagueness',
       severity,
-      reason:
-        severity > 0.3
-          ? 'The request is underspecified — it lacks a clear task, target, or output format.'
-          : undefined,
+      reason: severity > 0.25 ? `Underspecified: ${triggers.slice(0, 3).join(', ')}.` : undefined,
       improvement:
-        severity > 0.3
-          ? 'State the task, the target, and the desired output format (e.g. "summarize X in 5 bullets").'
+        severity > 0.25
+          ? 'Name the target and the output format, e.g. "summarize <file> in 5 bullets".'
           : undefined,
     };
   },

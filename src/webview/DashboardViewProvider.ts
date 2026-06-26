@@ -53,6 +53,12 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       case 'toggleCapture':
         this.handlers.toggleCapture();
         break;
+      case 'runDemo':
+        this.post({ type: 'busy', busy: true });
+        void Promise.resolve(
+          vscode.commands.executeCommand('ecoprompt.runDemo'),
+        ).finally(() => this.post({ type: 'busy', busy: false }));
+        break;
       case 'applyTip':
         void vscode.env.clipboard.writeText(msg.rewrittenPrompt);
         this.store.markTipApplied();

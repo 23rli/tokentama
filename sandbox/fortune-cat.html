@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lucky Fortune Cat 招き猫</title>
+<style>
+  :root{
+    --gold:#f6d365;
+    --gold-deep:#e8b923;
+    --gold-dark:#c98f17;
+    --red:#e23b2e;
+    --ink:#fff4e0;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{ height:100%; margin:0; }
+
+  body{
+    font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    background:
+      radial-gradient(120% 90% at 50% 18%, rgba(255,210,120,.30), transparent 55%),
+      linear-gradient(160deg,#8d0e1a 0%,#6a0a12 55%,#4d070d 100%);
+    overflow-x:hidden;
+  }
+
+  /* faint pattern of coins in the background */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:radial-gradient(circle, rgba(255,215,120,.10) 2px, transparent 3px);
+    background-size:28px 28px;
+    opacity:.5;
+    pointer-events:none;
+  }
+
+  .scene{
+    position:relative;
+    width:min(540px,100%);
+    background:linear-gradient(180deg, rgba(120,12,22,.55), rgba(60,6,12,.55));
+    border:2px solid rgba(246,211,101,.55);
+    border-radius:28px;
+    padding:26px 24px 30px;
+    box-shadow:0 24px 60px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.05);
+    text-align:center;
+    backdrop-filter:blur(2px);
+  }
+
+  /* hanging lanterns */
+  .lantern{
+    position:absolute; top:-6px;
+    width:46px; height:54px;
+    background:radial-gradient(circle at 50% 38%, #ff6a5a, #c81f1f 70%);
+    border-radius:50% / 44%;
+    transform-origin:top center;
+    box-shadow:inset -4px -6px 10px rgba(0,0,0,.35), 0 6px 14px rgba(0,0,0,.35);
+    animation:swing 4s ease-in-out infinite;
+  }
+  .lantern::before{ /* gold caps + string */
+    content:""; position:absolute; left:50%; top:-16px; transform:translateX(-50%);
+    width:18px; height:16px;
+    background:linear-gradient(#ffe08a,#d99b1c);
+    border-radius:3px;
+    box-shadow:0 -14px 0 -7px rgba(246,211,101,.8);
+  }
+  .lantern::after{ /* tassel */
+    content:""; position:absolute; left:50%; bottom:-14px; transform:translateX(-50%);
+    width:6px; height:16px;
+    background:linear-gradient(#ffe08a,#d99b1c);
+    border-radius:0 0 4px 4px;
+  }
+  .lantern.left{ left:14px; animation-delay:-1.2s; }
+  .lantern.right{ right:14px; animation-delay:-2.4s; }
+  @keyframes swing{ 0%,100%{ transform:rotate(-7deg);} 50%{ transform:rotate(7deg);} }
+
+  h1{
+    margin:6px 0 2px;
+    font-size:clamp(22px,5vw,30px);
+    letter-spacing:1px;
+    color:#fff;
+    text-shadow:0 2px 0 var(--gold-dark), 0 0 18px rgba(246,211,101,.5);
+  }
+  h1 .kanji{ color:var(--gold); font-weight:700; }
+  .subtitle{
+    margin:0 0 6px;
+    font-size:13px;
+    color:rgba(255,244,224,.78);
+    letter-spacing:.5px;
+  }
+
+  /* stage holding the cat */
+  .stage{
+    position:relative;
+    height:430px;
+    margin:6px auto 4px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  /* warm glow behind the cat */
+  .stage::before{
+    content:""; position:absolute; left:50%; top:46%;
+    width:340px; height:340px; transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(255,221,140,.45), transparent 65%);
+    filter:blur(6px);
+    pointer-events:none;
+  }
+
+  .cat-wrap{
+    position:relative;
+    width:360px; max-width:100%;
+    transform-origin:50% 92%;
+    animation:sway 4.5s ease-in-out infinite;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  @keyframes sway{ 0%,100%{ transform:rotate(-1.3deg);} 50%{ transform:rotate(1.3deg);} }
+  .cat-wrap:active{ transform:scale(.985); }
+
+  .cat{ display:block; width:100%; height:auto; overflow:visible; filter:drop-shadow(0 14px 16px rgba(0,0,0,.35)); }
+
+  /* fur + features */
+  .fur{ fill:#ffffff; stroke:#ecdcc2; stroke-width:3; }
+  .belly{ fill:#fff7ea; }
+  .ear-in{ fill:#ffb7c5; }
+  .eye{ fill:#3a2a1a; }
+  .glint{ fill:#fff; }
+  .nose{ fill:#ff8aa0; }
+  .blush{ fill:#ffc2cf; opacity:.75; }
+  .whisker{ stroke:#e2cfac; stroke-width:2.4; stroke-linecap:round; fill:none; }
+  .mouth{ stroke:#c79a6e; stroke-width:2.6; stroke-linecap:round; fill:none; }
+  .collar{ fill:none; stroke:var(--red); stroke-width:16; stroke-linecap:round; }
+  .bell{ fill:var(--gold); stroke:var(--gold-dark); stroke-width:2.5; }
+  .bell-line{ stroke:var(--gold-dark); stroke-width:2.2; fill:none; }
+  .koban{ fill:#ffd76b; stroke:var(--gold-dark); stroke-width:3; }
+  .koban-line{ fill:none; stroke:var(--gold-dark); stroke-width:2; }
+  .koban-text{ fill:#9a6b10; font:700 16px "Trebuchet MS",sans-serif; }
+  .cushion{ fill:#c8202a; stroke:var(--gold); stroke-width:3; }
+  .cushion-dark{ fill:#9c1620; }
+  .shadow{ fill:rgba(0,0,0,.18); }
+  .toe{ stroke:#e7d3b3; stroke-width:2.4; stroke-linecap:round; fill:none; }
+
+  /* the swinging arm */
+  #arm{
+    transform-box:view-box;
+    transform-origin:264px 248px;
+    animation:wave 1.15s ease-in-out infinite;
+  }
+  #arm.paused{ animation-play-state:paused; }
+  #arm.excited{ animation-duration:.34s; }
+  @keyframes wave{
+    0%,100%{ transform:rotate(-7deg); }
+    50%    { transform:rotate(21deg); }
+  }
+  .limb-out{ fill:none; stroke:#ecdcc2; stroke-width:48; stroke-linecap:round; }
+  .limb{ fill:none; stroke:#fff; stroke-width:42; stroke-linecap:round; }
+
+  /* floating coins layer */
+  .coin-layer{ position:absolute; inset:0; pointer-events:none; overflow:visible; }
+  .coin{
+    position:absolute; bottom:34%; left:50%;
+    width:30px; height:30px; border-radius:50%;
+    display:grid; place-items:center;
+    font-weight:800; font-size:15px; color:#8a5a00;
+    background:radial-gradient(circle at 35% 30%, #fff3c4, #ffd24a 46%, #e3a417 100%);
+    border:2px solid var(--gold-dark);
+    box-shadow:0 2px 6px rgba(0,0,0,.3), inset 0 0 0 2px rgba(255,255,255,.25);
+    transform:translate(-50%,0);
+    animation:coinFloat 1.25s ease-out forwards;
+  }
+  @keyframes coinFloat{
+    0%  { opacity:0; transform:translate(-50%,0) scale(.5) rotate(0deg); }
+    18% { opacity:1; }
+    100%{ opacity:0; transform:translate(calc(-50% + var(--dx)), -230px) scale(1.1) rotate(var(--rot)); }
+  }
+
+  /* fortune card */
+  .fortune{
+    min-height:46px;
+    margin:6px auto 12px;
+    padding:12px 16px;
+    max-width:440px;
+    background:rgba(255,247,230,.96);
+    color:#5a3210;
+    font-size:15px;
+    font-weight:600;
+    line-height:1.4;
+    border-radius:14px;
+    border:2px solid var(--gold-deep);
+    box-shadow:0 6px 18px rgba(0,0,0,.3);
+  }
+  .fortune.pop{ animation:pop .45s ease; }
+  @keyframes pop{ 0%{ transform:scale(.92); opacity:.4;} 60%{ transform:scale(1.03);} 100%{ transform:scale(1); opacity:1;} }
+
+  .stats{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 18px; margin-bottom:14px;
+    background:rgba(0,0,0,.25);
+    border:1px solid rgba(246,211,101,.5);
+    border-radius:999px;
+    font-size:15px;
+  }
+  .stats b{ color:var(--gold); font-size:18px; }
+
+  .controls{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  button{
+    font:inherit; font-weight:700;
+    color:#5a3210;
+    background:linear-gradient(180deg,#ffe08a,#f3c245);
+    border:1px solid var(--gold-dark);
+    padding:9px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:transform .12s ease, filter .12s ease;
+    box-shadow:0 4px 10px rgba(0,0,0,.25);
+  }
+  button:hover{ filter:brightness(1.05); transform:translateY(-1px); }
+  button:active{ transform:translateY(1px); }
+
+  .hint{ margin-top:14px; font-size:12px; color:rgba(255,244,224,.65); }
+</style>
+</head>
+<body>
+  <div class="scene">
+    <span class="lantern left"></span>
+    <span class="lantern right"></span>
+
+    <h1>Lucky Fortune Cat <span class="kanji">招き猫</span></h1>
+    <p class="subtitle">Maneki-neko — the beckoning cat that waves good fortune your way</p>
+
+    <div class="stage">
+      <div class="coin-layer" id="coinLayer"></div>
+
+      <div class="cat-wrap" id="cat" role="button" aria-label="Tap the lucky cat for a fortune" tabindex="0">
+        <svg class="cat" viewBox="0 0 360 430" xmlns="http://www.w3.org/2000/svg">
+          <!-- ground shadow + cushion -->
+          <ellipse class="shadow" cx="180" cy="424" rx="140" ry="18" />
+          <ellipse class="cushion" cx="180" cy="412" rx="150" ry="32" />
+          <ellipse class="cushion-dark" cx="180" cy="418" rx="150" ry="22" />
+
+          <!-- body -->
+          <path class="fur" d="M86,200 C58,250 60,360 96,398 C128,430 232,430 264,398
+                               C300,360 302,250 274,200 C250,165 110,165 86,200 Z"/>
+          <ellipse class="belly" cx="180" cy="320" rx="76" ry="90" />
+
+          <!-- resting front paws holding the koban -->
+          <ellipse class="fur" cx="132" cy="400" rx="30" ry="22" />
+          <ellipse class="fur" cx="228" cy="400" rx="30" ry="22" />
+          <g>
+            <ellipse class="koban" cx="180" cy="402" rx="50" ry="30" />
+            <ellipse class="koban-line" cx="180" cy="402" rx="40" ry="21" />
+            <text class="koban-text" x="180" y="408" text-anchor="middle">両</text>
+          </g>
+
+          <!-- head -->
+          <circle class="fur" cx="180" cy="150" r="92" />
+
+          <!-- ears -->
+          <path class="fur" d="M104,92 L116,38 L168,80 Z" />
+          <path class="ear-in" d="M120,82 L128,52 L154,78 Z" />
+          <path class="fur" d="M256,92 L244,38 L192,80 Z" />
+          <path class="ear-in" d="M240,82 L232,52 L206,78 Z" />
+
+          <!-- face -->
+          <path class="whisker" d="M118,166 L70,156 M118,178 L66,178 M118,190 L70,200" />
+          <path class="whisker" d="M242,166 L290,156 M242,178 L294,178 M242,190 L290,200" />
+
+          <ellipse class="eye" cx="146" cy="150" rx="11" ry="17" />
+          <ellipse class="eye" cx="214" cy="150" rx="11" ry="17" />
+          <circle class="glint" cx="142" cy="143" r="4" />
+          <circle class="glint" cx="210" cy="143" r="4" />
+
+          <ellipse class="blush" cx="124" cy="182" rx="13" ry="8" />
+          <ellipse class="blush" cx="236" cy="182" rx="13" ry="8" />
+
+          <path class="nose" d="M172,172 L188,172 L180,182 Z" />
+          <path class="mouth" d="M180,182 Q169,197 157,189 M180,182 Q191,197 203,189" />
+
+          <!-- collar + bell -->
+          <path class="collar" d="M120,212 Q180,250 240,212" />
+          <circle class="bell" cx="180" cy="236" r="15" />
+          <path class="bell-line" d="M166,234 H194" />
+          <circle class="bell" cx="180" cy="240" r="3" />
+
+          <!-- the swinging / beckoning arm (drawn on top) -->
+          <g id="arm">
+            <path class="limb-out" d="M264,250 L300,140" />
+            <path class="limb"     d="M264,250 L300,140" />
+            <ellipse class="fur" cx="302" cy="122" rx="30" ry="27" />
+            <path class="toe" d="M291,108 v18 M302,104 v20 M313,108 v18" />
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="fortune" id="fortune">Tap the lucky cat to invite your fortune… 🐾</div>
+
+    <div class="stats">Fortune gathered: <b>¥<span id="coins">0</span></b></div>
+
+    <div class="controls">
+      <button id="waveBtn">⏸ Pause waving</button>
+      <button id="muteBtn">🔔 Sound: on</button>
+      <button id="resetBtn">↺ Reset</button>
+    </div>
+
+    <p class="hint">Tip: the more you tap, the more fortune the cat beckons your way.</p>
+  </div>
+
+<script>
+  const cat       = document.getElementById('cat');
+  const arm       = document.getElementById('arm');
+  const fortuneEl = document.getElementById('fortune');
+  const coinsEl   = document.getElementById('coins');
+  const coinLayer = document.getElementById('coinLayer');
+  const waveBtn   = document.getElementById('waveBtn');
+  const muteBtn   = document.getElementById('muteBtn');
+  const resetBtn  = document.getElementById('resetBtn');
+
+  let coins  = 0;
+  let muted  = false;
+  let waving = true;
+
+  const fortunes = [
+    "A pleasant surprise is waiting for you. 🎁",
+    "Good fortune flows toward you like a river. 🌊",
+    "Your hard work is about to pay off. 💪",
+    "An old friend brings happy news. ✉️",
+    "Wealth and health follow your kind heart. 💛",
+    "Today is a lucky day to start something new. ✨",
+    "Money comes to those who keep smiling. 😺",
+    "A small risk leads to a big reward. 🎲",
+    "Doors you thought were closed are opening. 🚪",
+    "Prosperity loves a patient soul. 🪷",
+    "The universe is saving its best for you. 🌟",
+    "Your generosity returns to you tenfold. 🪙"
+  ];
+
+  // --- gentle bell chime via Web Audio (no files needed) ---
+  let audioCtx;
+  function chime(){
+    if (muted) return;
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const now = audioCtx.currentTime;
+      [880, 1318.5].forEach((f, i) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.value = f;
+        const t = now + i * 0.08;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+        o.connect(g).connect(audioCtx.destination);
+        o.start(t);
+        o.stop(t + 0.75);
+      });
+    }catch(e){ /* audio not available — ignore */ }
+  }
+
+  // --- count-up tween for the fortune total ---
+  function tweenCount(from, to, dur){
+    const start = performance.now();
+    (function step(t){
+      const p = Math.min(1, (t - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      coinsEl.textContent = Math.floor(from + (to - from) * eased).toLocaleString();
+      if (p < 1) requestAnimationFrame(step);
+    })(performance.now());
+  }
+
+  // --- spawn floating coins ---
+  function spawnCoins(n){
+    for (let i = 0; i < n; i++){
+      const c = document.createElement('div');
+      c.className = 'coin';
+      c.textContent = '¥';
+      c.style.left = (50 + (Math.random() * 36 - 18)) + '%';
+      c.style.setProperty('--dx',  (Math.random() * 150 - 75) + 'px');
+      c.style.setProperty('--rot', (Math.random() * 540 - 270) + 'deg');
+      c.style.animationDelay = (Math.random() * 0.18) + 's';
+      coinLayer.appendChild(c);
+      c.addEventListener('animationend', () => c.remove());
+    }
+  }
+
+  // --- the main "beckon" action ---
+  function beckon(){
+    // quick excited wave
+    if (waving){
+      arm.classList.add('excited');
+      setTimeout(() => arm.classList.remove('excited'), 1300);
+    }
+
+    // new fortune
+    fortuneEl.textContent = fortunes[Math.floor(Math.random() * fortunes.length)];
+    fortuneEl.classList.remove('pop');
+    void fortuneEl.offsetWidth;       // restart animation
+    fortuneEl.classList.add('pop');
+
+    // coins
+    spawnCoins(5 + Math.floor(Math.random() * 4));
+    const gain = (Math.floor(Math.random() * 9) + 1) * 100;  // 100–900
+    const prev = coins;
+    coins += gain;
+    tweenCount(prev, coins, 600);
+
+    chime();
+  }
+
+  cat.addEventListener('click', beckon);
+  cat.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); beckon(); }
+  });
+
+  // --- controls ---
+  waveBtn.addEventListener('click', () => {
+    waving = !waving;
+    arm.classList.toggle('paused', !waving);
+    waveBtn.textContent = waving ? '⏸ Pause waving' : '▶ Resume waving';
+  });
+
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    muteBtn.textContent = muted ? '🔕 Sound: off' : '🔔 Sound: on';
+    if (!muted) chime();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    const prev = coins;
+    coins = 0;
+    tweenCount(prev, 0, 400);
+    fortuneEl.textContent = 'Tap the lucky cat to invite your fortune… 🐾';
+  });
+</script>
+</body>
+</html>

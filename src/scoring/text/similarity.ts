@@ -50,6 +50,12 @@ export function clamp01(n: number): number {
   return Math.max(0, Math.min(1, n));
 }
 
+/** Smooth 0..1 ramp: 0 at or below `lo`, 1 at or above `hi`, linear between. */
+export function ramp(x: number, lo: number, hi: number): number {
+  if (hi <= lo) return x >= hi ? 1 : 0;
+  return clamp01((x - lo) / (hi - lo));
+}
+
 export function clampScore(n: number): number {
   if (Number.isNaN(n)) return 0;
   return Math.max(0, Math.min(100, Math.round(n)));

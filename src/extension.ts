@@ -119,6 +119,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('ecoprompt.diagnostics', () =>
       showCaptureDiagnostics(workspaceHash, output),
     ),
+    vscode.commands.registerCommand('ecoprompt.runDemo', () => scoreService.runDemo()),
     vscode.commands.registerCommand('ecoprompt.setLlmApiKey', () => setLlmApiKey(context)),
   );
 

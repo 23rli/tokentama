@@ -46,6 +46,9 @@ export function QualityBars({ lastEvent }: { lastEvent?: ScoredEventView }) {
           );
         })}
       </div>
+      {lastEvent && lastEvent.reasons.length > 0 && (
+        <p class="quality-why">{lastEvent.reasons[0]}</p>
+      )}
     </section>
   );
 }

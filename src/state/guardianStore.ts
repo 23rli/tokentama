@@ -43,6 +43,8 @@ export interface RecordScoreOptions {
   tokens?: TokenEstimate;
   /** The session's selected model + pricing, when known. */
   model?: ModelInfo;
+  /** Demo/testing override: set health directly instead of smoothing (EMA). */
+  forceHealth?: number;
 }
 
 /**
@@ -93,7 +95,8 @@ export class GuardianStore {
 
   recordScore(resp: ScorePromptResponse, opts: RecordScoreOptions): void {
     const prev = this.data.health;
-    this.data.health = prev * 0.6 + resp.overallScore * 0.4;
+    this.data.health =
+      opts.forceHealth !== undefined ? opts.forceHealth : prev * 0.6 + resp.overallScore * 0.4;
 
     const tokens = opts.tokens ?? resp.tokens;
     const event: ScoredEventView = {

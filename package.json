@@ -90,6 +90,12 @@
         "icon": "$(info)"
       },
       {
+        "command": "ecoprompt.runDemo",
+        "title": "Run guardian demo",
+        "category": "EcoPrompt",
+        "icon": "$(play-circle)"
+      },
+      {
         "command": "ecoprompt.setLlmApiKey",
         "title": "Set coaching LLM API key",
         "category": "EcoPrompt"
@@ -106,6 +112,11 @@
           "command": "ecoprompt.diagnostics",
           "when": "view == ecoprompt.dashboard",
           "group": "navigation@3"
+        },
+        {
+          "command": "ecoprompt.runDemo",
+          "when": "view == ecoprompt.dashboard",
+          "group": "navigation@4"
         },
         {
           "command": "ecoprompt.scorePrompt",

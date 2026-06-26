@@ -3,16 +3,21 @@ import { splitSentences } from '@ecoprompt/scoring-engine';
 
 /** Playful one-liners per dominant waste category (design doc §11.3 tone). */
 const SHORT_TIPS: Record<WasteCategory, string> = {
-  redundantContext: 'Looks like that repeated context from earlier — I can compact it.',
-  vagueness: 'Want me to tighten that prompt with a clear task and format?',
-  retryLoop: 'Instead of retrying, let’s add the missing detail just once.',
-  toolOveruse: 'We can probably get there with fewer tool calls.',
-  verbosityMismatch: 'We can likely get the same result with fewer tokens.',
-  ignoredCoaching: 'Give the suggested rewrite a try — it usually pays off.',
+  redundantContext:
+    'You re-pasted earlier context — point to it by name instead and save those tokens.',
+  vagueness: 'Add a target and an output format so the first answer lands — fewer retries.',
+  retryLoop: "Don't resend — say what was wrong and the one change you need.",
+  toolOveruse: 'This can likely be done with fewer tool calls.',
+  verbosityMismatch: 'Trim the filler and bound the output — same result, far fewer tokens.',
+  ignoredCoaching: 'Try the rewrite below — it usually cuts tokens noticeably.',
 };
 
 const RETRY_FILLER =
-  /\b(still not working|still broken|try again|same as before|just fix it|fix it|please)\b[.,!]?/gi;
+  /\b(still not working|still broken|try again|same as before|just fix it|fix it)\b[.,!]?/gi;
+
+// Politeness / hedging padding stripped from the rewrite so the real ask stands out.
+const FILLER_PATTERN =
+  /\b(could you please|if it'?s not too much trouble|if it is not too much trouble|if possible|i was wondering if|i would (?:really )?(?:appreciate|like)|would you mind|when you get a chance|kindly|thanks in advance|maybe|possibly|kind of|sort of|the usual stuff|please)\b[.,!]?/gi;
 
 function dedupeSentences(text: string): string {
   const seen = new Set<string>();
@@ -28,23 +33,40 @@ function dedupeSentences(text: string): string {
 
 /** Build a cleaned, structured rewrite of a wasteful prompt — no LLM required. */
 export function heuristicRewrite(promptText: string, categories: WasteCategory[]): string {
-  let core = dedupeSentences(promptText).replace(RETRY_FILLER, '').replace(/\s+/g, ' ').trim();
-  if (!core) core = 'Complete the task';
+  // 1) Clean: drop duplicate sentences, strip retry + politeness padding.
+  let core = dedupeSentences(promptText)
+    .replace(RETRY_FILLER, '')
+    .replace(FILLER_PATTERN, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,!?])/g, '$1')
+    .replace(/^(?:and|also|so|well|um|please)[,\s]+/i, '')
+    .trim();
+
+  if (!core || core.replace(/[^a-z0-9]/gi, '').length < 3) {
+    core = 'State the exact task and the target (file / function / component)';
+  }
+  core = core.charAt(0).toUpperCase() + core.slice(1);
   if (!/[.!?]$/.test(core)) core += '.';
 
+  // 2) Add only the lines that address the detected issues — concrete, not generic.
+  const set = new Set(categories);
   const lines = [core];
-  if (categories.includes('vagueness') || categories.includes('verbosityMismatch')) {
-    lines.push(
-      'Output: the smallest format that answers the ask (e.g. 5 bullets, a single function, or a unified diff).',
-    );
+  if (set.has('vagueness')) {
+    lines.push('Target: name the exact file / function / component to change.');
   }
-  if (categories.includes('redundantContext')) {
-    lines.push('Reference earlier context by name instead of re-pasting it.');
+  if (set.has('vagueness') || set.has('verbosityMismatch')) {
+    lines.push('Output: the smallest useful format (a unified diff, one function, or 5 bullets).');
   }
-  if (categories.includes('verbosityMismatch')) {
-    lines.push('Keep it concise — no more than is needed.');
+  if (set.has('verbosityMismatch')) {
+    lines.push('Limit: be brief — no preamble, no restating the question.');
   }
-  return lines.join(' ');
+  if (set.has('redundantContext')) {
+    lines.push('Context: reference earlier messages/files by name instead of pasting them again.');
+  }
+  if (set.has('retryLoop')) {
+    lines.push('Since last try: state what was wrong and the one specific change you need.');
+  }
+  return lines.join('\n');
 }
 
 /** Deterministic coach used offline and as the fallback when no LLM is configured. */

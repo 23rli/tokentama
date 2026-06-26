@@ -6,15 +6,16 @@ import { clamp01 } from '../text/similarity';
 /**
  * Waste category weights. The headline EcoScore is driven by four prompt-quality
  * factors the user controls: duplicate context (redundantContext + retryLoop),
- * vagueness, verbosity, and ignoring coaching. Tool overuse is intentionally
- * excluded from the score (weight 0). Sum = 1.0.
+ * vagueness, verbosity, and ignoring coaching. Weights lean toward the stable,
+ * prompt-intrinsic factors (vagueness + verbosity) so similar prompts score
+ * similarly. Tool overuse is intentionally excluded (weight 0). Sum = 1.0.
  */
 export const WASTE_WEIGHTS: Record<WasteCategory, number> = {
-  redundantContext: 0.4,
-  retryLoop: 0.2,
-  vagueness: 0.15,
-  verbosityMismatch: 0.1,
-  ignoredCoaching: 0.15,
+  redundantContext: 0.3,
+  retryLoop: 0.25,
+  vagueness: 0.2,
+  verbosityMismatch: 0.15,
+  ignoredCoaching: 0.1,
   toolOveruse: 0,
 };
 

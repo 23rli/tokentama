@@ -102,5 +102,6 @@ export type WebviewMessage =
   | { type: 'scorePrompt' }
   | { type: 'reset' }
   | { type: 'toggleCapture' }
+  | { type: 'runDemo' }
   | { type: 'applyTip'; rewrittenPrompt: string }
   | { type: 'copyTip'; text: string };

@@ -28,7 +28,7 @@ describe('heuristicRewrite', () => {
     // The duplicate sentence should not appear twice.
     expect(rewrite.toLowerCase().match(/refactor the data layer/g)?.length).toBe(1);
     expect(rewrite.toLowerCase()).not.toContain('still not working');
-    expect(rewrite).toContain('Reference earlier context');
+    expect(rewrite.toLowerCase()).toContain('reference earlier');
   });
 });
 

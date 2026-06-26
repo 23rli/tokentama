@@ -4,16 +4,19 @@ import { post } from './vscodeApi';
 import { PetStage } from './components/PetStage';
 import { ScoreHeader } from './components/ScoreHeader';
 import { ImpactTrio } from './components/ImpactTrio';
+import { LiveData } from './components/LiveData';
 import { QualityBars } from './components/QualityBars';
 import { CoachingPanel } from './components/CoachingPanel';
 
 export function App() {
   const [state, setState] = useState<GuardianState | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<HostMessage>): void => {
       const message = event.data;
       if (message.type === 'state') setState(message.state);
+      else if (message.type === 'busy') setBusy(message.busy);
     };
     window.addEventListener('message', onMessage);
     post({ type: 'ready' });
@@ -26,20 +29,26 @@ export function App() {
 
   return (
     <div class="app">
-      <PetStage world={state.world} score={state.overallScore} />
-      <ScoreHeader state={state} />
-      <ImpactTrio metrics={state.metrics} />
-      <QualityBars lastEvent={state.lastEvent} />
-      <CoachingPanel tip={state.tip} lastEvent={state.lastEvent} />
+      <div class="app-main">
+        <PetStage world={state.world} score={state.overallScore} />
+        <ScoreHeader state={state} />
+        <ImpactTrio metrics={state.metrics} />
+        <LiveData state={state} />
+        <QualityBars lastEvent={state.lastEvent} />
+        <CoachingPanel tip={state.tip} lastEvent={state.lastEvent} />
+      </div>
 
       <div class="actions">
-        <button class="primary" onClick={() => post({ type: 'scorePrompt' })}>
+        <button class="primary" disabled={busy} onClick={() => post({ type: 'scorePrompt' })}>
           Score a prompt
         </button>
-        <button class="ghost" onClick={() => post({ type: 'toggleCapture' })}>
+        <button class="ghost" disabled={busy} onClick={() => post({ type: 'runDemo' })}>
+          {busy ? '▶ Running…' : '▶ Demo'}
+        </button>
+        <button class="ghost" disabled={busy} onClick={() => post({ type: 'toggleCapture' })}>
           {state.captureEnabled ? '◉ Capture' : '○ Capture'}
         </button>
-        <button class="ghost" onClick={() => post({ type: 'reset' })}>
+        <button class="ghost" disabled={busy} onClick={() => post({ type: 'reset' })}>
           Reset
         </button>
       </div>

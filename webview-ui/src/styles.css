@@ -820,23 +820,71 @@ button.ghost:hover {
    coaching panel flex-shrinks (and scrolls internally) so the page never scrolls. */
 .app {
   height: 100vh;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  gap: 10px;
-  padding: 10px 10px 10px;
+  gap: 0;
+  padding: 0;
 }
 
-.petstage,
-.scoreheader,
-.impact,
-.quality,
-.actions {
-  flex: 0 0 auto;
-}
-
-.coaching {
+/* Glanceable content. Scrolls only if the panel is unusually short; the action
+   buttons stay pinned at the bottom and are always reachable. */
+.app-main {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px 10px 4px;
+}
+
+.actions {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-top: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.2));
+}
+
+/* Compact scene keeps the data + coaching above the fold (Clippy stays bottom-anchored). */
+.petstage-scene {
+  height: 120px;
+}
+
+/* ---------- Live Copilot data strip ---------- */
+.livedata {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+  background: var(--vscode-editorWidget-background, rgba(128, 128, 128, 0.1));
+}
+.livedata-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.livedata-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+}
+.livedata-row {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.3;
+}
+.livedata-key {
+  color: var(--vscode-descriptionForeground);
+}
+.livedata-val {
+  color: var(--vscode-foreground);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Keep the coaching rewrite compact within the tighter budget. */
@@ -961,4 +1009,11 @@ button.ghost:hover {
 }
 .quality-bad {
   background: var(--vscode-charts-red, #d64646);
+}
+
+.quality-why {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--vscode-descriptionForeground);
 }
