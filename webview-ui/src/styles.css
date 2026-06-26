@@ -1017,3 +1017,119 @@ button.ghost:hover {
   line-height: 1.35;
   color: var(--vscode-descriptionForeground);
 }
+
+/* ============================================================================
+   PIXEL-ART KIT — banded skies, a pixel mesh, a blocky sun + clouds, and
+   chunkier cards. Keeps the lake/sun/Clippy vibe but renders it retro.
+   ========================================================================== */
+
+/* Crisp scaling everywhere it matters. */
+.petstage-scene,
+.scene-sun,
+.scene-trees,
+.scene-river,
+.clippy-sprite {
+  image-rendering: pixelated;
+}
+
+/* Squarer, chunkier frame for the scene. */
+.petstage-scene {
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+
+/* Banded (stepped) skies — flat colour bands instead of smooth gradients. */
+.scene-thriving {
+  background: linear-gradient(180deg, #8fd6ff 0 32%, #b8e7ff 32% 60%, #d8f4ff 60% 82%, #eafaff 82% 100%);
+}
+.scene-healthy {
+  background: linear-gradient(180deg, #7cc0ee 0 32%, #a8d8f2 32% 60%, #cfeafa 60% 82%, #e2f3fb 82% 100%);
+}
+.scene-concerned {
+  background: linear-gradient(180deg, #9aa7ad 0 34%, #b3bbbb 34% 64%, #cacac0 64% 100%);
+}
+.scene-critical {
+  background: linear-gradient(180deg, #7a6b50 0 34%, #9c8a63 34% 64%, #b6a079 64% 100%);
+}
+.scene-collapse {
+  background: linear-gradient(180deg, #4a3526 0 34%, #38281b 34% 64%, #2a1d13 64% 100%);
+}
+.scene-dead {
+  background: linear-gradient(180deg, #1f1f22 0 34%, #151517 34% 64%, #0d0d0d 64% 100%);
+}
+
+/* Blocky pixel sun: stepped rings + a hard (blur-free) pixel halo. */
+.scene-sun {
+  border-radius: 5px;
+  background: radial-gradient(circle at 50% 50%, #fff6c4 0 38%, #ffe066 38% 68%, #ffcf3a 68% 100%);
+  box-shadow:
+    0 0 0 3px rgba(255, 224, 120, 0.32),
+    0 0 0 6px rgba(255, 224, 120, 0.16);
+}
+
+/* Pixel clouds drifting in the sky; they fade out as the world dies. */
+.petstage-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(0.12 + 0.88 * var(--fill, 1));
+  transition: opacity 600ms ease;
+  background-repeat: no-repeat;
+  background-image:
+    radial-gradient(11px 7px at 20% 24%, #ffffff 70%, transparent 72%),
+    radial-gradient(15px 9px at 27% 27%, #ffffff 70%, transparent 72%),
+    radial-gradient(10px 6px at 34% 25%, #eef6ff 70%, transparent 72%),
+    radial-gradient(9px 6px at 72% 18%, #ffffff 70%, transparent 72%),
+    radial-gradient(13px 8px at 79% 21%, #ffffff 70%, transparent 72%);
+  image-rendering: pixelated;
+}
+
+/* Pixel mesh over the scene (under Clippy) — unifies everything into pixels. */
+.petstage-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px);
+  background-size: 3px 3px;
+  mix-blend-mode: multiply;
+  opacity: 0.42;
+}
+
+/* Keep Clippy crisp above the mesh. */
+.clippy-walker {
+  z-index: 2;
+}
+
+/* ---- Chunkier, squarer cards to match the pixel vibe ---- */
+.impact-tile,
+.livedata {
+  border-radius: 5px;
+  border-width: 2px;
+}
+.quality-bar,
+.quality-fill,
+.bar,
+.bar-fill {
+  border-radius: 2px;
+}
+.pill {
+  border-radius: 3px;
+}
+.app button {
+  border-radius: 4px;
+}
+
+/* Subtle pixel texture on the dashboard background. */
+.app-main {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.016) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.016) 0 1px, transparent 1px 3px);
+  background-size: 3px 3px;
+}
