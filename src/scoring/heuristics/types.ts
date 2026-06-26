@@ -1,4 +1,4 @@
-import type { ScoreToolCall, ScorePromptMetadata, WasteCategory } from '@ecoprompt/shared-types';
+import type { ScoreToolCall, ScorePromptMetadata, WasteCategory } from '@tokentama/shared-types';
 
 export interface DetectorInput {
   promptText: string;

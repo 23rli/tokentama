@@ -1,13 +1,13 @@
-import type { PromptEvent, ScorePromptRequest } from '@ecoprompt/shared-types';
-import { dominantWasteCategories, scorePrompt, clampScore } from '@ecoprompt/scoring-engine';
-import { generateTip, type CoachConfig } from '@ecoprompt/llm-adapters';
+import type { PromptEvent, ScorePromptRequest } from '@tokentama/shared-types';
+import { dominantWasteCategories, scorePrompt, clampScore } from '@tokentama/scoring-engine';
+import { generateTip, type CoachConfig } from '@tokentama/llm-adapters';
 import { SessionTracker, buildPromptEvent } from '../capture/parsers';
-import type { GuardianStore } from '../state/guardianStore';
+import type { TamaStore } from '../state/tamaStore';
 import type { TipView } from '../webview/contract';
 
 const MANUAL_SESSION = 'manual-session';
 
-const DEMO_SESSION = 'ecoprompt-demo';
+const DEMO_SESSION = 'tokentama-demo';
 const DEMO_STEP_MS = 1200;
 
 function delay(ms: number): Promise<void> {
@@ -98,7 +98,7 @@ export class ScoreService {
   private demoRunning = false;
 
   constructor(
-    private readonly store: GuardianStore,
+    private readonly store: TamaStore,
     private readonly getCoachConfig: () => Promise<CoachConfig>,
     private readonly log?: (message: string) => void,
   ) {}

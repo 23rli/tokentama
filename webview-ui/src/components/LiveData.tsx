@@ -1,4 +1,4 @@
-import type { GuardianState } from '../../../src/webview/contract';
+import type { TamaState } from '../../../src/webview/contract';
 import { fmtNum, fmtUsd } from '../format';
 
 /**
@@ -6,7 +6,7 @@ import { fmtNum, fmtUsd } from '../format';
  * the model/agent + reasoning level, this prompt's token usage, and the running
  * session totals — so it's clear the dashboard is reading live metered data.
  */
-export function LiveData({ state }: { state: GuardianState }) {
+export function LiveData({ state }: { state: TamaState }) {
   const m = state.model;
   const e = state.lastEvent;
   const metrics = state.metrics;

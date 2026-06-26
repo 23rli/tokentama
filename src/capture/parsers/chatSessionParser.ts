@@ -1,4 +1,4 @@
-import type { ModelInfo } from '@ecoprompt/shared-types';
+import type { ModelInfo } from '@tokentama/shared-types';
 import type { ParsedChatSession, ParsedChatRequest } from './types';
 
 interface ChatLine {

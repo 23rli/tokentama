@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { GuardianState, PetWorldState } from '../webview/contract';
+import type { TamaState, PetWorldState } from '../webview/contract';
 
 const WORLD_EMOJI: Record<PetWorldState, string> = {
   thriving: '🌳',
@@ -16,14 +16,14 @@ export class StatusBar implements vscode.Disposable {
 
   constructor() {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    this.item.command = 'ecoprompt.openDashboard';
+    this.item.command = 'tokentama.openDashboard';
     this.item.show();
   }
 
-  update(state: GuardianState): void {
+  update(state: TamaState): void {
     const emoji = WORLD_EMOJI[state.world] ?? '🌿';
     this.item.text = `$(shield) ${emoji} ${Math.round(state.overallScore)}`;
-    this.item.tooltip = `EcoPrompt Guardian — ${state.world} · waste ${Math.round(
+    this.item.tooltip = `Tokentama — ${state.world} · waste ${Math.round(
       state.wasteScore,
     )} · ${state.metrics.promptsScored} scored`;
   }

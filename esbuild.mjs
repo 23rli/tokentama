@@ -8,10 +8,10 @@ const production = process.argv.includes('--production');
 
 /** Map the legacy workspace package names to the flattened src/ locations. */
 const alias = {
-  '@ecoprompt/shared-types': path.join(root, 'src/types/index.ts'),
-  '@ecoprompt/scoring-engine': path.join(root, 'src/scoring/index.ts'),
-  '@ecoprompt/llm-adapters': path.join(root, 'src/coaching/index.ts'),
-  '@ecoprompt/ingestion': path.join(root, 'src/capture/parsers/index.ts'),
+  '@tokentama/shared-types': path.join(root, 'src/types/index.ts'),
+  '@tokentama/scoring-engine': path.join(root, 'src/scoring/index.ts'),
+  '@tokentama/llm-adapters': path.join(root, 'src/coaching/index.ts'),
+  '@tokentama/ingestion': path.join(root, 'src/capture/parsers/index.ts'),
 };
 
 /** @type {import('esbuild').BuildOptions} */

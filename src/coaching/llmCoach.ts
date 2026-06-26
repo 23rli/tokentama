@@ -1,4 +1,4 @@
-import type { TipRequest, TipResponse } from '@ecoprompt/shared-types';
+import type { TipRequest, TipResponse } from '@tokentama/shared-types';
 import type { CoachConfig } from './config';
 import { COACH_SYSTEM_PROMPT, buildCoachUserMessage } from './promptTemplates';
 

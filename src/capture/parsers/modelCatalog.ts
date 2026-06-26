@@ -1,4 +1,4 @@
-import type { ModelInfo } from '@ecoprompt/shared-types';
+import type { ModelInfo } from '@tokentama/shared-types';
 
 interface RawModel {
   id?: string;

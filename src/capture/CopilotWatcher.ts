@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { join } from 'node:path';
-import type { PromptEvent } from '@ecoprompt/shared-types';
+import type { PromptEvent } from '@tokentama/shared-types';
 import { findActiveSession, getWorkspaceStorageRoot, listCopilotSessions } from './copilotPaths';
 import { readSessionEvents } from './copilotReader';
 

@@ -1,4 +1,4 @@
-import type { WasteCategory, WasteComponent } from '@ecoprompt/shared-types';
+import type { WasteCategory, WasteComponent } from '@tokentama/shared-types';
 import type { DetectorInput, DetectorResult, StructureSignal } from '../heuristics/types';
 import { WASTE_DETECTORS, detectStructuredPrompt } from '../heuristics';
 import { clamp01 } from '../text/similarity';

@@ -3,7 +3,7 @@ import type {
   ScorePromptResponse,
   TokenEstimate,
   WasteCategory,
-} from '@ecoprompt/shared-types';
+} from '@tokentama/shared-types';
 import type { DetectorInput } from './heuristics/types';
 import { computeWaste } from './calculators/wasteScore';
 import { computeSubscores } from './calculators/subscores';

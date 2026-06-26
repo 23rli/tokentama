@@ -1,4 +1,4 @@
-# EcoPrompt Guardians — Architecture & Connection Map
+# Tokentama — Architecture & Connection Map
 
 > **Audience:** engineering team picking up the codebase.
 > **Purpose:** show what each piece is, where it lives, and how data flows between

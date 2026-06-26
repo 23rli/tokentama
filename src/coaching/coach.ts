@@ -1,4 +1,4 @@
-import type { TipRequest, TipResponse } from '@ecoprompt/shared-types';
+import type { TipRequest, TipResponse } from '@tokentama/shared-types';
 import { loadCoachConfig, isCoachConfigured, type CoachConfig } from './config';
 import { heuristicGenerateTip } from './heuristicCoach';
 import { llmGenerateTip } from './llmCoach';

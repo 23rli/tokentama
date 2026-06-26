@@ -6,10 +6,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.join(here, '..');
 const alias = {
-  '@ecoprompt/shared-types': path.join(repo, 'src/types/index.ts'),
-  '@ecoprompt/scoring-engine': path.join(repo, 'src/scoring/index.ts'),
-  '@ecoprompt/llm-adapters': path.join(repo, 'src/coaching/index.ts'),
-  '@ecoprompt/ingestion': path.join(repo, 'src/capture/parsers/index.ts'),
+  '@tokentama/shared-types': path.join(repo, 'src/types/index.ts'),
+  '@tokentama/scoring-engine': path.join(repo, 'src/scoring/index.ts'),
+  '@tokentama/llm-adapters': path.join(repo, 'src/coaching/index.ts'),
+  '@tokentama/ingestion': path.join(repo, 'src/capture/parsers/index.ts'),
 };
 
 const out = path.join(repo, 'dist/diag.cjs');

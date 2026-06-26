@@ -1,4 +1,4 @@
-import type { Subscores, WasteCategory } from '@ecoprompt/shared-types';
+import type { Subscores, WasteCategory } from '@tokentama/shared-types';
 import type { DetectorResult, StructureSignal } from '../heuristics/types';
 import { clampScore } from '../text/similarity';
 

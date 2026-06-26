@@ -6,10 +6,10 @@ const r = (p) => resolve(__dirname, p);
 export default defineConfig({
   resolve: {
     alias: {
-      '@ecoprompt/shared-types': r('src/types/index.ts'),
-      '@ecoprompt/scoring-engine': r('src/scoring/index.ts'),
-      '@ecoprompt/llm-adapters': r('src/coaching/index.ts'),
-      '@ecoprompt/ingestion': r('src/capture/parsers/index.ts'),
+      '@tokentama/shared-types': r('src/types/index.ts'),
+      '@tokentama/scoring-engine': r('src/scoring/index.ts'),
+      '@tokentama/llm-adapters': r('src/coaching/index.ts'),
+      '@tokentama/ingestion': r('src/capture/parsers/index.ts'),
     },
   },
   test: {

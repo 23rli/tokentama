@@ -1,4 +1,4 @@
-# EcoPrompt Guardians — Cloud MVP Plan
+# Tokentama — Cloud MVP Plan
 
 > **Goal:** take the project from "runs on my laptop" to a **true cloud MVP that does
 > not run locally at all** — scoring, coaching, storage, telemetry, and the UI all

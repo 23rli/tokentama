@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import type { PromptEvent } from '@ecoprompt/shared-types';
+import type { PromptEvent } from '@tokentama/shared-types';
 import { parseTranscript } from './parsers/transcriptParser';
 import { parseChatSessionTokens } from './parsers/chatSessionTokens';
 import { parseChatSession, parseEarlyPrompts } from './parsers/chatSessionParser';

@@ -366,12 +366,15 @@ body {
   height: 100%;
   object-fit: contain;
   image-rendering: pixelated;
-  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.35));
+  /* Light pixel outline so Clippy always pops off the mountains, plus a ground shadow. */
+  filter:
+    drop-shadow(1px 0 0 rgba(255, 255, 255, 0.5)) drop-shadow(-1px 0 0 rgba(255, 255, 255, 0.5))
+    drop-shadow(0 -1px 0 rgba(255, 255, 255, 0.4)) drop-shadow(0 5px 3px rgba(0, 0, 0, 0.45));
 }
 
 @keyframes clippy-walk {
   0% {
-    left: 0;
+    left: 44%;
     transform: scaleX(1);
   }
   48% {
@@ -383,11 +386,11 @@ body {
     transform: scaleX(-1);
   }
   98% {
-    left: 0;
+    left: 44%;
     transform: scaleX(-1);
   }
   100% {
-    left: 0;
+    left: 44%;
     transform: scaleX(1);
   }
 }
@@ -844,10 +847,15 @@ button.ghost:hover {
   padding: 8px 10px;
   border-top: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.2));
 }
+/* Buttons share each row evenly and wrap into tidy rows when the sidebar is narrow. */
+.actions button {
+  flex: 1 1 auto;
+  min-width: 88px;
+}
 
-/* Compact scene keeps the data + coaching above the fold (Clippy stays bottom-anchored). */
+/* A taller, more vertical world — room for mountains, sky, and a fuller scene. */
 .petstage-scene {
-  height: 120px;
+  height: 184px;
 }
 
 /* ---------- Live Copilot data strip ---------- */
@@ -874,7 +882,7 @@ button.ghost:hover {
 }
 .livedata-row {
   display: grid;
-  grid-template-columns: 74px 1fr;
+  grid-template-columns: 64px minmax(0, 1fr);
   gap: 8px;
   font-size: 11px;
   line-height: 1.3;
@@ -901,7 +909,7 @@ button.ghost:hover {
 
 .impact-trio {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -1019,117 +1027,380 @@ button.ghost:hover {
 }
 
 /* ============================================================================
-   PIXEL-ART KIT — banded skies, a pixel mesh, a blocky sun + clouds, and
-   chunkier cards. Keeps the lake/sun/Clippy vibe but renders it retro.
+   PIXEL-ART SCENE — hard-edged & tamagotchi-simple. No smooth gradients, blur,
+   or filter overlays. Flat sky bands, a blocky sun, chunky block clouds, pixel
+   shrubs, a grassy ground, and a blocky pond that droughts with --fill. Built
+   around the Clippy sprite, which walks the grass in front.
    ========================================================================== */
 
-/* Crisp scaling everywhere it matters. */
 .petstage-scene,
 .scene-sun,
 .scene-trees,
 .scene-river,
+.scene-riverbed,
+.scene-ground,
 .clippy-sprite {
   image-rendering: pixelated;
 }
 
-/* Squarer, chunkier frame for the scene. */
+/* Chunky pixel frame around the little world. */
 .petstage-scene {
-  border-radius: 6px;
+  border-radius: 4px;
   box-shadow:
-    inset 0 0 0 2px rgba(0, 0, 0, 0.4),
-    inset 0 0 0 3px rgba(255, 255, 255, 0.06);
+    inset 0 0 0 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 4px rgba(255, 255, 255, 0.05);
 }
 
-/* Banded (stepped) skies — flat colour bands instead of smooth gradients. */
-.scene-thriving {
-  background: linear-gradient(180deg, #8fd6ff 0 32%, #b8e7ff 32% 60%, #d8f4ff 60% 82%, #eafaff 82% 100%);
-}
-.scene-healthy {
-  background: linear-gradient(180deg, #7cc0ee 0 32%, #a8d8f2 32% 60%, #cfeafa 60% 82%, #e2f3fb 82% 100%);
-}
-.scene-concerned {
-  background: linear-gradient(180deg, #9aa7ad 0 34%, #b3bbbb 34% 64%, #cacac0 64% 100%);
-}
-.scene-critical {
-  background: linear-gradient(180deg, #7a6b50 0 34%, #9c8a63 34% 64%, #b6a079 64% 100%);
-}
-.scene-collapse {
-  background: linear-gradient(180deg, #4a3526 0 34%, #38281b 34% 64%, #2a1d13 64% 100%);
-}
-.scene-dead {
-  background: linear-gradient(180deg, #1f1f22 0 34%, #151517 34% 64%, #0d0d0d 64% 100%);
-}
+/* Flat banded skies (hard stops) — more depth for the taller scene. */
+.scene-thriving { background: linear-gradient(180deg, #2f9bff 0 40%, #6cc0ff 40% 70%, #aee3ff 70% 100%); }
+.scene-healthy { background: linear-gradient(180deg, #4d9fe0 0 38%, #9ec6dd 38% 66%, #f0d79a 66% 100%); }
+.scene-concerned { background: linear-gradient(180deg, #93a0a3 0 40%, #b3b8b0 40% 70%, #d2cfbe 70% 100%); }
+.scene-critical { background: linear-gradient(180deg, #7a5a3e 0 36%, #b07a48 36% 64%, #e69a4a 64% 100%); }
+.scene-collapse { background: linear-gradient(180deg, #241318 0 45%, #4a241a 45% 75%, #7a3a1e 75% 100%); }
+.scene-dead { background: linear-gradient(180deg, #0a0610 0 32%, #2e0f0c 32% 60%, #c2401a 60% 100%); }
 
-/* Blocky pixel sun: stepped rings + a hard (blur-free) pixel halo. */
+/* ---- Sun: a chunky blocky disc (octagon), 2-tone, no glow. ---- */
 .scene-sun {
-  border-radius: 5px;
-  background: radial-gradient(circle at 50% 50%, #fff6c4 0 38%, #ffe066 38% 68%, #ffcf3a 68% 100%);
-  box-shadow:
-    0 0 0 3px rgba(255, 224, 120, 0.32),
-    0 0 0 6px rgba(255, 224, 120, 0.16);
+  width: 28px;
+  height: 28px;
+  top: 13px;
+  right: 18px;
+  border-radius: 0;
+  background: #ffd23f;
+  box-shadow: inset 0 0 0 3px #ffbf1c;
+  clip-path: polygon(25% 0, 75% 0, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0 75%, 0 25%);
 }
+.scene-sun::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  background: #fff1ad;
+}
+.scene-healthy .scene-sun { background: #ffc233; top: 30px; }
+.scene-concerned .scene-sun { background: #e6c97c; box-shadow: none; }
+.scene-critical .scene-sun { background: #e0863a; box-shadow: none; }
+.scene-collapse .scene-sun,
+.scene-dead .scene-sun { opacity: 0; }
 
-/* Pixel clouds drifting in the sky; they fade out as the world dies. */
+/* ---- Clouds: flat white blocks (body + bumps), fade as the world dies. ---- */
 .petstage-scene::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: calc(0.12 + 0.88 * var(--fill, 1));
+  opacity: calc(0.1 + 0.9 * var(--fill, 1));
   transition: opacity 600ms ease;
   background-repeat: no-repeat;
   background-image:
-    radial-gradient(11px 7px at 20% 24%, #ffffff 70%, transparent 72%),
-    radial-gradient(15px 9px at 27% 27%, #ffffff 70%, transparent 72%),
-    radial-gradient(10px 6px at 34% 25%, #eef6ff 70%, transparent 72%),
-    radial-gradient(9px 6px at 72% 18%, #ffffff 70%, transparent 72%),
-    radial-gradient(13px 8px at 79% 21%, #ffffff 70%, transparent 72%);
-  image-rendering: pixelated;
+    linear-gradient(#fff, #fff),
+    linear-gradient(#fff, #fff),
+    linear-gradient(#fff, #fff),
+    linear-gradient(#fff, #fff),
+    linear-gradient(#fff, #fff);
+  background-size: 30px 7px, 12px 6px, 16px 6px, 20px 6px, 11px 5px;
+  background-position: 14% 33%, 17% 27%, 24% 27%, 72% 20%, 76% 15%;
 }
 
-/* Pixel mesh over the scene (under Clippy) — unifies everything into pixels. */
-.petstage-scene::after {
+/* No mesh / no background texture — those read as a "filter". Keep it clean. */
+.app-main { background-image: none; }
+
+/* ---- Grassy ground Clippy walks on: green top, darker earth below. ---- */
+.scene-ground {
+  background: var(--grass, #3a8f4e);
+  border-top: 2px solid rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 -16px 0 rgba(0, 0, 0, 0.34);
+}
+
+/* ---- Evergreen fir forest: stacked-block PIXEL firs, two dense rows for a full treeline. ---- */
+.scene-trees {
+  background: none;
+  clip-path: none;
+}
+/* Back row: a higher, darker rank of firs peeking over the front row. */
+.scene-trees::before {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 1;
-  pointer-events: none;
+  filter: brightness(0.62);
+  background-repeat: no-repeat;
   background-image:
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px);
-  background-size: 3px 3px;
-  mix-blend-mode: multiply;
-  opacity: 0.42;
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage));
+  background-size:
+    5px 7px, 10px 6px, 16px 7px, 5px 7px, 10px 6px, 16px 7px, 5px 7px, 10px 6px, 16px 7px,
+    5px 7px, 10px 6px, 16px 7px, 5px 7px, 10px 6px, 16px 7px, 5px 7px, 10px 6px, 16px 7px;
+  background-position:
+    10% calc(100% - 17px), 10% calc(100% - 12px), 10% calc(100% - 7px),
+    24% calc(100% - 17px), 24% calc(100% - 12px), 24% calc(100% - 7px),
+    38% calc(100% - 17px), 38% calc(100% - 12px), 38% calc(100% - 7px),
+    52% calc(100% - 17px), 52% calc(100% - 12px), 52% calc(100% - 7px),
+    67% calc(100% - 17px), 67% calc(100% - 12px), 67% calc(100% - 7px),
+    82% calc(100% - 17px), 82% calc(100% - 12px), 82% calc(100% - 7px);
+}
+/* Front row: taller, fuller firs filling the gaps for a dense forest. */
+.scene-trees::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-image:
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
+    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage));
+  background-size:
+    6px 8px, 13px 7px, 20px 8px, 6px 8px, 13px 7px, 20px 8px, 6px 8px, 13px 7px, 20px 8px,
+    6px 8px, 13px 7px, 20px 8px, 6px 8px, 13px 7px, 20px 8px, 6px 8px, 13px 7px, 20px 8px,
+    6px 8px, 13px 7px, 20px 8px;
+  background-position:
+    4% calc(100% - 12px), 4% calc(100% - 6px), 4% 100%,
+    17% calc(100% - 12px), 17% calc(100% - 6px), 17% 100%,
+    30% calc(100% - 12px), 30% calc(100% - 6px), 30% 100%,
+    43% calc(100% - 12px), 43% calc(100% - 6px), 43% 100%,
+    57% calc(100% - 12px), 57% calc(100% - 6px), 57% 100%,
+    71% calc(100% - 12px), 71% calc(100% - 6px), 71% 100%,
+    86% calc(100% - 12px), 86% calc(100% - 6px), 86% 100%;
 }
 
-/* Keep Clippy crisp above the mesh. */
-.clippy-walker {
-  z-index: 2;
+/* ---- A solid grassy bank along the horizon (connects shrubs to the ground). ---- */
+.scene-grass {
+  height: 9px;
+  opacity: 1;
+  background: var(--grass);
 }
 
-/* ---- Chunkier, squarer cards to match the pixel vibe ---- */
+/* ---- Lake: a blocky pool off to the side; droughts via --fill. ---- */
+.scene-river {
+  left: 4%;
+  right: auto;
+  transform: none;
+  bottom: 9px;
+  z-index: 1;
+  width: calc(20% + 17% * var(--fill, 1));
+  height: calc(10px + 12px * var(--fill, 1));
+  border-radius: 0;
+  box-shadow: none;
+  background: linear-gradient(180deg, var(--water-top) 0 45%, var(--water-bot) 45% 100%);
+  clip-path: polygon(10% 0, 90% 0, 100% 34%, 100% 66%, 90% 100%, 10% 100%, 0 66%, 0 34%);
+}
+.scene-river::before {
+  content: '';
+  position: absolute;
+  left: 18%;
+  top: 22%;
+  width: 36%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* ---- Dry bed beneath the lake (blocky). ---- */
+.scene-riverbed {
+  left: 4%;
+  right: auto;
+  transform: none;
+  bottom: 8px;
+  z-index: 1;
+  width: 34%;
+  height: 18px;
+  border-radius: 0;
+  background: #6b4a2e;
+  clip-path: polygon(10% 0, 90% 0, 100% 34%, 100% 66%, 90% 100%, 10% 100%, 0 66%, 0 34%);
+}
+.scene-riverbed::after { content: none; }
+
+/* ---- Grassy shore: a green margin framing the lake so the flowers never
+   butt straight up against the water. Sits above the flower carpet (z-index 1)
+   but is overpainted by the lake, leaving a thin grass ring. ---- */
+.scene-shore {
+  position: absolute;
+  left: 1%;
+  right: auto;
+  bottom: 5px;
+  z-index: 1;
+  width: calc(26% + 17% * var(--fill, 1));
+  height: calc(18px + 12px * var(--fill, 1));
+  background: var(--grass);
+  clip-path: polygon(10% 0, 90% 0, 100% 34%, 100% 66%, 90% 100%, 10% 100%, 0 66%, 0 34%);
+}
+
+/* Keep Clippy crisp above the world. */
+.clippy-walker { z-index: 2; }
+
+/* ---- Cards: chunky & squared-off to match (no smooth pills). ---- */
 .impact-tile,
 .livedata {
-  border-radius: 5px;
+  border-radius: 4px;
   border-width: 2px;
 }
 .quality-bar,
 .quality-fill,
 .bar,
 .bar-fill {
-  border-radius: 2px;
+  border-radius: 0;
 }
-.pill {
-  border-radius: 3px;
+.pill { border-radius: 2px; }
+.app button { border-radius: 3px; }
+
+/* ---- Mt. Rainier: one broad, majestic snow-capped peak (Washington wilderness). ---- */
+.scene-mountains {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 30px;
+  height: 116px;
+  pointer-events: none;
+  background: #5a6486;
+  clip-path: polygon(
+    0% 100%, 0% 74%, 11% 74%, 11% 63%, 20% 63%, 20% 52%, 28% 52%, 28% 41%, 35% 41%, 35% 31%,
+    41% 31%, 41% 22%, 46% 22%, 46% 13%, 54% 13%, 54% 22%, 59% 22%, 59% 31%, 65% 31%, 65% 41%,
+    72% 41%, 72% 52%, 80% 52%, 80% 63%, 89% 63%, 89% 74%, 100% 74%, 100% 100%
+  );
 }
-.app button {
-  border-radius: 4px;
+/* Snow cap + glaciers: white over the upper peak with a STEPPED (pixel) snow line. */
+.scene-mountains::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #f3f8ff;
+  clip-path: polygon(
+    0 0, 100% 0,
+    100% 46%, 88% 46%, 88% 52%, 80% 52%, 80% 46%, 72% 46%, 72% 58%, 64% 58%,
+    64% 48%, 56% 48%, 56% 54%, 50% 54%, 50% 48%, 44% 48%, 44% 56%, 36% 56%,
+    36% 48%, 28% 48%, 28% 52%, 20% 52%, 20% 46%, 12% 46%, 12% 50%, 0 50%
+  );
+}
+/* A soft blue glacier shadow just below the snow line. */
+.scene-mountains::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0 50%, rgba(150, 175, 215, 0.35) 50% 55%, transparent 55%);
+}
+.scene-healthy .scene-mountains { background: #5a6486; }
+.scene-concerned .scene-mountains { background: #66695e; }
+.scene-critical .scene-mountains { background: #5f4830; }
+.scene-collapse .scene-mountains { background: #342818; }
+/* Snow + glacier only while the world is healthy; bare rock (or eruption) as it dies. */
+.scene-concerned .scene-mountains::before,
+.scene-critical .scene-mountains::before,
+.scene-collapse .scene-mountains::before,
+.scene-concerned .scene-mountains::after,
+.scene-critical .scene-mountains::after,
+.scene-collapse .scene-mountains::after { content: none; }
+
+/* ---- Eruption finale: Mt. Rainier blows its top — billowing ash plume,
+   a glowing lava crater, twin lava flows, and flying embers. ---- */
+.scene-dead .scene-mountains {
+  background: linear-gradient(
+    180deg,
+    #4a4148 0 8%,
+    #322d36 8% 15%,
+    #ff6a1e 15% 26%,
+    #3a201a 26% 50%,
+    #2a1714 50% 100%
+  );
+  clip-path: polygon(
+    0% 100%, 0% 74%, 8% 74%, 8% 63%, 16% 63%, 16% 52%, 24% 52%, 24% 41%, 31% 41%, 31% 31%, 38% 31%, 38% 26%, 43% 26%,
+    43% 15%, 30% 15%, 26% 6%, 34% 1%, 44% 4%, 50% 0%, 56% 4%, 66% 1%, 74% 6%, 70% 15%, 57% 15%, 57% 26%,
+    62% 26%, 62% 31%, 69% 31%, 69% 41%, 76% 41%, 76% 52%, 84% 52%, 84% 63%, 92% 63%, 92% 74%, 100% 74%, 100% 100%
+  );
+}
+/* Bright lava glowing at the crater throat. */
+.scene-dead .scene-mountains::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0 16%, #ffe785 16% 20%, #ff8a1e 20% 27%, transparent 27%);
+}
+/* Twin lava flows spilling down the slopes. */
+.scene-dead .scene-mountains::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(#ff5a14, #ff5a14), linear-gradient(#ff8a1e, #ff8a1e);
+  background-repeat: no-repeat;
+  background-size: 5px 42%, 4px 30%;
+  background-position: 55% 26%, 44% 28%;
+}
+.scene-dead .scene-ground {
+  background: #261c16;
+}
+/* Flying embers / sparks raining around the eruption. */
+.scene-dead .scene-stars {
+  opacity: 1;
+  background-image:
+    radial-gradient(1.6px 1.6px at 44% 30%, #ffcf4a 50%, transparent 52%),
+    radial-gradient(1.6px 1.6px at 56% 22%, #ff7a1e 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 50% 16%, #ffe785 50%, transparent 52%),
+    radial-gradient(1.6px 1.6px at 62% 34%, #ff5a14 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 38% 22%, #ff9a2e 50%, transparent 52%),
+    radial-gradient(1.6px 1.6px at 66% 14%, #ffcf4a 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 34% 34%, #ff7a1e 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 72% 26%, #ff9a2e 50%, transparent 52%);
 }
 
-/* Subtle pixel texture on the dashboard background. */
-.app-main {
+/* ---- Foreground wildflower meadow: a dense full-bloom carpet (Paradise at Rainier).
+   The whole field is scattered with lupine, paintbrush, lily & daisies; it fades
+   to bare ground as the world wilts (opacity follows --fill). ---- */
+/* ---- Foreground wildflower meadow: a dense full-bloom carpet (Paradise at Rainier).
+   A cohesive lupine-purple field with a few harmonious accents (magenta paintbrush,
+   white avalanche lily, soft yellow) so the colour reads continuous, not a rainbow.
+   It fades to bare ground as the world wilts (opacity follows --fill). ---- */
+.scene-plants {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 27px;
+  pointer-events: none;
+  opacity: calc(0.08 + 0.92 * var(--fill, 1));
+  transition: opacity 600ms ease;
+  /* A continuous tiled lupine-purple base, then a few same-colour CLUMPS
+     (deep purple, magenta paintbrush, white lily, gold) grouped at distinct
+     spots to the right of the lake — patches, not scattered confetti. */
+  background-repeat:
+    repeat, repeat,
+    no-repeat, no-repeat, no-repeat, no-repeat,
+    no-repeat, no-repeat, no-repeat, no-repeat,
+    no-repeat, no-repeat, no-repeat,
+    no-repeat, no-repeat, no-repeat;
   background-image:
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.016) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.016) 0 1px, transparent 1px 3px);
-  background-size: 3px 3px;
+    radial-gradient(circle, #7e63d6 0 1.9px, transparent 2.2px),
+    radial-gradient(circle, #9579e0 0 1.7px, transparent 2px),
+    radial-gradient(circle at 27% 44%, #6b4fc0 0 2px, transparent 2.4px),
+    radial-gradient(circle at 33% 60%, #6b4fc0 0 2px, transparent 2.4px),
+    radial-gradient(circle at 30% 78%, #6b4fc0 0 2px, transparent 2.4px),
+    radial-gradient(circle at 36% 86%, #6b4fc0 0 2px, transparent 2.4px),
+    radial-gradient(circle at 44% 42%, #e0568f 0 2px, transparent 2.4px),
+    radial-gradient(circle at 50% 58%, #e0568f 0 2px, transparent 2.4px),
+    radial-gradient(circle at 46% 76%, #e0568f 0 2px, transparent 2.4px),
+    radial-gradient(circle at 52% 84%, #e0568f 0 2px, transparent 2.4px),
+    radial-gradient(circle at 60% 48%, #eef0ff 0 1.8px, transparent 2.2px),
+    radial-gradient(circle at 66% 64%, #eef0ff 0 1.8px, transparent 2.2px),
+    radial-gradient(circle at 62% 82%, #eef0ff 0 1.8px, transparent 2.2px),
+    radial-gradient(circle at 75% 50%, #f3cf5a 0 1.8px, transparent 2.2px),
+    radial-gradient(circle at 81% 66%, #f3cf5a 0 1.8px, transparent 2.2px),
+    radial-gradient(circle at 78% 84%, #f3cf5a 0 1.8px, transparent 2.2px);
+  background-size:
+    12px 8px, 14px 9px,
+    100% 100%, 100% 100%, 100% 100%, 100% 100%,
+    100% 100%, 100% 100%, 100% 100%, 100% 100%,
+    100% 100%, 100% 100%, 100% 100%,
+    100% 100%, 100% 100%, 100% 100%;
+  background-position:
+    2px 6px, 8px 13px,
+    0 0, 0 0, 0 0, 0 0,
+    0 0, 0 0, 0 0, 0 0,
+    0 0, 0 0, 0 0,
+    0 0, 0 0, 0 0;
 }

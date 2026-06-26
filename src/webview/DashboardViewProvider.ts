@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { GuardianStore } from '../state/guardianStore';
+import type { TamaStore } from '../state/tamaStore';
 import type { HostMessage, WebviewMessage } from './contract';
 import { buildDashboardHtml } from './html';
 
@@ -7,15 +7,15 @@ export interface DashboardHandlers {
   toggleCapture: () => void;
 }
 
-/** Sidebar webview that renders the guardian, metrics, and coaching panel. */
+/** Sidebar webview that renders the pet, metrics, and coaching panel. */
 export class DashboardViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'ecoprompt.dashboard';
+  public static readonly viewType = 'tokentama.dashboard';
 
   private view?: vscode.WebviewView;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
-    private readonly store: GuardianStore,
+    private readonly store: TamaStore,
     private readonly handlers: DashboardHandlers,
   ) {
     this.store.onDidChange((state) => this.post({ type: 'state', state }));
@@ -45,7 +45,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         this.post({ type: 'state', state: this.store.getState() });
         break;
       case 'scorePrompt':
-        void vscode.commands.executeCommand('ecoprompt.scorePrompt');
+        void vscode.commands.executeCommand('tokentama.scorePrompt');
         break;
       case 'reset':
         this.store.reset();
@@ -56,7 +56,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       case 'runDemo':
         this.post({ type: 'busy', busy: true });
         void Promise.resolve(
-          vscode.commands.executeCommand('ecoprompt.runDemo'),
+          vscode.commands.executeCommand('tokentama.runDemo'),
         ).finally(() => this.post({ type: 'busy', busy: false }));
         break;
       case 'applyTip':

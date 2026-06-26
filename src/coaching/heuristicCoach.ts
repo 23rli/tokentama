@@ -1,5 +1,5 @@
-import type { TipRequest, TipResponse, WasteCategory } from '@ecoprompt/shared-types';
-import { splitSentences } from '@ecoprompt/scoring-engine';
+import type { TipRequest, TipResponse, WasteCategory } from '@tokentama/shared-types';
+import { splitSentences } from '@tokentama/scoring-engine';
 
 /** Playful one-liners per dominant waste category (design doc §11.3 tone). */
 const SHORT_TIPS: Record<WasteCategory, string> = {

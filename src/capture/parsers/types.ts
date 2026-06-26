@@ -3,7 +3,7 @@ import type {
   IngestionSource,
   ToolCallInfo,
   ModelInfo,
-} from '@ecoprompt/shared-types';
+} from '@tokentama/shared-types';
 
 export type PromptEventHandler = (event: PromptEvent) => void;
 

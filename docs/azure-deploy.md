@@ -1,4 +1,4 @@
-# Deploying the EcoPrompt Guardians API to Azure
+# Deploying the Tokentama API to Azure
 
 The API runs **fully locally** with no Azure resources (plain Node server + in-memory
 store). This guide is for a real cloud deployment.

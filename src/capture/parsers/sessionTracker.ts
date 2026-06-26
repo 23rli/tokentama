@@ -1,5 +1,5 @@
-import type { PromptEvent, ScorePromptRequest } from '@ecoprompt/shared-types';
-import { similarity } from '@ecoprompt/scoring-engine';
+import type { PromptEvent, ScorePromptRequest } from '@tokentama/shared-types';
+import { similarity } from '@tokentama/scoring-engine';
 
 /**
  * Turns a stream of PromptEvents into ScorePromptRequests, maintaining the

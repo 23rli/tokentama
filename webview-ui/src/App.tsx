@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { GuardianState, HostMessage } from '../../src/webview/contract';
+import type { TamaState, HostMessage } from '../../src/webview/contract';
 import { post } from './vscodeApi';
 import { PetStage } from './components/PetStage';
 import { ScoreHeader } from './components/ScoreHeader';
@@ -9,7 +9,7 @@ import { QualityBars } from './components/QualityBars';
 import { CoachingPanel } from './components/CoachingPanel';
 
 export function App() {
-  const [state, setState] = useState<GuardianState | null>(null);
+  const [state, setState] = useState<TamaState | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export function App() {
   }, []);
 
   if (!state) {
-    return <div class="loading">Summoning your guardian…</div>;
+    return <div class="loading">Summoning Tokentama…</div>;
   }
 
   return (

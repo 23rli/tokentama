@@ -1,4 +1,4 @@
-# EcoPrompt Guardians — Master Strategy, Architecture, and Hackathon Design Document
+# Tokentama — Master Strategy, Architecture, and Hackathon Design Document
 
 **Status:** Draft v1.0  
 **Audience:** Hackathon team, engineering contributors, mentor reviewers, future organizational sponsors  
@@ -8,14 +8,14 @@
 
 # 1. Executive Summary
 
-EcoPrompt Guardians is a sustainability-focused AI efficiency companion designed to reduce the environmental and monetary costs of inefficient AI usage.
+Tokentama is a sustainability-focused AI efficiency companion designed to reduce the environmental and monetary costs of inefficient AI usage.
 
 The core idea is simple:
 - Many users unintentionally waste AI resources through verbose prompts, repeated retries, unnecessary context stuffing, unnecessary tool usage, and poor prompt structure.
 - At small scale, those inefficiencies feel trivial.
 - At Microsoft scale, they become material cost, latency, infrastructure, and sustainability issues.
 
-EcoPrompt Guardians turns invisible AI inefficiency into something visible, emotional, and actionable.
+Tokentama turns invisible AI inefficiency into something visible, emotional, and actionable.
 
 The product experience is a small desktop companion with a Clippy-inspired tamagotchi mechanic:
 - When a user prompts efficiently, the ecosystem thrives.

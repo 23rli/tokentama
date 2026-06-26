@@ -1,17 +1,17 @@
 {
-  "name": "ecoprompt-guardians",
-  "displayName": "EcoPrompt Guardians",
+  "name": "tokentama",
+  "displayName": "Tokentama",
   "description": "An AI-efficiency companion that scores prompt waste, coaches better prompts, and grows a tamagotchi ecosystem that thrives when you prompt efficiently.",
   "version": "0.1.0",
-  "publisher": "ecoprompt",
+  "publisher": "tokentama",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/ecoprompt-guardians.git"
+    "url": "https://github.com/your-org/tokentama.git"
   },
-  "homepage": "https://github.com/your-org/ecoprompt-guardians#readme",
+  "homepage": "https://github.com/your-org/tokentama#readme",
   "bugs": {
-    "url": "https://github.com/your-org/ecoprompt-guardians/issues"
+    "url": "https://github.com/your-org/tokentama/issues"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -39,115 +39,115 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "ecoprompt-guardians",
-          "title": "EcoPrompt Guardians",
-          "icon": "media/guardian-icon.svg"
+          "id": "tokentama",
+          "title": "Tokentama",
+          "icon": "media/tokentama-icon.svg"
         }
       ]
     },
     "views": {
-      "ecoprompt-guardians": [
+      "tokentama": [
         {
           "type": "webview",
-          "id": "ecoprompt.dashboard",
-          "name": "Guardian"
+          "id": "tokentama.dashboard",
+          "name": "Tokentama"
         }
       ]
     },
     "commands": [
       {
-        "command": "ecoprompt.scorePrompt",
+        "command": "tokentama.scorePrompt",
         "title": "Score this prompt",
-        "category": "EcoPrompt",
+        "category": "Tokentama",
         "icon": "$(beaker)"
       },
       {
-        "command": "ecoprompt.openDashboard",
-        "title": "Open Guardian dashboard",
-        "category": "EcoPrompt"
+        "command": "tokentama.openDashboard",
+        "title": "Open Tokentama dashboard",
+        "category": "Tokentama"
       },
       {
-        "command": "ecoprompt.toggleCapture",
+        "command": "tokentama.toggleCapture",
         "title": "Toggle passive capture",
-        "category": "EcoPrompt"
+        "category": "Tokentama"
       },
       {
-        "command": "ecoprompt.resetEcosystem",
+        "command": "tokentama.resetEcosystem",
         "title": "Reset ecosystem",
-        "category": "EcoPrompt",
+        "category": "Tokentama",
         "icon": "$(debug-restart)"
       },
       {
-        "command": "ecoprompt.rescan",
+        "command": "tokentama.rescan",
         "title": "Scan recent Copilot prompts",
-        "category": "EcoPrompt",
+        "category": "Tokentama",
         "icon": "$(sync)"
       },
       {
-        "command": "ecoprompt.diagnostics",
+        "command": "tokentama.diagnostics",
         "title": "Show capture diagnostics",
-        "category": "EcoPrompt",
+        "category": "Tokentama",
         "icon": "$(info)"
       },
       {
-        "command": "ecoprompt.runDemo",
-        "title": "Run guardian demo",
-        "category": "EcoPrompt",
+        "command": "tokentama.runDemo",
+        "title": "Run Tokentama demo",
+        "category": "Tokentama",
         "icon": "$(play-circle)"
       },
       {
-        "command": "ecoprompt.setLlmApiKey",
+        "command": "tokentama.setLlmApiKey",
         "title": "Set coaching LLM API key",
-        "category": "EcoPrompt"
+        "category": "Tokentama"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "ecoprompt.rescan",
-          "when": "view == ecoprompt.dashboard",
+          "command": "tokentama.rescan",
+          "when": "view == tokentama.dashboard",
           "group": "navigation@0"
         },
         {
-          "command": "ecoprompt.diagnostics",
-          "when": "view == ecoprompt.dashboard",
+          "command": "tokentama.diagnostics",
+          "when": "view == tokentama.dashboard",
           "group": "navigation@3"
         },
         {
-          "command": "ecoprompt.runDemo",
-          "when": "view == ecoprompt.dashboard",
+          "command": "tokentama.runDemo",
+          "when": "view == tokentama.dashboard",
           "group": "navigation@4"
         },
         {
-          "command": "ecoprompt.scorePrompt",
-          "when": "view == ecoprompt.dashboard",
+          "command": "tokentama.scorePrompt",
+          "when": "view == tokentama.dashboard",
           "group": "navigation@1"
         },
         {
-          "command": "ecoprompt.resetEcosystem",
-          "when": "view == ecoprompt.dashboard",
+          "command": "tokentama.resetEcosystem",
+          "when": "view == tokentama.dashboard",
           "group": "navigation@2"
         }
       ]
     },
     "chatParticipants": [
       {
-        "id": "ecoprompt.guardian",
-        "name": "ecoprompt",
-        "fullName": "EcoPrompt Guardian",
+        "id": "tokentama.chat",
+        "name": "tokentama",
+        "fullName": "Tokentama",
         "description": "Score a prompt's efficiency and suggest a leaner version",
         "isSticky": false
       }
     ],
     "configuration": {
-      "title": "EcoPrompt Guardians",
+      "title": "Tokentama",
       "properties": {
-        "ecoprompt.passiveCapture.enabled": {
+        "tokentama.passiveCapture.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Passively read VS Code Copilot chat sessions to score prompts automatically. Experimental and read-only."
         },
-        "ecoprompt.coaching.llmProvider": {
+        "tokentama.coaching.llmProvider": {
           "type": "string",
           "enum": [
             "none",
@@ -157,32 +157,32 @@
           "default": "none",
           "description": "LLM provider for coaching tips. 'none' uses the offline heuristic coach."
         },
-        "ecoprompt.coaching.endpoint": {
+        "tokentama.coaching.endpoint": {
           "type": "string",
           "default": "",
           "description": "LLM endpoint URL (for openai / azure-openai)."
         },
-        "ecoprompt.coaching.model": {
+        "tokentama.coaching.model": {
           "type": "string",
           "default": "gpt-4o-mini",
           "description": "Model or deployment name used for coaching."
         },
-        "ecoprompt.sustainability.whPerThousandTokens": {
+        "tokentama.sustainability.whPerThousandTokens": {
           "type": "number",
           "default": 0.4,
           "description": "Estimated watt-hours consumed per 1,000 tokens, used for the sustainability estimate."
         },
-        "ecoprompt.sustainability.gridGramsCo2PerKwh": {
+        "tokentama.sustainability.gridGramsCo2PerKwh": {
           "type": "number",
           "default": 400,
           "description": "Grid carbon intensity (gCO2e per kWh) for the sustainability estimate."
         },
-        "ecoprompt.impact.co2GramsPer1kTokens": {
+        "tokentama.impact.co2GramsPer1kTokens": {
           "type": "number",
           "default": 0.11,
           "description": "Estimated grams of CO2e per 1,000 tokens, used for the headline environmental impact."
         },
-        "ecoprompt.impact.waterMlPer1kTokens": {
+        "tokentama.impact.waterMlPer1kTokens": {
           "type": "number",
           "default": 2,
           "description": "Estimated millilitres of water per 1,000 tokens, used for the headline environmental impact."

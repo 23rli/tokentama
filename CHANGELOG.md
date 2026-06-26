@@ -1,6 +1,6 @@
 # Change Log
 
-All notable changes to the EcoPrompt Guardians extension are documented here.
+All notable changes to the Tokentama extension are documented here.
 
 ## [0.1.0] - Unreleased
 
@@ -9,7 +9,7 @@ All notable changes to the EcoPrompt Guardians extension are documented here.
 - Initial VS Code extension scaffold (migrated from the Electron desktop widget).
 - Prompt waste scoring engine with five efficiency subscores and a transparent
   waste breakdown.
-- Tamagotchi "guardian" ecosystem that thrives or degrades with prompt efficiency
+- Tamagotchi pet ecosystem that thrives or degrades with prompt efficiency
   (placeholder visuals).
 - Coaching tips with rewritten-prompt suggestions (offline heuristic coach by
   default; optional LLM coach).

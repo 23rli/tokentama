@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { TipRequest } from '@ecoprompt/shared-types';
+import type { TipRequest } from '@tokentama/shared-types';
 import { heuristicGenerateTip, heuristicRewrite } from '../heuristicCoach';
 import { generateTip } from '../coach';
 import { isCoachConfigured, loadCoachConfig } from '../config';

@@ -2,9 +2,9 @@
  * Shared message + state contract between the extension host and the webview.
  * Types only — safe to import from both the Node host and the browser webview.
  */
-import type { PetWorldState, Subscores, WasteComponent, ModelInfo } from '@ecoprompt/shared-types';
+import type { PetWorldState, Subscores, WasteComponent, ModelInfo } from '@tokentama/shared-types';
 
-export type { PetWorldState, Subscores, WasteComponent, ModelInfo } from '@ecoprompt/shared-types';
+export type { PetWorldState, Subscores, WasteComponent, ModelInfo } from '@tokentama/shared-types';
 
 /** A single scored prompt, flattened for display in the webview. */
 export interface ScoredEventView {
@@ -76,8 +76,8 @@ export interface SuccessMetrics {
   costUsdWasted: number;
 }
 
-/** Full snapshot of guardian state pushed to the webview. */
-export interface GuardianState {
+/** Full snapshot of pet state pushed to the webview. */
+export interface TamaState {
   world: PetWorldState;
   overallScore: number;
   wasteScore: number;
@@ -93,7 +93,7 @@ export interface GuardianState {
 
 /** Messages sent host → webview. */
 export type HostMessage =
-  | { type: 'state'; state: GuardianState }
+  | { type: 'state'; state: TamaState }
   | { type: 'busy'; busy: boolean };
 
 /** Messages sent webview → host. */

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'node:path';
-import type { CoachConfig, CoachProvider } from '@ecoprompt/llm-adapters';
-import { GuardianStore } from './state/guardianStore';
+import type { CoachConfig, CoachProvider } from '@tokentama/llm-adapters';
+import { TamaStore } from './state/tamaStore';
 import { ScoreService } from './core/scoreService';
 import { CopilotWatcher } from './capture/CopilotWatcher';
 import { findActiveSession, listCopilotSessions } from './capture/copilotPaths';
@@ -9,16 +9,16 @@ import { readSessionEvents } from './capture/copilotReader';
 import { StatusBar } from './status/statusBar';
 import { DashboardViewProvider } from './webview/DashboardViewProvider';
 
-const SECRET_KEY = 'ecoprompt.llmApiKey';
+const SECRET_KEY = 'tokentama.llmApiKey';
 
 export function activate(context: vscode.ExtensionContext): void {
-  const store = new GuardianStore(context);
+  const store = new TamaStore(context);
 
-  const output = vscode.window.createOutputChannel('EcoPrompt Guardians');
+  const output = vscode.window.createOutputChannel('Tokentama');
   context.subscriptions.push(output);
   const log = (message: string): void =>
     output.appendLine(`[${new Date().toLocaleTimeString()}] ${message}`);
-  log('EcoPrompt Guardians activated.');
+  log('Tokentama activated.');
 
   const workspaceHash = deriveWorkspaceHash(context);
   log(
@@ -28,7 +28,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   const getCoachConfig = async (): Promise<CoachConfig> => {
-    const cfg = vscode.workspace.getConfiguration('ecoprompt.coaching');
+    const cfg = vscode.workspace.getConfiguration('tokentama.coaching');
     const apiKey = await context.secrets.get(SECRET_KEY);
     return {
       provider: cfg.get<string>('llmProvider', 'none') as CoachProvider,
@@ -53,7 +53,7 @@ export function activate(context: vscode.ExtensionContext): void {
     if (watcher) return;
     if (!workspaceHash) {
       log(
-        'Ambient capture paused: this window has no folder open, so there is no window-scoped Copilot session. Open a folder (the dev host opens the sandbox/ folder via F5), or use @ecoprompt / Score this prompt.',
+        'Ambient capture paused: this window has no folder open, so there is no window-scoped Copilot session. Open a folder (the dev host opens the sandbox/ folder via F5), or use @tokentama / Score this prompt.',
       );
       return;
     }
@@ -66,7 +66,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (!announcedCapture) {
         announcedCapture = true;
         void vscode.window.showInformationMessage(
-          'EcoPrompt Guardian is now auto-grading your Copilot prompts.',
+          'Tokentama is now auto-grading your Copilot prompts.',
         );
       }
       void scoreService.scoreEvent(event, 'copilot');
@@ -90,7 +90,7 @@ export function activate(context: vscode.ExtensionContext): void {
     if (next) startWatcher();
     else stopWatcher();
     void vscode.window.showInformationMessage(
-      `EcoPrompt passive capture ${next ? 'enabled' : 'disabled'}.`,
+      `Tokentama passive capture ${next ? 'enabled' : 'disabled'}.`,
     );
   };
 
@@ -102,25 +102,25 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('ecoprompt.scorePrompt', () =>
+    vscode.commands.registerCommand('tokentama.scorePrompt', () =>
       scoreManualPrompt(scoreService),
     ),
-    vscode.commands.registerCommand('ecoprompt.openDashboard', () =>
-      vscode.commands.executeCommand('ecoprompt.dashboard.focus'),
+    vscode.commands.registerCommand('tokentama.openDashboard', () =>
+      vscode.commands.executeCommand('tokentama.dashboard.focus'),
     ),
-    vscode.commands.registerCommand('ecoprompt.toggleCapture', toggleCapture),
-    vscode.commands.registerCommand('ecoprompt.resetEcosystem', () => {
+    vscode.commands.registerCommand('tokentama.toggleCapture', toggleCapture),
+    vscode.commands.registerCommand('tokentama.resetEcosystem', () => {
       store.reset();
-      void vscode.window.showInformationMessage('EcoPrompt ecosystem reset.');
+      void vscode.window.showInformationMessage('Tokentama ecosystem reset.');
     }),
-    vscode.commands.registerCommand('ecoprompt.rescan', () =>
+    vscode.commands.registerCommand('tokentama.rescan', () =>
       rescanCopilot(scoreService, log, workspaceHash),
     ),
-    vscode.commands.registerCommand('ecoprompt.diagnostics', () =>
+    vscode.commands.registerCommand('tokentama.diagnostics', () =>
       showCaptureDiagnostics(workspaceHash, output),
     ),
-    vscode.commands.registerCommand('ecoprompt.runDemo', () => scoreService.runDemo()),
-    vscode.commands.registerCommand('ecoprompt.setLlmApiKey', () => setLlmApiKey(context)),
+    vscode.commands.registerCommand('tokentama.runDemo', () => scoreService.runDemo()),
+    vscode.commands.registerCommand('tokentama.setLlmApiKey', () => setLlmApiKey(context)),
   );
 
   registerChatParticipant(context, scoreService, store, log);
@@ -135,7 +135,7 @@ export function deactivate(): void {
 function registerChatParticipant(
   context: vscode.ExtensionContext,
   scoreService: ScoreService,
-  store: GuardianStore,
+  store: TamaStore,
   log: (message: string) => void,
 ): void {
   if (!vscode.chat?.createChatParticipant) {
@@ -144,18 +144,18 @@ function registerChatParticipant(
   }
   try {
     const participant = vscode.chat.createChatParticipant(
-      'ecoprompt.guardian',
+      'tokentama.chat',
       async (request, _chatContext, response) => {
         const text = request.prompt?.trim();
         if (!text) {
-          response.markdown('Type a prompt after `@ecoprompt` and I’ll score its efficiency.');
+          response.markdown('Type a prompt after `@tokentama` and I’ll score its efficiency.');
           return;
         }
         const score = await scoreService.scoreManualText(text);
         const state = store.getState();
         const ev = state.lastEvent;
         response.markdown(
-          `**EcoPrompt score: ${Math.round(score)}/100**  ·  waste ${Math.round(
+          `**Tokentama score: ${Math.round(score)}/100**  ·  waste ${Math.round(
             ev?.wasteScore ?? 0,
           )}  ·  ecosystem _${state.world}_\n\n`,
         );
@@ -176,12 +176,12 @@ function registerChatParticipant(
             );
           }
         }
-        log(`@ecoprompt scored a prompt → ${Math.round(score)}/100`);
+        log(`@tokentama scored a prompt → ${Math.round(score)}/100`);
       },
     );
     participant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'media', 'icon.png');
     context.subscriptions.push(participant);
-    log('Chat participant @ecoprompt registered.');
+    log('Chat participant @tokentama registered.');
   } catch (err) {
     log(`Failed to register chat participant: ${String(err)}`);
   }
@@ -198,7 +198,7 @@ async function showCaptureDiagnostics(
   workspaceHash: string | undefined,
   output: vscode.OutputChannel,
 ): Promise<void> {
-  const lines: string[] = ['', '=== EcoPrompt capture diagnostics ==='];
+  const lines: string[] = ['', '=== Tokentama capture diagnostics ==='];
   lines.push(
     `scoped workspace hash: ${workspaceHash ?? '(none — empty window, reading globally)'}`,
   );
@@ -241,7 +241,7 @@ async function rescanCopilot(
   if (!active) {
     log('rescan: no active Copilot session found on disk.');
     void vscode.window.showInformationMessage(
-      'EcoPrompt: no Copilot chat sessions found on disk yet. Send a Copilot prompt first.',
+      'Tokentama: no Copilot chat sessions found on disk yet. Send a Copilot prompt first.',
     );
     return;
   }
@@ -250,7 +250,7 @@ async function rescanCopilot(
     .slice(-3);
   if (recent.length === 0) {
     void vscode.window.showInformationMessage(
-      'EcoPrompt: the latest Copilot session has no prompts to score yet.',
+      'Tokentama: the latest Copilot session has no prompts to score yet.',
     );
     return;
   }
@@ -258,9 +258,9 @@ async function rescanCopilot(
     await scoreService.scoreEvent(event, 'copilot');
   }
   log(`rescan: scored ${recent.length} recent prompt(s) from session ${active.sessionId}.`);
-  await vscode.commands.executeCommand('ecoprompt.dashboard.focus');
+  await vscode.commands.executeCommand('tokentama.dashboard.focus');
   void vscode.window.showInformationMessage(
-    `EcoPrompt scored your ${recent.length} most recent Copilot prompt(s).`,
+    `Tokentama scored your ${recent.length} most recent Copilot prompt(s).`,
   );
 }
 
@@ -282,8 +282,8 @@ async function scoreManualPrompt(scoreService: ScoreService): Promise<void> {
   if (!text || !text.trim()) return;
 
   const score = await scoreService.scoreManualText(text);
-  await vscode.commands.executeCommand('ecoprompt.dashboard.focus');
-  void vscode.window.showInformationMessage(`EcoPrompt score: ${Math.round(score)} / 100`);
+  await vscode.commands.executeCommand('tokentama.dashboard.focus');
+  void vscode.window.showInformationMessage(`Tokentama score: ${Math.round(score)} / 100`);
 }
 
 async function setLlmApiKey(context: vscode.ExtensionContext): Promise<void> {
@@ -295,9 +295,9 @@ async function setLlmApiKey(context: vscode.ExtensionContext): Promise<void> {
   if (key === undefined) return;
   if (key.trim() === '') {
     await context.secrets.delete(SECRET_KEY);
-    void vscode.window.showInformationMessage('EcoPrompt coaching API key cleared.');
+    void vscode.window.showInformationMessage('Tokentama coaching API key cleared.');
   } else {
     await context.secrets.store(SECRET_KEY, key);
-    void vscode.window.showInformationMessage('EcoPrompt coaching API key saved.');
+    void vscode.window.showInformationMessage('Tokentama coaching API key saved.');
   }
 }

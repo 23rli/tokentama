@@ -4,8 +4,8 @@ import type {
   IngestionSource,
   ToolCallInfo,
   ModelInfo,
-} from '@ecoprompt/shared-types';
-import { estimateTokens, estimateCostUsd } from '@ecoprompt/scoring-engine';
+} from '@tokentama/shared-types';
+import { estimateTokens, estimateCostUsd } from '@tokentama/scoring-engine';
 
 export interface BuildPromptEventInput {
   source: IngestionSource;

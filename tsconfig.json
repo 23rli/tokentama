@@ -15,10 +15,10 @@
     "noEmit": true,
     "types": ["node", "vscode"],
     "paths": {
-      "@ecoprompt/shared-types": ["./src/types/index.ts"],
-      "@ecoprompt/scoring-engine": ["./src/scoring/index.ts"],
-      "@ecoprompt/llm-adapters": ["./src/coaching/index.ts"],
-      "@ecoprompt/ingestion": ["./src/capture/parsers/index.ts"]
+      "@tokentama/shared-types": ["./src/types/index.ts"],
+      "@tokentama/scoring-engine": ["./src/scoring/index.ts"],
+      "@tokentama/llm-adapters": ["./src/coaching/index.ts"],
+      "@tokentama/ingestion": ["./src/capture/parsers/index.ts"]
     }
   },
   "include": ["src", "webview-ui/src"]

@@ -68,7 +68,7 @@ const VISUALS: Record<PetWorldState, Visual> = {
 };
 
 function spriteUrl(name: Visual['sprite']): string {
-  const base = window.__ECO_MEDIA__ ?? 'media';
+  const base = window.__TOKENTAMA_MEDIA__ ?? 'media';
   return `${base}/clippy/${name}.gif`;
 }
 
@@ -104,19 +104,22 @@ export function PetStage({ world, score }: { world: PetWorldState; score: number
         class={sceneClass}
         style={sceneStyle}
         role="img"
-        aria-label={`Guardian ${v.label}`}
+        aria-label={`Tokentama ${v.label}`}
       >
         <div class="scene-stars" />
         <div class="scene-sun" />
         <div class="scene-haze" />
         <div class="scene-flash" />
+        <div class="scene-mountains" />
         <div class="scene-scenery">
           <div class="scene-trees" />
           <div class="scene-grass" />
         </div>
         <div class="scene-riverbed" />
+        <div class="scene-shore" />
         <div class="scene-river" />
         <div class="scene-ground" />
+        <div class="scene-plants" />
 
         <div
           class={

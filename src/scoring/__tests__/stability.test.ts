@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { ScorePromptRequest } from '@ecoprompt/shared-types';
+import type { ScorePromptRequest } from '@tokentama/shared-types';
 import { scorePrompt } from '../scorePrompt';
 
 const base = { sessionId: 's', userId: 'u' };

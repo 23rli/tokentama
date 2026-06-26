@@ -1,4 +1,4 @@
-import type { GuardianState } from '../../../src/webview/contract';
+import type { TamaState } from '../../../src/webview/contract';
 
 function sparkline(points: number[]): string {
   if (points.length < 2) return '';
@@ -16,7 +16,7 @@ function sparkline(points: number[]): string {
     .join(' ');
 }
 
-export function ScoreHeader({ state }: { state: GuardianState }) {
+export function ScoreHeader({ state }: { state: TamaState }) {
   const delta = state.lastEvent?.delta ?? 0;
   const trend = state.history.map((h) => h.overallScore);
   const deltaClass = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';

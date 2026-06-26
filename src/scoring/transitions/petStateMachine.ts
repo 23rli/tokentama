@@ -1,5 +1,5 @@
-import type { PetWorldState } from '@ecoprompt/shared-types';
-import { PET_WORLD_STATES } from '@ecoprompt/shared-types';
+import type { PetWorldState } from '@tokentama/shared-types';
+import { PET_WORLD_STATES } from '@tokentama/shared-types';
 
 /** Map an overall efficiency score (0..100) to a world state (design doc §9.2). */
 export function scoreToState(score: number): PetWorldState {

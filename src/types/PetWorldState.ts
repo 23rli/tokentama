@@ -1,5 +1,5 @@
 /**
- * The six world states the guardian's ecosystem can be in, ordered from
+ * The six world states the pet's ecosystem can be in, ordered from
  * healthiest to most degraded. Mapped from the overall efficiency score by the
  * scoring engine. See design doc §9.2 and §21.
  */
