@@ -1,4 +1,5 @@
 import type { SuccessMetrics } from '../webview/contract';
+import { footprint, type ImpactFactors } from './impact';
 
 /** One scored prompt, reduced to the numbers the metrics need. */
 export interface ScoredRecord {
@@ -21,6 +22,10 @@ export interface Counters {
 export interface SustainabilityConfig {
   whPerThousandTokens: number;
   gridGramsCo2PerKwh: number;
+  /** Grams CO2e per 1,000 tokens (headline impact). */
+  co2GramsPer1kTokens: number;
+  /** Millilitres of water per 1,000 tokens (headline impact). */
+  waterMlPer1kTokens: number;
 }
 
 function avg(nums: number[]): number {
@@ -70,6 +75,19 @@ export function computeMetrics(
   const totalCostUsd = records.reduce((a, r) => a + r.costUsd, 0);
   const totalCredits = records.reduce((a, r) => a + (r.credits ?? 0), 0);
 
+  const factors: ImpactFactors = {
+    co2GramsPer1kTokens: sustain.co2GramsPer1kTokens,
+    waterMlPer1kTokens: sustain.waterMlPer1kTokens,
+  };
+  const wasteFraction = (w: number): number => Math.max(0, Math.min(100, w)) / 100;
+  const totalFootprint = footprint(totalTokens, factors);
+  const wastedTokens = records.reduce(
+    (a, r) => a + (r.inputTokens + r.outputTokens) * wasteFraction(r.wasteScore),
+    0,
+  );
+  const wastedFootprint = footprint(wastedTokens, factors);
+  const costUsdWasted = records.reduce((a, r) => a + r.costUsd * wasteFraction(r.wasteScore), 0);
+
   return {
     tokenReductionPct,
     wasteReductionPct,
@@ -84,5 +102,10 @@ export function computeMetrics(
     totalTokens,
     totalCostUsd,
     totalCredits,
+    co2eGramsTotal: totalFootprint.co2eGrams,
+    waterMlTotal: totalFootprint.waterMl,
+    co2eGramsWasted: wastedFootprint.co2eGrams,
+    waterMlWasted: wastedFootprint.waterMl,
+    costUsdWasted,
   };
 }

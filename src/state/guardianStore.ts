@@ -156,9 +156,12 @@ export class GuardianStore {
 
   getState(): GuardianState {
     const cfg = vscode.workspace.getConfiguration('ecoprompt.sustainability');
+    const impactCfg = vscode.workspace.getConfiguration('ecoprompt.impact');
     const metrics = computeMetrics(this.data.records, this.data.counters, {
       whPerThousandTokens: cfg.get<number>('whPerThousandTokens', 0.4),
       gridGramsCo2PerKwh: cfg.get<number>('gridGramsCo2PerKwh', 400),
+      co2GramsPer1kTokens: impactCfg.get<number>('co2GramsPer1kTokens', 0.11),
+      waterMlPer1kTokens: impactCfg.get<number>('waterMlPer1kTokens', 2),
     });
 
     return {

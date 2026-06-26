@@ -3,9 +3,8 @@ import type { GuardianState, HostMessage } from '../../src/webview/contract';
 import { post } from './vscodeApi';
 import { PetStage } from './components/PetStage';
 import { ScoreHeader } from './components/ScoreHeader';
-import { ModelCard } from './components/ModelCard';
-import { MetricsGrid } from './components/MetricsGrid';
-import { WasteBreakdown } from './components/WasteBreakdown';
+import { ImpactTrio } from './components/ImpactTrio';
+import { QualityBars } from './components/QualityBars';
 import { CoachingPanel } from './components/CoachingPanel';
 
 export function App() {
@@ -29,23 +28,21 @@ export function App() {
     <div class="app">
       <PetStage world={state.world} score={state.overallScore} />
       <ScoreHeader state={state} />
-      <ModelCard model={state.model} />
+      <ImpactTrio metrics={state.metrics} />
+      <QualityBars lastEvent={state.lastEvent} />
+      <CoachingPanel tip={state.tip} lastEvent={state.lastEvent} />
 
       <div class="actions">
         <button class="primary" onClick={() => post({ type: 'scorePrompt' })}>
           Score a prompt
         </button>
         <button class="ghost" onClick={() => post({ type: 'toggleCapture' })}>
-          {state.captureEnabled ? '◉ Capture on' : '○ Capture off'}
+          {state.captureEnabled ? '◉ Capture' : '○ Capture'}
         </button>
         <button class="ghost" onClick={() => post({ type: 'reset' })}>
           Reset
         </button>
       </div>
-
-      <CoachingPanel tip={state.tip} lastEvent={state.lastEvent} />
-      <MetricsGrid metrics={state.metrics} />
-      <WasteBreakdown lastEvent={state.lastEvent} />
     </div>
   );
 }

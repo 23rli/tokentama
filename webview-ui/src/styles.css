@@ -811,3 +811,154 @@ button.ghost:hover {
   display: flex;
   justify-content: flex-end;
 }
+
+/* ============================================================================
+   No-scroll redesign — EcoScore + impact showcase. Overrides above where needed.
+   ========================================================================== */
+
+/* Lock the dashboard to the viewport: fixed sections keep their size, only the
+   coaching panel flex-shrinks (and scrolls internally) so the page never scrolls. */
+.app {
+  height: 100vh;
+  overflow: hidden;
+  gap: 10px;
+  padding: 10px 10px 10px;
+}
+
+.petstage,
+.scoreheader,
+.impact,
+.quality,
+.actions {
+  flex: 0 0 auto;
+}
+
+.coaching {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Keep the coaching rewrite compact within the tighter budget. */
+.rewrite-body {
+  max-height: 84px;
+}
+
+/* ---------- Impact trio (dollars · carbon · water) ---------- */
+.impact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.impact-trio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.impact-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  text-align: center;
+  border-radius: 10px;
+  border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+  background: var(--vscode-editorWidget-background, rgba(128, 128, 128, 0.1));
+}
+
+.impact-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.impact-value {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.impact-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.impact-waste {
+  font-size: 10px;
+  color: var(--vscode-charts-orange, #db8e28);
+}
+
+.impact-equiv {
+  font-size: 11px;
+  font-style: italic;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* ---------- Prompt-quality bars ---------- */
+.quality {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quality-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.quality-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.quality-hint {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.quality-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.quality-row {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.quality-label {
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--vscode-descriptionForeground);
+}
+
+.quality-bar {
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+}
+
+.quality-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 400ms ease, background 400ms ease;
+}
+
+.quality-good {
+  background: var(--vscode-charts-green, #2ea043);
+}
+.quality-warn {
+  background: var(--vscode-charts-yellow, #d9a625);
+}
+.quality-bad {
+  background: var(--vscode-charts-red, #d64646);
+}

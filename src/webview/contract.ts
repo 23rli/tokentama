@@ -64,6 +64,16 @@ export interface SuccessMetrics {
   totalCostUsd: number;
   /** Sum of real Copilot credits across the session (0 if none were real). */
   totalCredits: number;
+  /** Absolute CO2e footprint of all tokens this session (grams). */
+  co2eGramsTotal: number;
+  /** Absolute water footprint of all tokens this session (millilitres). */
+  waterMlTotal: number;
+  /** CO2e (grams) attributable to wasteful prompting (waste-weighted). */
+  co2eGramsWasted: number;
+  /** Water (millilitres) attributable to wasteful prompting. */
+  waterMlWasted: number;
+  /** Estimated dollars attributable to wasteful prompting. */
+  costUsdWasted: number;
 }
 
 /** Full snapshot of guardian state pushed to the webview. */

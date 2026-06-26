@@ -59,6 +59,7 @@ export function scorePrompt(req: ScorePromptRequest, opts: ScoreOptions = {}): S
   const ordered = [...waste.components].sort((a, b) => b.weightedPoints - a.weightedPoints);
   for (const c of ordered) {
     if (c.severity <= 0.25) continue;
+    if (c.weightedPoints <= 0) continue; // skip categories excluded from the score (e.g. tool overuse)
     const r = waste.results[c.category];
     if (!r) continue;
     if (r.reason) reasons.push(r.reason);
@@ -84,7 +85,7 @@ export function scorePrompt(req: ScorePromptRequest, opts: ScoreOptions = {}): S
 /** The waste categories that materially hurt this prompt, worst-first. */
 export function dominantWasteCategories(resp: ScorePromptResponse): WasteCategory[] {
   return resp.wasteBreakdown
-    .filter((c) => c.severity > 0.25)
+    .filter((c) => c.severity > 0.25 && c.weightedPoints > 0)
     .sort((a, b) => b.weightedPoints - a.weightedPoints)
     .map((c) => c.category);
 }

@@ -26,7 +26,7 @@ export function CoachingPanel({ tip, lastEvent }: Props) {
 
       {improvements.length > 0 && (
         <ul class="tip-improvements">
-          {improvements.slice(0, 3).map((imp, i) => (
+          {improvements.slice(0, 2).map((imp, i) => (
             <li key={i}>{imp}</li>
           ))}
         </ul>
