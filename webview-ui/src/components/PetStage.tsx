@@ -116,7 +116,6 @@ export function PetStage({ world, score }: { world: PetWorldState; score: number
           <div class="scene-grass" />
         </div>
         <div class="scene-riverbed" />
-        <div class="scene-shore" />
         <div class="scene-river" />
         <div class="scene-ground" />
         <div class="scene-plants" />

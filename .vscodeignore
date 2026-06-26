@@ -2,13 +2,7 @@
 .github/**
 src/**
 webview-ui/**
-packages/**
-apps/**
-infra/**
-docs/**
 scripts/**
-token-lens/**
-vscode-pets/**
 node_modules/**
 **/*.ts
 **/*.map
@@ -22,7 +16,6 @@ eslint.config.mjs
 .gitignore
 .npmrc
 .env.example
-EcoPrompt_Guardians_Master_Design_Doc.md
 !dist/**
 !media/**
 !README.md

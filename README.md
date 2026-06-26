@@ -239,8 +239,6 @@ webview-ui/src/              # Preact dashboard
 The scoring engine, coaching, and metrics are **pure TypeScript** with no VS Code dependency, so they're unit-tested directly.
 </details>
 
-This extension is aligned with the strategy in the **Tokentama master design document** included in this repository.
-
 ## License
 
 MIT — see [LICENSE](LICENSE). Pet sprite art is from the open-source [vscode-pets](https://github.com/tonybaloney/vscode-pets) project (MIT).

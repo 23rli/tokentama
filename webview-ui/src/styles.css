@@ -847,11 +847,6 @@ button.ghost:hover {
   padding: 8px 10px;
   border-top: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.2));
 }
-/* Buttons share each row evenly and wrap into tidy rows when the sidebar is narrow. */
-.actions button {
-  flex: 1 1 auto;
-  min-width: 88px;
-}
 
 /* A taller, more vertical world — room for mountains, sky, and a fuller scene. */
 .petstage-scene {
@@ -882,7 +877,7 @@ button.ghost:hover {
 }
 .livedata-row {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: 74px 1fr;
   gap: 8px;
   font-size: 11px;
   line-height: 1.3;
@@ -909,7 +904,7 @@ button.ghost:hover {
 
 .impact-trio {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
@@ -1114,62 +1109,49 @@ button.ghost:hover {
   box-shadow: inset 0 -16px 0 rgba(0, 0, 0, 0.34);
 }
 
-/* ---- Evergreen fir forest: stacked-block PIXEL firs, two dense rows for a full treeline. ---- */
+/* ---- Evergreen firs at the foot of the mountain: one dense row of short, shaded
+   pixel firs (lit on the left, shadowed on the right) so they sit on the lower
+   slopes and never float in the sky. Split across ::before/::after for density. ---- */
 .scene-trees {
   background: none;
   clip-path: none;
 }
-/* Back row: a higher, darker rank of firs peeking over the front row. */
-.scene-trees::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  filter: brightness(0.62);
-  background-repeat: no-repeat;
-  background-image:
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage));
-  background-size:
-    5px 7px, 10px 6px, 16px 7px, 5px 7px, 10px 6px, 16px 7px, 5px 7px, 10px 6px, 16px 7px,
-    5px 7px, 10px 6px, 16px 7px, 5px 7px, 10px 6px, 16px 7px, 5px 7px, 10px 6px, 16px 7px;
-  background-position:
-    10% calc(100% - 17px), 10% calc(100% - 12px), 10% calc(100% - 7px),
-    24% calc(100% - 17px), 24% calc(100% - 12px), 24% calc(100% - 7px),
-    38% calc(100% - 17px), 38% calc(100% - 12px), 38% calc(100% - 7px),
-    52% calc(100% - 17px), 52% calc(100% - 12px), 52% calc(100% - 7px),
-    67% calc(100% - 17px), 67% calc(100% - 12px), 67% calc(100% - 7px),
-    82% calc(100% - 17px), 82% calc(100% - 12px), 82% calc(100% - 7px);
-}
-/* Front row: taller, fuller firs filling the gaps for a dense forest. */
+.scene-trees::before { content: none; }
 .scene-trees::after {
   content: '';
   position: absolute;
   inset: 0;
   background-repeat: no-repeat;
   background-image:
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)),
-    linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage)), linear-gradient(var(--foliage), var(--foliage));
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%),
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%),
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%),
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%),
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%),
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%),
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%),
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%),
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%),
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%),
+    linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%), linear-gradient(90deg, var(--foliage) 0 60%, color-mix(in srgb, var(--foliage), #000 38%) 60%);
   background-size:
-    6px 8px, 13px 7px, 20px 8px, 6px 8px, 13px 7px, 20px 8px, 6px 8px, 13px 7px, 20px 8px,
-    6px 8px, 13px 7px, 20px 8px, 6px 8px, 13px 7px, 20px 8px, 6px 8px, 13px 7px, 20px 8px,
-    6px 8px, 13px 7px, 20px 8px;
+    5px 6px, 9px 6px, 14px 6px, 5px 6px, 9px 6px, 14px 6px, 5px 6px, 9px 6px, 14px 6px,
+    5px 6px, 9px 6px, 14px 6px, 5px 6px, 9px 6px, 14px 6px, 5px 6px, 9px 6px, 14px 6px,
+    5px 6px, 9px 6px, 14px 6px, 5px 6px, 9px 6px, 14px 6px, 5px 6px, 9px 6px, 14px 6px,
+    5px 6px, 9px 6px, 14px 6px, 5px 6px, 9px 6px, 14px 6px, 5px 6px, 9px 6px, 14px 6px;
   background-position:
-    4% calc(100% - 12px), 4% calc(100% - 6px), 4% 100%,
-    17% calc(100% - 12px), 17% calc(100% - 6px), 17% 100%,
-    30% calc(100% - 12px), 30% calc(100% - 6px), 30% 100%,
-    43% calc(100% - 12px), 43% calc(100% - 6px), 43% 100%,
-    57% calc(100% - 12px), 57% calc(100% - 6px), 57% 100%,
-    71% calc(100% - 12px), 71% calc(100% - 6px), 71% 100%,
-    86% calc(100% - 12px), 86% calc(100% - 6px), 86% 100%;
+    4% calc(100% - 10px), 4% calc(100% - 5px), 4% 100%,
+    12% calc(100% - 10px), 12% calc(100% - 5px), 12% 100%,
+    20% calc(100% - 10px), 20% calc(100% - 5px), 20% 100%,
+    28% calc(100% - 10px), 28% calc(100% - 5px), 28% 100%,
+    36% calc(100% - 10px), 36% calc(100% - 5px), 36% 100%,
+    44% calc(100% - 10px), 44% calc(100% - 5px), 44% 100%,
+    52% calc(100% - 10px), 52% calc(100% - 5px), 52% 100%,
+    60% calc(100% - 10px), 60% calc(100% - 5px), 60% 100%,
+    68% calc(100% - 10px), 68% calc(100% - 5px), 68% 100%,
+    76% calc(100% - 10px), 76% calc(100% - 5px), 76% 100%,
+    84% calc(100% - 10px), 84% calc(100% - 5px), 84% 100%,
+    92% calc(100% - 10px), 92% calc(100% - 5px), 92% 100%;
 }
 
 /* ---- A solid grassy bank along the horizon (connects shrubs to the ground). ---- */
@@ -1217,21 +1199,6 @@ button.ghost:hover {
   clip-path: polygon(10% 0, 90% 0, 100% 34%, 100% 66%, 90% 100%, 10% 100%, 0 66%, 0 34%);
 }
 .scene-riverbed::after { content: none; }
-
-/* ---- Grassy shore: a green margin framing the lake so the flowers never
-   butt straight up against the water. Sits above the flower carpet (z-index 1)
-   but is overpainted by the lake, leaving a thin grass ring. ---- */
-.scene-shore {
-  position: absolute;
-  left: 1%;
-  right: auto;
-  bottom: 5px;
-  z-index: 1;
-  width: calc(26% + 17% * var(--fill, 1));
-  height: calc(18px + 12px * var(--fill, 1));
-  background: var(--grass);
-  clip-path: polygon(10% 0, 90% 0, 100% 34%, 100% 66%, 90% 100%, 10% 100%, 0 66%, 0 34%);
-}
 
 /* Keep Clippy crisp above the world. */
 .clippy-walker { z-index: 2; }
@@ -1361,46 +1328,38 @@ button.ghost:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 27px;
+  height: 28px;
   pointer-events: none;
-  opacity: calc(0.08 + 0.92 * var(--fill, 1));
+  opacity: calc(0.12 + 0.88 * var(--fill, 1));
   transition: opacity 600ms ease;
-  /* A continuous tiled lupine-purple base, then a few same-colour CLUMPS
-     (deep purple, magenta paintbrush, white lily, gold) grouped at distinct
-     spots to the right of the lake — patches, not scattered confetti. */
-  background-repeat:
-    repeat, repeat,
-    no-repeat, no-repeat, no-repeat, no-repeat,
-    no-repeat, no-repeat, no-repeat, no-repeat,
-    no-repeat, no-repeat, no-repeat,
-    no-repeat, no-repeat, no-repeat;
+  /* Individual wildflowers: a green stem topped by a small blossom, dotted along
+     the meadow in a limited palette (pink / yellow / white / purple). */
+  background-repeat: no-repeat;
   background-image:
-    radial-gradient(circle, #7e63d6 0 1.9px, transparent 2.2px),
-    radial-gradient(circle, #9579e0 0 1.7px, transparent 2px),
-    radial-gradient(circle at 27% 44%, #6b4fc0 0 2px, transparent 2.4px),
-    radial-gradient(circle at 33% 60%, #6b4fc0 0 2px, transparent 2.4px),
-    radial-gradient(circle at 30% 78%, #6b4fc0 0 2px, transparent 2.4px),
-    radial-gradient(circle at 36% 86%, #6b4fc0 0 2px, transparent 2.4px),
-    radial-gradient(circle at 44% 42%, #e0568f 0 2px, transparent 2.4px),
-    radial-gradient(circle at 50% 58%, #e0568f 0 2px, transparent 2.4px),
-    radial-gradient(circle at 46% 76%, #e0568f 0 2px, transparent 2.4px),
-    radial-gradient(circle at 52% 84%, #e0568f 0 2px, transparent 2.4px),
-    radial-gradient(circle at 60% 48%, #eef0ff 0 1.8px, transparent 2.2px),
-    radial-gradient(circle at 66% 64%, #eef0ff 0 1.8px, transparent 2.2px),
-    radial-gradient(circle at 62% 82%, #eef0ff 0 1.8px, transparent 2.2px),
-    radial-gradient(circle at 75% 50%, #f3cf5a 0 1.8px, transparent 2.2px),
-    radial-gradient(circle at 81% 66%, #f3cf5a 0 1.8px, transparent 2.2px),
-    radial-gradient(circle at 78% 84%, #f3cf5a 0 1.8px, transparent 2.2px);
+    linear-gradient(#2f8f46, #2f8f46), linear-gradient(#ff6b86, #ff6b86),
+    linear-gradient(#2f8f46, #2f8f46), linear-gradient(#ffd23f, #ffd23f),
+    linear-gradient(#2f8f46, #2f8f46), linear-gradient(#ffffff, #ffffff),
+    linear-gradient(#2f8f46, #2f8f46), linear-gradient(#b06bd6, #b06bd6),
+    linear-gradient(#2f8f46, #2f8f46), linear-gradient(#ff6b86, #ff6b86),
+    linear-gradient(#2f8f46, #2f8f46), linear-gradient(#ffd23f, #ffd23f),
+    linear-gradient(#2f8f46, #2f8f46), linear-gradient(#ffffff, #ffffff),
+    linear-gradient(#2f8f46, #2f8f46), linear-gradient(#b06bd6, #b06bd6);
   background-size:
-    12px 8px, 14px 9px,
-    100% 100%, 100% 100%, 100% 100%, 100% 100%,
-    100% 100%, 100% 100%, 100% 100%, 100% 100%,
-    100% 100%, 100% 100%, 100% 100%,
-    100% 100%, 100% 100%, 100% 100%;
+    2px 7px, 5px 4px,
+    2px 8px, 5px 4px,
+    2px 6px, 4px 4px,
+    2px 8px, 5px 4px,
+    2px 7px, 5px 4px,
+    2px 8px, 5px 4px,
+    2px 6px, 4px 4px,
+    2px 7px, 5px 4px;
   background-position:
-    2px 6px, 8px 13px,
-    0 0, 0 0, 0 0, 0 0,
-    0 0, 0 0, 0 0, 0 0,
-    0 0, 0 0, 0 0,
-    0 0, 0 0, 0 0;
+    8% 100%, 8% calc(100% - 7px),
+    30% 100%, 30% calc(100% - 8px),
+    42% 100%, 42% calc(100% - 6px),
+    53% 100%, 53% calc(100% - 8px),
+    64% 100%, 64% calc(100% - 7px),
+    74% 100%, 74% calc(100% - 8px),
+    84% 100%, 84% calc(100% - 6px),
+    93% 100%, 93% calc(100% - 7px);
 }
