@@ -28,6 +28,8 @@ export interface ScoredEventView {
   source: 'manual' | 'copilot';
   /** Per-prompt efficiency (0..100): waste scaled by cost/carbon intensity. */
   efficiency?: number;
+  /** Estimated task difficulty, for model/effort right-sizing. */
+  difficulty?: 'trivial' | 'moderate' | 'complex';
 }
 
 /** A coaching tip shown to the user. */

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { ScorePromptResponse, Subscores, TokenEstimate, ModelInfo } from '@tokentama/shared-types';
 import { scoreToState, computeHealthUpdate, DEFAULT_HEALTH_CONFIG, type HealthModelConfig } from '@tokentama/scoring-engine';
+import { classifyDifficulty } from '../analysis/taskDifficulty';
 import type {
   TamaState,
   ScorePoint,
@@ -124,6 +125,7 @@ export class TamaStore {
       timestamp: new Date().toISOString(),
       source: opts.source,
       efficiency: Math.round(update.efficiency),
+      difficulty: classifyDifficulty(opts.promptText).level,
     };
 
     this.data.lastEvent = event;
@@ -188,6 +190,7 @@ export class TamaStore {
       timestamp: new Date().toISOString(),
       source: opts.source,
       efficiency: Math.round(efficiency),
+      difficulty: classifyDifficulty(opts.promptText).level,
     };
     this.data.lastSubscores = resp.subscores;
     this.data.tip = opts.tip;
