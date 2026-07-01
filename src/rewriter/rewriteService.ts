@@ -1,5 +1,6 @@
 import type { CoachConfig } from '@tokentama/llm-adapters';
 import { chatComplete, isCoachConfigured, leanRewrite } from '@tokentama/llm-adapters';
+import { estimateTokens } from '@tokentama/scoring-engine';
 import type { TrainingPair } from '../data/corpusStore';
 import { hasTarget } from '../analysis/corpusInsights';
 import { buildRewriteMessages, retrievePairs } from './corpusRetrieval';
@@ -24,6 +25,8 @@ export interface RewriteResult {
   source: 'offline' | 'llm' | 'none';
   /** How many corpus examples informed the rewrite. */
   examplesUsed: number;
+  /** Estimated tokens THIS rewrite call itself spent (0 for offline) — for net accounting. */
+  llmTokensSpent?: number;
 }
 
 export interface CorpusPairs {
@@ -60,6 +63,7 @@ export class RewriteService {
     private readonly corpus: CorpusPairs,
     private readonly getConfig: () => Promise<RewriteConfig>,
     private readonly llmComplete?: LlmComplete,
+    private readonly getPortfolio?: () => string | undefined,
   ) {}
 
   async rewrite(input: { promptText: string; model?: string }): Promise<RewriteResult> {
@@ -75,10 +79,13 @@ export class RewriteService {
     });
 
     if (cfg.mode === 'llm' || (cfg.mode === 'auto' && this.worthLlm(prompt))) {
-      const raw = await this.tryLlm(prompt, examples, cfg);
-      if (raw) {
-        const result = this.present(prompt, cleanRewrite(raw), 'llm', examples.length);
-        if (result.rewrittenPrompt) return result;
+      const llm = await this.tryLlm(prompt, examples, cfg);
+      if (llm) {
+        const result = this.present(prompt, cleanRewrite(llm.raw), 'llm', examples.length);
+        if (result.rewrittenPrompt) {
+          result.llmTokensSpent = llm.tokensSpent;
+          return result;
+        }
       }
     }
 
@@ -96,18 +103,20 @@ export class RewriteService {
     return t.length >= MIN_LLM_CHARS || !hasTarget(t);
   }
 
-  /** Try the best available model backend; returns raw text or undefined. */
+  /** Try the best available model backend; returns raw text + its estimated token spend. */
   private async tryLlm(
     prompt: string,
     examples: TrainingPair[],
     cfg: RewriteConfig,
-  ): Promise<string | undefined> {
-    const { system, user } = buildRewriteMessages(prompt, examples);
+  ): Promise<{ raw: string; tokensSpent: number } | undefined> {
+    const { system, user } = buildRewriteMessages(prompt, examples, this.getPortfolio?.());
+    const spend = (out: string): number =>
+      estimateTokens(system) + estimateTokens(user) + estimateTokens(out);
     // Prefer the user's own Copilot models via the injected LM (no key required).
     if (this.llmComplete) {
       try {
         const out = await this.llmComplete(system, user);
-        if (out && out.trim()) return out;
+        if (out && out.trim()) return { raw: out, tokensSpent: spend(out) };
       } catch {
         /* try the next backend */
       }
@@ -116,7 +125,8 @@ export class RewriteService {
     if (isCoachConfigured(cfg.coach)) {
       try {
         const maxTokens = Math.min(500, Math.ceil(prompt.length / 3) + 120);
-        return await chatComplete(cfg.coach, system, user, { temperature: 0.3, maxTokens });
+        const out = await chatComplete(cfg.coach, system, user, { temperature: 0.3, maxTokens });
+        return { raw: out, tokensSpent: spend(out) };
       } catch {
         /* fall through to offline */
       }

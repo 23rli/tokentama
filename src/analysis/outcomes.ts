@@ -18,6 +18,10 @@ export interface OutcomeReport {
   retryReductionPct?: number;
   estRetriesAvoided: number;
   estTokensSaved: number;
+  /** Tokens Tokentama itself spent (LLM rewrites) — the maintenance cost. */
+  toolTokensSpent: number;
+  /** Net = estimated tokens saved minus the tool's own spend (can be negative). */
+  netTokensSaved: number;
   /** True once both cohorts have enough samples for the comparison to be meaningful. */
   hasSignal: boolean;
 }
@@ -28,7 +32,10 @@ function avg(nums: number[]): number {
   return nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : 0;
 }
 
-export function computeOutcomes(records: CorpusRecord[]): OutcomeReport {
+export function computeOutcomes(
+  records: CorpusRecord[],
+  toolTokensSpent = 0,
+): OutcomeReport {
   const isRetry = (r: CorpusRecord): boolean => (r.retryCount ?? 0) > 0;
   const total = records.length;
   const retries = records.filter(isRetry).length;
@@ -66,6 +73,8 @@ export function computeOutcomes(records: CorpusRecord[]): OutcomeReport {
     retryReductionPct,
     estRetriesAvoided,
     estTokensSaved,
+    toolTokensSpent: Math.round(toolTokensSpent),
+    netTokensSaved: Math.round(estTokensSaved - toolTokensSpent),
     hasSignal,
   };
 }

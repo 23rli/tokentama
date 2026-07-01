@@ -28,8 +28,9 @@ export function retrievePairs(
 export function buildRewriteMessages(
   prompt: string,
   examples: TrainingPair[],
+  portfolio?: string,
 ): { system: string; user: string } {
-  const system =
+  const base =
     'You rewrite a developer\'s prompt so the model gets it right on the FIRST try while ' +
     'spending the fewest TOTAL tokens across the whole interaction. Two moves:\n' +
     '1) If the prompt is padded, polite, or repeats context, cut the filler and reference ' +
@@ -39,8 +40,10 @@ export function buildRewriteMessages(
     'longer but specific prompt beats a short vague one that gets re-asked.\n' +
     'Preserve the user\'s intent and personal style; never invent requirements you cannot infer. ' +
     'Return ONLY the rewritten prompt as plain text — no preamble, quotes, code fences, or explanation.';
+  // The compact profile replaces stuffing many examples — cheaper and personalized.
+  const system = portfolio ? `${base}\n\n${portfolio}` : base;
   const shots = examples
-    .slice(0, 5)
+    .slice(0, 2)
     .map((e) => `Original:\n${e.input}\nLeaner rewrite:\n${e.output}`)
     .join('\n\n');
   const user =

@@ -38,6 +38,8 @@ interface PersistShape {
   tip?: TipView;
   model?: ModelInfo;
   lastOverallBySession: Record<string, number>;
+  /** Cumulative tokens Tokentama itself has spent (LLM rewrites) — for net accounting. */
+  toolTokensSpent: number;
 }
 
 export interface RecordScoreOptions {
@@ -80,6 +82,7 @@ export class TamaStore {
       history: [],
       counters: { tipsShown: 0, tipsApplied: 0 },
       lastOverallBySession: {},
+      toolTokensSpent: 0,
     };
   }
 
@@ -103,6 +106,18 @@ export class TamaStore {
   /** The current session's model, without recomputing the full state snapshot. */
   currentModel(): ModelInfo | undefined {
     return this.data.model;
+  }
+
+  /** Record tokens Tokentama itself spent (e.g. an LLM rewrite call). */
+  addToolSpend(tokens: number): void {
+    if (!(tokens > 0)) return;
+    this.data.toolTokensSpent = (this.data.toolTokensSpent ?? 0) + Math.round(tokens);
+    this.persist();
+  }
+
+  /** Cumulative tokens Tokentama has spent operating. */
+  toolSpend(): number {
+    return this.data.toolTokensSpent ?? 0;
   }
 
   /** Provide a lazy outcomes computation (from the corpus), read on each getState. */

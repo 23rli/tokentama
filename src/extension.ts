@@ -16,6 +16,7 @@ import { RewriteService, type RewriteConfig, type RewriterMode } from './rewrite
 import { summarizeContext, historyAdvisory } from './analysis/contextBreakdown';
 import { buildSessionSummary } from './analysis/sessionSummary';
 import { computeOutcomes } from './analysis/outcomes';
+import { buildPortfolio, renderPortfolio } from './analysis/userPortfolio';
 
 const SECRET_KEY = 'tokentama.llmApiKey';
 
@@ -58,7 +59,18 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   // Close the quality loop: outcomes (retry reduction from adoption) computed lazily
   // from the in-memory corpus and surfaced in state.
-  store.setOutcomesProvider(() => computeOutcomes(corpus.all()));
+  store.setOutcomesProvider(() => computeOutcomes(corpus.all(), store.toolSpend()));
+
+  // Compact, continuously-updated profile that the rewriter runs off of (cached
+  // by corpus size — recomputed only as the corpus grows).
+  let portfolioCache: { size: number; text: string } | undefined;
+  const getPortfolio = (): string => {
+    const records = corpus.all();
+    if (!portfolioCache || portfolioCache.size !== records.length) {
+      portfolioCache = { size: records.length, text: renderPortfolio(buildPortfolio(records)) };
+    }
+    return portfolioCache.text;
+  };
 
   const scoreService = new ScoreService(store, getCoachConfig, log, telemetry, corpus, () =>
     corpus.all(),
@@ -74,7 +86,7 @@ export function activate(context: vscode.ExtensionContext): void {
       coach: model ? { ...coach, deployment: model } : coach,
     };
   };
-  const rewriteService = new RewriteService(corpus, getRewriteConfig, lmRewrite);
+  const rewriteService = new RewriteService(corpus, getRewriteConfig, lmRewrite, getPortfolio);
 
   const statusBar = new StatusBar();
   context.subscriptions.push(statusBar);
@@ -192,8 +204,7 @@ export function activate(context: vscode.ExtensionContext): void {
     scoreDraft: (text) => scoreService.scoreDraft(text),
     autoRewrite: async (text) => {
       const model = store.getState().model?.family;
-      const r = await rewriteService.rewrite({ promptText: text, model });
-      return {
+      const r = await rewriteService.rewrite({ promptText: text, model });      if (r.llmTokensSpent) store.addToolSpend(r.llmTokensSpent);      return {
         text,
         rewrittenPrompt: r.rewrittenPrompt,
         estimatedTokenReductionPct: r.estimatedTokenReductionPct,

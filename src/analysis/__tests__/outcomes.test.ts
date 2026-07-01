@@ -39,6 +39,15 @@ describe('computeOutcomes', () => {
     expect(r.retryReductionPct).toBe(80); // (0.5-0.1)/0.5
     expect(r.estRetriesAvoided).toBe(4); // 0.4 * 10
     expect(r.estTokensSaved).toBe(4000); // 4 * 1000 avg input
+    expect(r.netTokensSaved).toBe(4000); // no tool spend passed
+  });
+
+  it('subtracts the tool spend to report NET savings', () => {
+    const adopted = Array.from({ length: 10 }, (_, i) => rec(true, i < 1 ? 1 : 0));
+    const notAdopted = Array.from({ length: 10 }, (_, i) => rec(false, i < 5 ? 1 : 0));
+    const r = computeOutcomes([...adopted, ...notAdopted], 1500);
+    expect(r.toolTokensSpent).toBe(1500);
+    expect(r.netTokensSaved).toBe(4000 - 1500);
   });
 
   it('reports overall retry rate', () => {

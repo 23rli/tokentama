@@ -104,6 +104,14 @@ describe('RewriteService (cost-aware auto gating)', () => {
     expect(r.source).toBe('llm');
   });
 
+  it('reports the tokens the LLM rewrite call itself spent (for net accounting)', async () => {
+    const r = await serviceWithLlm('auto', async () => 'Fix login in src/auth/login.ts.').rewrite({
+      promptText: 'please help me fix the login flow, it is broken somehow, thanks',
+    });
+    expect(r.source).toBe('llm');
+    expect(r.llmTokensSpent).toBeGreaterThan(0);
+  });
+
   it('mode=llm always uses the LLM regardless of length', async () => {
     let called = false;
     const svc = serviceWithLlm('llm', async () => {

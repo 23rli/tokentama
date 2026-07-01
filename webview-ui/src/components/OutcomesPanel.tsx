@@ -25,6 +25,10 @@ export function OutcomesPanel({ outcomes }: { outcomes?: OutcomeReport }) {
       <p class="outcomes-sub">
         retry rate: {adopted}% when adopted · {notAdopted}% when not
       </p>
+      <p class="outcomes-sub">
+        net saved: {fmtNum(outcomes.netTokensSaved)} tokens (−{fmtNum(outcomes.toolTokensSpent)}{' '}
+        Tokentama spend)
+      </p>
     </section>
   );
 }
