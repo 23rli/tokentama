@@ -60,6 +60,8 @@ export interface ComposeResult {
   /** Predicted likelihood this prompt needs a retry (the costliest miss). */
   retryRisk?: 'low' | 'medium' | 'high';
   retryReasons?: string[];
+  /** Offline corpus hint when the prompt names no target the user usually works in. */
+  contextGapHint?: string;
 }
 
 /** Result of an on-demand auto-rewrite of a compose-box draft. */

@@ -80,3 +80,37 @@ describe('RewriteService (auto / LM)', () => {
     expect(r.rewrittenPrompt).toBeTruthy();
   });
 });
+
+describe('RewriteService (cost-aware auto gating)', () => {
+  it('does NOT spend an LLM call on a short, already-specific prompt', async () => {
+    let called = false;
+    const svc = serviceWithLlm('auto', async () => {
+      called = true;
+      return 'x';
+    });
+    const r = await svc.rewrite({ promptText: 'Rename foo in bar.ts.' });
+    expect(called).toBe(false); // offline handles it — no tokens spent
+    expect(r.source).not.toBe('llm');
+  });
+
+  it('DOES use the LLM for a vague prompt with no named target', async () => {
+    let called = false;
+    const svc = serviceWithLlm('auto', async () => {
+      called = true;
+      return 'Fix the login flow in src/auth/login.ts and add a test.';
+    });
+    const r = await svc.rewrite({ promptText: 'fix the login' });
+    expect(called).toBe(true);
+    expect(r.source).toBe('llm');
+  });
+
+  it('mode=llm always uses the LLM regardless of length', async () => {
+    let called = false;
+    const svc = serviceWithLlm('llm', async () => {
+      called = true;
+      return 'Short.';
+    });
+    await svc.rewrite({ promptText: 'Rename foo in bar.ts.' });
+    expect(called).toBe(true);
+  });
+});

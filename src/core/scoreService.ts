@@ -12,6 +12,7 @@ import type { ComposeResult, TipView } from '../webview/contract';
 import type { ScoreTelemetry } from '../telemetry/telemetryService';
 import type { CorpusRecord, CorpusSink } from '../data/corpusStore';
 import { predictRetryRisk, similarRetryStats } from '../analysis/retryRisk';
+import { deriveInsights, hasTarget, type CorpusInsights } from '../analysis/corpusInsights';
 
 const MANUAL_SESSION = 'manual-session';
 
@@ -105,6 +106,7 @@ export class ScoreService {
   private readonly ingestTrackers = new Map<string, SessionTracker>();
   private manualTurn = 0;
   private demoRunning = false;
+  private insightsCache?: { size: number; insights: CorpusInsights };
 
   constructor(
     private readonly store: TamaStore,
@@ -131,6 +133,15 @@ export class ScoreService {
       this.ingestTrackers.set(sessionId, t);
     }
     return t;
+  }
+
+  /** Cached corpus insights (frequent targets), recomputed only when it grows. */
+  private insights(): CorpusInsights {
+    const records = this.corpusReader?.() ?? [];
+    if (!this.insightsCache || this.insightsCache.size !== records.length) {
+      this.insightsCache = { size: records.length, insights: deriveInsights(records) };
+    }
+    return this.insightsCache.insights;
   }
 
   /** Score arbitrary text typed/pasted/selected by the user. */
@@ -233,6 +244,18 @@ export class ScoreService {
       : undefined;
     const retry = predictRetryRisk(resp, { priorAvgRetries: prior?.avgRetries });
 
+    // Context-gap fill (offline, zero tokens): if the prompt names no target but
+    // the corpus shows where the user usually works, nudge them to add it.
+    let contextGapHint: string | undefined;
+    if (text.trim() && !hasTarget(text)) {
+      const targets = this.insights().topTargets;
+      if (targets.length > 0) {
+        contextGapHint = `No file named — you often work in ${targets
+          .slice(0, 2)
+          .join(', ')}. Naming the target avoids a back-and-forth.`;
+      }
+    }
+
     return {
       text,
       overallScore: resp.overallScore,
@@ -243,6 +266,7 @@ export class ScoreService {
       inputTokens: tokens.inputTokens,
       retryRisk: retry.level,
       retryReasons: retry.reasons,
+      contextGapHint,
     };
   }
 

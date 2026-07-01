@@ -32,6 +32,7 @@ export function ComposeBox({ result, auto }: { result?: ComposeResult; auto?: Au
   const scoreClass = score == null ? '' : score >= 60 ? 'high' : score >= 30 ? 'mid' : 'low';
   const retryRisk = matches ? result!.retryRisk : undefined;
   const retryReason = matches ? result!.retryReasons?.[0] : undefined;
+  const contextGap = matches ? result!.contextGapHint : undefined;
 
   const autoMatches = auto != null && auto.text === text;
   const autoRewrite = autoMatches ? auto!.rewrittenPrompt : undefined;
@@ -72,6 +73,12 @@ export function ComposeBox({ result, auto }: { result?: ComposeResult; auto?: Au
           ⚠️ {retryRisk === 'high' ? 'High' : 'Some'} retry risk{retryReason ? ` — ${retryReason}` : ''}.
           Add specifics or use “Rewrite in my style” to land on the first try.
         </p>
+      )}
+
+      {contextGap && <p class="compose-tip">🧩 {contextGap}</p>}
+
+      {autoMatches && auto!.source === 'none' && !rewrite && (
+        <p class="compose-tip">✓ Already efficient — no leaner rewrite needed.</p>
       )}
 
       {rewrite && (

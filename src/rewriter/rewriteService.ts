@@ -1,7 +1,11 @@
 import type { CoachConfig } from '@tokentama/llm-adapters';
 import { chatComplete, isCoachConfigured, leanRewrite } from '@tokentama/llm-adapters';
 import type { TrainingPair } from '../data/corpusStore';
+import { hasTarget } from '../analysis/corpusInsights';
 import { buildRewriteMessages, retrievePairs } from './corpusRetrieval';
+
+/** Below this length, a specific prompt doesn't justify spending an LLM call. */
+const MIN_LLM_CHARS = 80;
 
 export type RewriterMode = 'off' | 'offline' | 'auto' | 'llm';
 
@@ -70,7 +74,7 @@ export class RewriteService {
       model: input.model,
     });
 
-    if (cfg.mode === 'llm' || cfg.mode === 'auto') {
+    if (cfg.mode === 'llm' || (cfg.mode === 'auto' && this.worthLlm(prompt))) {
       const raw = await this.tryLlm(prompt, examples, cfg);
       if (raw) {
         const result = this.present(prompt, cleanRewrite(raw), 'llm', examples.length);
@@ -79,6 +83,17 @@ export class RewriteService {
     }
 
     return this.present(prompt, leanRewrite(prompt), 'offline', examples.length);
+  }
+
+  /**
+   * Cost gate for `auto`: only spend an LLM call when the free offline cleanup
+   * can't do the job — a long prompt worth compressing, or a vague one (no named
+   * target) that needs specifics. Short, already-specific prompts stay offline
+   * (zero tokens), so we save tokens rather than spend them.
+   */
+  private worthLlm(prompt: string): boolean {
+    const t = prompt.trim();
+    return t.length >= MIN_LLM_CHARS || !hasTarget(t);
   }
 
   /** Try the best available model backend; returns raw text or undefined. */
