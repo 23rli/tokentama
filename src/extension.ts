@@ -264,12 +264,14 @@ async function lmRewrite(system: string, user: string): Promise<string> {
   if (!model) throw new Error('No language model available');
   const messages = [vscode.LanguageModelChatMessage.User(`${system}\n\n${user}`)];
   const source = new vscode.CancellationTokenSource();
+  const timeout = setTimeout(() => source.cancel(), 20000);
   try {
     const res = await model.sendRequest(messages, {}, source.token);
     let out = '';
     for await (const part of res.text) out += part;
     return out;
   } finally {
+    clearTimeout(timeout);
     source.dispose();
   }
 }

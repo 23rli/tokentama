@@ -5,7 +5,7 @@ import {
   clampScore,
   estimateTokenUsage,
 } from '@tokentama/scoring-engine';
-import { generateTip, heuristicGenerateTip, type CoachConfig } from '@tokentama/llm-adapters';
+import { generateTip, heuristicGenerateTip, leanRewrite, type CoachConfig } from '@tokentama/llm-adapters';
 import { SessionTracker, buildPromptEvent } from '../capture/parsers';
 import type { TamaStore } from '../state/tamaStore';
 import type { ComposeResult, TipView } from '../webview/contract';
@@ -216,8 +216,14 @@ export class ScoreService {
         overallScore: resp.overallScore,
       });
       tip = t.shortTip;
-      rewrittenPrompt = t.rewrittenPrompt;
-      estimatedTokenReductionPct = t.estimatedSavings?.estimatedTokenReductionPct;
+      // Live suggestion = the pure lean rewrite (genuinely shorter, honest %). The
+      // fuller, corpus/LLM rewrite is produced by the explicit "Rewrite in my style".
+      const trimmed = text.trim();
+      const lean = leanRewrite(text);
+      if (lean !== trimmed && lean.length < trimmed.length) {
+        rewrittenPrompt = lean;
+        estimatedTokenReductionPct = Math.round((1 - lean.length / trimmed.length) * 100);
+      }
     }
 
     // Retry risk: a re-ask re-sends the whole turn, so this is the costliest miss.

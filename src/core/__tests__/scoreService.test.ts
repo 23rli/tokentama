@@ -23,12 +23,16 @@ describe('ScoreService.scoreDraft (compose box)', () => {
     expect(r.inputTokens).toBeGreaterThan(0);
   });
 
-  it('offers a leaner rewrite for a padded, vague prompt', () => {
+  it('offers a leaner, honest rewrite for a padded prompt', () => {
     const svc = makeService();
-    const r = svc.scoreDraft(
-      'Could you please, if it is not too much trouble, kindly help me make the thing work better, you know what I mean.',
-    );
+    const prompt =
+      'Could you please, if it is not too much trouble, kindly help me fix the login flow. Thanks so much!';
+    const r = svc.scoreDraft(prompt);
     expect(r.rewrittenPrompt).toBeTruthy();
+    expect(r.rewrittenPrompt!.length).toBeLessThan(prompt.length);
+    expect(r.rewrittenPrompt!.toLowerCase()).not.toContain('please');
+    expect(r.rewrittenPrompt!.toLowerCase()).not.toContain('thanks');
+    expect(r.estimatedTokenReductionPct!).toBeGreaterThan(0);
     expect(r.tip).toBeTruthy();
   });
 
