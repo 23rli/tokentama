@@ -1,5 +1,5 @@
-import type { ScoredEventView } from '../../../src/webview/contract';
-import { summarizeContext } from '../../../src/analysis/contextBreakdown';
+import type { ModelInfo, ScoredEventView } from '../../../src/webview/contract';
+import { summarizeContext, toolAdvisory } from '../../../src/analysis/contextBreakdown';
 import { fmtNum } from '../format';
 
 /**
@@ -8,10 +8,19 @@ import { fmtNum } from '../format';
  * every turn; the user's message is usually a sliver. That overhead is a stable,
  * cacheable prefix — the biggest lever for real savings.
  */
-export function ContextPanel({ lastEvent }: { lastEvent?: ScoredEventView }) {
+export function ContextPanel({
+  lastEvent,
+  model,
+}: {
+  lastEvent?: ScoredEventView;
+  model?: ModelInfo;
+}) {
   const slices = lastEvent?.contextBreakdown;
-  const summary = summarizeContext(slices, lastEvent?.inputTokens ?? 0);
+  const totalIn = lastEvent?.inputTokens ?? 0;
+  const summary = summarizeContext(slices, totalIn);
   if (!summary) return null;
+  const advisory = toolAdvisory(slices, totalIn, model?.inputPer1M);
+  const unit = model?.inputPer1M != null ? 'AICs' : '';
 
   const palette = ['#539bf5', '#d29922', '#3fb950', '#a371f7', '#f85149', '#8b949e'];
 
@@ -25,9 +34,12 @@ export function ContextPanel({ lastEvent }: { lastEvent?: ScoredEventView }) {
       <div class="context-bar">
         {summary.slices.map((s, i) => (
           <div
-            key={s.label}
+            key={`${s.label}-${i}`}
             class="context-seg"
-            style={{ width: `${s.pct}%`, background: palette[i % palette.length] }}
+            style={{
+              width: `${(s.tokens / summary.totalTokens) * 100}%`,
+              background: palette[i % palette.length],
+            }}
             title={`${s.label}: ${fmtNum(s.tokens)} tokens (${s.pct}%)`}
           />
         ))}
@@ -35,7 +47,7 @@ export function ContextPanel({ lastEvent }: { lastEvent?: ScoredEventView }) {
 
       <ul class="context-legend">
         {summary.slices.map((s, i) => (
-          <li key={s.label}>
+          <li key={`${s.label}-${i}`}>
             <span class="context-dot" style={{ background: palette[i % palette.length] }} />
             <span class="context-label">{s.label}</span>
             <span class="context-val">
@@ -50,6 +62,17 @@ export function ContextPanel({ lastEvent }: { lastEvent?: ScoredEventView }) {
         tokens) — a stable prefix that's cacheable. Trim unused tools and avoid re-pasting context
         to keep that cache warm.
       </p>
+
+      {advisory?.recommend && (
+        <div class="context-advisory">
+          🔧 Tool definitions are {advisory.toolPct}% of every prompt ({fmtNum(advisory.toolTokens)}{' '}
+          tokens, re-sent each turn). Disable unused tools / MCP servers to cut this on every turn
+          {advisory.costPerDay != null && (
+            <> — ≈{advisory.costPerDay.toFixed(1)} {unit}/day saved (est.)</>
+          )}
+          .
+        </div>
+      )}
     </section>
   );
 }

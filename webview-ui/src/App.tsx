@@ -41,7 +41,7 @@ export function App() {
         <ComposeBox result={compose} auto={auto} />
         <ImpactTrio metrics={state.metrics} />
         <LiveData state={state} />
-        <ContextPanel lastEvent={state.lastEvent} />
+        <ContextPanel lastEvent={state.lastEvent} model={state.model} />
         <QualityBars lastEvent={state.lastEvent} />
         <CoachingPanel tip={state.tip} lastEvent={state.lastEvent} />
       </div>

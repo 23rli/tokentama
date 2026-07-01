@@ -66,3 +66,49 @@ export function cacheSavings(
   const cached = (overheadTokens * cacheReadPer1M) / 1_000_000;
   return Math.max(0, full - cached);
 }
+
+/** Illustrative turns/day used to project the per-turn tool tax into a daily figure. */
+export const TURNS_PER_DAY = 50;
+/** Tool-definition share (%) at which we surface the "trim your tools" advisory. */
+export const TOOL_ADVISORY_PCT = 25;
+
+export interface ToolAdvisory {
+  /** Tokens spent on tool definitions on THIS turn (re-sent every turn). */
+  toolTokens: number;
+  toolPct: number;
+  /** Credits/USD spent on tool definitions per turn, at the input rate. */
+  costPerTurn?: number;
+  /** Illustrative cost over a TURNS_PER_DAY day — tool overhead is paid every turn. */
+  costPerDay?: number;
+  /** True when tool definitions are a large enough share to be worth trimming. */
+  recommend: boolean;
+}
+
+/**
+ * Tool-definition overhead advisory. Tool definitions are re-sent on EVERY turn,
+ * so a large share is the highest-leverage thing to cut — disabling unused tools/
+ * MCP servers reduces every future turn (and shrinks the cacheable prefix).
+ */
+export function toolAdvisory(
+  slices: ContextSlice[] | undefined,
+  totalInputTokens: number,
+  inputPer1M?: number,
+): ToolAdvisory | undefined {
+  if (!slices || slices.length === 0 || !(totalInputTokens > 0)) return undefined;
+  const toolTokens = slices
+    .filter((s) => s.label === 'Tool Definitions')
+    .reduce((sum, s) => sum + s.tokens, 0);
+  if (toolTokens <= 0) return undefined;
+
+  const toolPct = Math.round((toolTokens / totalInputTokens) * 100);
+  const costPerTurn =
+    inputPer1M != null ? (toolTokens * inputPer1M) / 1_000_000 : undefined;
+  return {
+    toolTokens,
+    toolPct,
+    costPerTurn,
+    costPerDay: costPerTurn != null ? costPerTurn * TURNS_PER_DAY : undefined,
+    recommend: toolPct >= TOOL_ADVISORY_PCT,
+  };
+}
+

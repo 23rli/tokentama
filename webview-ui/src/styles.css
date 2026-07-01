@@ -1014,6 +1014,15 @@ button.ghost:hover {
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
 }
+.context-advisory {
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-charts-orange, #db8e28);
+  background: color-mix(in srgb, var(--vscode-charts-orange, #db8e28) 12%, transparent);
+  color: var(--vscode-foreground);
+}
 
 /* ============================================================================
    No-scroll redesign — EcoScore + impact showcase. Overrides above where needed.
