@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { summarizeContext, cacheSavings, toolAdvisory, TURNS_PER_DAY } from '../contextBreakdown';
+import {
+  summarizeContext,
+  cacheSavings,
+  toolAdvisory,
+  historyAdvisory,
+  TURNS_PER_DAY,
+  HISTORY_NUDGE_TOKENS,
+} from '../contextBreakdown';
 import type { ContextSlice } from '@tokentama/shared-types';
 
 const slices: ContextSlice[] = [
@@ -61,5 +68,23 @@ describe('toolAdvisory', () => {
       { category: 'User Context', label: 'Messages', pct: 100, tokens: 10000 },
     ];
     expect(toolAdvisory(none, 10000, 500)).toBeUndefined();
+  });
+});
+
+describe('historyAdvisory', () => {
+  it('recommends compaction once conversation history is large', () => {
+    const big: ContextSlice[] = [
+      { category: 'System', label: 'System Instructions', pct: 10, tokens: 5000 },
+      { category: 'User Context', label: 'Messages', pct: 90, tokens: 45000 },
+    ];
+    const a = historyAdvisory(summarizeContext(big, 50000))!;
+    expect(a.conversationTokens).toBe(45000);
+    expect(a.recommend).toBe(true);
+  });
+
+  it('does not nudge for a small session', () => {
+    const a = historyAdvisory(summarizeContext(slices, 10000))!;
+    expect(a.conversationTokens).toBeLessThan(HISTORY_NUDGE_TOKENS);
+    expect(a.recommend).toBe(false);
   });
 });

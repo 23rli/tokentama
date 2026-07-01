@@ -52,6 +52,9 @@ export interface ComposeResult {
   rewrittenPrompt?: string;
   estimatedTokenReductionPct?: number;
   inputTokens: number;
+  /** Predicted likelihood this prompt needs a retry (the costliest miss). */
+  retryRisk?: 'low' | 'medium' | 'high';
+  retryReasons?: string[];
 }
 
 /** Result of an on-demand auto-rewrite of a compose-box draft. */

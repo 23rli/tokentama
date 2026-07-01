@@ -1,5 +1,5 @@
 import type { ModelInfo, ScoredEventView } from '../../../src/webview/contract';
-import { summarizeContext, toolAdvisory } from '../../../src/analysis/contextBreakdown';
+import { summarizeContext, toolAdvisory, historyAdvisory } from '../../../src/analysis/contextBreakdown';
 import { fmtNum } from '../format';
 
 /**
@@ -20,6 +20,7 @@ export function ContextPanel({
   const summary = summarizeContext(slices, totalIn);
   if (!summary) return null;
   const advisory = toolAdvisory(slices, totalIn, model?.inputPer1M);
+  const history = historyAdvisory(summary);
   const unit = model?.inputPer1M != null ? 'AICs' : '';
 
   const palette = ['#539bf5', '#d29922', '#3fb950', '#a371f7', '#f85149', '#8b949e'];
@@ -71,6 +72,13 @@ export function ContextPanel({
             <> — ≈{advisory.costPerDay.toFixed(1)} {unit}/day saved (est.)</>
           )}
           .
+        </div>
+      )}
+
+      {history?.recommend && (
+        <div class="context-advisory">
+          🧹 This chat carries {fmtNum(history.conversationTokens)} tokens of context/history — re-sent
+          every turn. Start a fresh chat or summarize to stop paying for it repeatedly.
         </div>
       )}
     </section>

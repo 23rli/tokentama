@@ -10,7 +10,8 @@ import { SessionTracker, buildPromptEvent } from '../capture/parsers';
 import type { TamaStore } from '../state/tamaStore';
 import type { ComposeResult, TipView } from '../webview/contract';
 import type { ScoreTelemetry } from '../telemetry/telemetryService';
-import type { CorpusSink } from '../data/corpusStore';
+import type { CorpusRecord, CorpusSink } from '../data/corpusStore';
+import { predictRetryRisk, similarRetryStats } from '../analysis/retryRisk';
 
 const MANUAL_SESSION = 'manual-session';
 
@@ -111,6 +112,7 @@ export class ScoreService {
     private readonly log?: (message: string) => void,
     private readonly telemetry?: ScoreTelemetry,
     private readonly corpus?: CorpusSink,
+    private readonly corpusReader?: () => CorpusRecord[],
   ) {}
 
   private tracker(sessionId: string): SessionTracker {
@@ -217,6 +219,14 @@ export class ScoreService {
       rewrittenPrompt = t.rewrittenPrompt;
       estimatedTokenReductionPct = t.estimatedSavings?.estimatedTokenReductionPct;
     }
+
+    // Retry risk: a re-ask re-sends the whole turn, so this is the costliest miss.
+    const model = this.store.getState().model?.family;
+    const prior = this.corpusReader
+      ? similarRetryStats(this.corpusReader(), categories, model)
+      : undefined;
+    const retry = predictRetryRisk(resp, { priorAvgRetries: prior?.avgRetries });
+
     return {
       text,
       overallScore: resp.overallScore,
@@ -225,6 +235,8 @@ export class ScoreService {
       rewrittenPrompt,
       estimatedTokenReductionPct,
       inputTokens: tokens.inputTokens,
+      retryRisk: retry.level,
+      retryReasons: retry.reasons,
     };
   }
 

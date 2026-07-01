@@ -112,3 +112,24 @@ export function toolAdvisory(
   };
 }
 
+/** Conversation/history size (tokens) at which we suggest a fresh chat / compaction. */
+export const HISTORY_NUDGE_TOKENS = 20000;
+
+export interface HistoryAdvisory {
+  conversationTokens: number;
+  recommend: boolean;
+}
+
+/**
+ * Session-hygiene advisory. Everything conversation-specific (your messages,
+ * accumulated history, attached files) is re-sent on every turn, so a bloated
+ * session pays that tax repeatedly — a fresh chat or a summary compaction cuts it.
+ */
+export function historyAdvisory(summary: ContextSummary | undefined): HistoryAdvisory | undefined {
+  if (!summary) return undefined;
+  return {
+    conversationTokens: summary.conversationTokens,
+    recommend: summary.conversationTokens >= HISTORY_NUDGE_TOKENS,
+  };
+}
+

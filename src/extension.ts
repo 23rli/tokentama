@@ -54,7 +54,9 @@ export function activate(context: vscode.ExtensionContext): void {
     () => vscode.workspace.getConfiguration('tokentama.corpus').get<boolean>('storeRawText', true),
   );
 
-  const scoreService = new ScoreService(store, getCoachConfig, log, telemetry, corpus);
+  const scoreService = new ScoreService(store, getCoachConfig, log, telemetry, corpus, () =>
+    corpus.all(),
+  );
 
   const getRewriteConfig = async (): Promise<RewriteConfig> => {
     const cfg = vscode.workspace.getConfiguration('tokentama.rewriter');

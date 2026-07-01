@@ -126,6 +126,8 @@ export function toTrainingPair(rec: CorpusRecord): TrainingPair | null {
 export class CorpusStore implements CorpusSink {
   private readonly file: string;
   private readonly keys = new Set<string>();
+  /** In-memory record cache so reads never re-parse the file. */
+  private records: CorpusRecord[] = [];
 
   constructor(
     private readonly dir: string,
@@ -133,16 +135,17 @@ export class CorpusStore implements CorpusSink {
     private readonly storeRawText: () => boolean,
   ) {
     this.file = join(dir, 'corpus.jsonl');
-    this.loadKeys();
+    this.load();
   }
 
-  private loadKeys(): void {
+  private load(): void {
     try {
       if (!existsSync(this.file)) return;
       for (const line of readFileSync(this.file, 'utf8').split(/\r?\n/)) {
         if (!line.trim()) continue;
         try {
           const rec = JSON.parse(line) as CorpusRecord;
+          this.records.push(rec);
           this.keys.add(`${rec.sessionId}:${rec.turnIndex}`);
         } catch {
           /* skip malformed line */
@@ -162,6 +165,7 @@ export class CorpusStore implements CorpusSink {
       mkdirSync(this.dir, { recursive: true });
       appendFileSync(this.file, JSON.stringify(rec) + '\n', 'utf8');
       this.keys.add(key);
+      this.records.push(rec);
     } catch {
       /* best-effort — never break scoring on a write error */
     }
@@ -172,21 +176,7 @@ export class CorpusStore implements CorpusSink {
   }
 
   all(): CorpusRecord[] {
-    const out: CorpusRecord[] = [];
-    try {
-      if (!existsSync(this.file)) return out;
-      for (const line of readFileSync(this.file, 'utf8').split(/\r?\n/)) {
-        if (!line.trim()) continue;
-        try {
-          out.push(JSON.parse(line) as CorpusRecord);
-        } catch {
-          /* skip */
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-    return out;
+    return this.records;
   }
 
   /** All valid (original → lean) training pairs currently in the corpus. */
