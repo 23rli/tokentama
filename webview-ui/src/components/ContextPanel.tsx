@@ -1,5 +1,6 @@
 import type { ModelInfo, ScoredEventView } from '../../../src/webview/contract';
 import { summarizeContext, toolAdvisory, historyAdvisory } from '../../../src/analysis/contextBreakdown';
+import { post } from '../vscodeApi';
 import { fmtNum } from '../format';
 
 /**
@@ -78,7 +79,12 @@ export function ContextPanel({
       {history?.recommend && (
         <div class="context-advisory">
           🧹 This chat carries {fmtNum(history.conversationTokens)} tokens of context/history — re-sent
-          every turn. Start a fresh chat or summarize to stop paying for it repeatedly.
+          every turn. Compact it into a lean recap and keep going.
+          <div class="advisory-actions">
+            <button class="primary" onClick={() => post({ type: 'compactSession' })}>
+              Compact — fresh chat + summary
+            </button>
+          </div>
         </div>
       )}
     </section>

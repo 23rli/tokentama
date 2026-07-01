@@ -13,6 +13,8 @@ import { hashText } from './telemetry/hash';
 import type { TelemetryEvent } from './types/Telemetry';
 import { CorpusStore } from './data/corpusStore';
 import { RewriteService, type RewriteConfig, type RewriterMode } from './rewriter/rewriteService';
+import { summarizeContext, historyAdvisory } from './analysis/contextBreakdown';
+import { buildSessionSummary } from './analysis/sessionSummary';
 
 const SECRET_KEY = 'tokentama.llmApiKey';
 
@@ -75,6 +77,32 @@ export function activate(context: vscode.ExtensionContext): void {
 
   store.onDidChange((state) => statusBar.update(state));
   statusBar.update(store.getState());
+
+  // Proactive, once-per-bloat nudge: when the chat's history grows large enough to
+  // be worth compacting, surface it prominently with a one-click action. Re-arms
+  // after history drops (i.e. a fresh chat), so it fires once per bloated session.
+  let historyNudged = false;
+  store.onDidChange((state) => {
+    const summary = summarizeContext(
+      state.lastEvent?.contextBreakdown,
+      state.lastEvent?.inputTokens ?? 0,
+    );
+    const advisory = historyAdvisory(summary);
+    if (advisory?.recommend && !historyNudged) {
+      historyNudged = true;
+      const kt = Math.round(advisory.conversationTokens / 1000);
+      void vscode.window
+        .showWarningMessage(
+          `Tokentama: this chat carries ~${kt}k tokens of history — re-sent on every turn. Compact it to a lean summary?`,
+          'Start fresh chat (summary copied)',
+        )
+        .then((choice) => {
+          if (choice) void vscode.commands.executeCommand('tokentama.compactSession');
+        });
+    } else if (!advisory?.recommend) {
+      historyNudged = false;
+    }
+  });
 
   let watcher: CopilotWatcher | undefined;
   let announcedCapture = false;
@@ -205,6 +233,9 @@ export function activate(context: vscode.ExtensionContext): void {
       ingestHistory(scoreService, corpus, log, workspaceHash),
     ),
     vscode.commands.registerCommand('tokentama.exportCorpus', () => exportCorpus(corpus, log)),
+    vscode.commands.registerCommand('tokentama.compactSession', () =>
+      compactSession(workspaceHash, log),
+    ),
   );
 
   registerChatParticipant(context, scoreService, store, log);
@@ -542,5 +573,49 @@ async function exportCorpus(corpus: CorpusStore, log: (message: string) => void)
   log(`exportCorpus: wrote ${records.length} records and ${pairs.length} training pairs to ${dir.fsPath}`);
   void vscode.window.showInformationMessage(
     `Tokentama corpus exported: ${records.length} records, ${pairs.length} training pairs → ${dir.fsPath}.`,
+  );
+}
+
+/**
+ * One-click session compaction. Builds a compact recap of the current chat's
+ * prompts, copies it to the clipboard, and opens a fresh Copilot chat — so the
+ * user drops the re-sent-every-turn history and pastes a lean summary instead.
+ */
+async function compactSession(
+  workspaceHash: string | undefined,
+  log: (message: string) => void,
+): Promise<void> {
+  let prompts: string[] = [];
+  try {
+    const active = findActiveSession(undefined, workspaceHash) ?? findActiveSession();
+    if (active) {
+      prompts = readSessionEvents(active)
+        .filter((e) => e.promptText.trim())
+        .map((e) => e.promptText);
+    }
+  } catch {
+    /* fall back to an empty recap */
+  }
+
+  const summary = buildSessionSummary(prompts);
+  await vscode.env.clipboard.writeText(summary);
+
+  // Open a fresh chat via whichever command this VS Code build exposes.
+  let opened = false;
+  for (const cmd of ['workbench.action.chat.newChat', 'workbench.action.chat.new']) {
+    try {
+      await vscode.commands.executeCommand(cmd);
+      opened = true;
+      break;
+    } catch {
+      /* try the next id */
+    }
+  }
+
+  log(`compactSession: recap of ${prompts.length} prompt(s) copied${opened ? ', fresh chat opened' : ''}.`);
+  void vscode.window.showInformationMessage(
+    opened
+      ? 'Fresh chat opened — your session recap is on the clipboard. Paste it to keep context at a fraction of the tokens.'
+      : 'Session recap copied to clipboard. Start a new Copilot chat (＋) and paste it to keep context lean.',
   );
 }

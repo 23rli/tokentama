@@ -117,6 +117,12 @@
         "title": "Export training corpus (JSONL)",
         "category": "Tokentama",
         "icon": "$(cloud-download)"
+      },
+      {
+        "command": "tokentama.compactSession",
+        "title": "Compact session (fresh chat + summary)",
+        "category": "Tokentama",
+        "icon": "$(combine)"
       }
     ],
     "menus": {
@@ -145,6 +151,11 @@
           "command": "tokentama.ingestHistory",
           "when": "view == tokentama.dashboard",
           "group": "navigation@6"
+        },
+        {
+          "command": "tokentama.compactSession",
+          "when": "view == tokentama.dashboard",
+          "group": "navigation@7"
         },
         {
           "command": "tokentama.scorePrompt",

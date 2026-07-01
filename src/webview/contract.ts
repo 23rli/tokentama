@@ -148,4 +148,5 @@ export type WebviewMessage =
   | { type: 'copyTip'; text: string }
   | { type: 'composeInput'; text: string }
   | { type: 'autoRewrite'; text: string }
-  | { type: 'copyToCopilot'; text: string; adopted: boolean };
+  | { type: 'copyToCopilot'; text: string; adopted: boolean }
+  | { type: 'compactSession' };

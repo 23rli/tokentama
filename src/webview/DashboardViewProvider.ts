@@ -83,6 +83,9 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
       case 'copyToCopilot':
         this.handlers.copyToCopilot({ text: msg.text, adopted: msg.adopted });
         break;
+      case 'compactSession':
+        void vscode.commands.executeCommand('tokentama.compactSession');
+        break;
     }
   }
 
