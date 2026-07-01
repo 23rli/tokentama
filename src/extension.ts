@@ -69,12 +69,12 @@ export function activate(context: vscode.ExtensionContext): void {
     const coach = await getCoachConfig();
     const model = cfg.get<string>('model')?.trim();
     return {
-      mode: cfg.get<string>('mode', 'offline') as RewriterMode,
+      mode: cfg.get<string>('mode', 'auto') as RewriterMode,
       fewShotK: cfg.get<number>('fewShotK', 3),
       coach: model ? { ...coach, deployment: model } : coach,
     };
   };
-  const rewriteService = new RewriteService(corpus, getRewriteConfig);
+  const rewriteService = new RewriteService(corpus, getRewriteConfig, lmRewrite);
 
   const statusBar = new StatusBar();
   context.subscriptions.push(statusBar);
@@ -249,6 +249,29 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {
   /* disposables are cleaned up via context.subscriptions */
+}
+
+/**
+ * Rewrite completion backed by the VS Code Language Model API — uses the user's
+ * OWN Copilot models (no API key). Throws if the LM is unavailable or unauthorized
+ * so the rewriter falls back to the offline cleanup.
+ */
+async function lmRewrite(system: string, user: string): Promise<string> {
+  if (!vscode.lm?.selectChatModels) throw new Error('LM API unavailable');
+  let models = await vscode.lm.selectChatModels({ vendor: 'copilot', family: 'gpt-4o-mini' });
+  if (models.length === 0) models = await vscode.lm.selectChatModels({ vendor: 'copilot' });
+  const model = models[0];
+  if (!model) throw new Error('No language model available');
+  const messages = [vscode.LanguageModelChatMessage.User(`${system}\n\n${user}`)];
+  const source = new vscode.CancellationTokenSource();
+  try {
+    const res = await model.sendRequest(messages, {}, source.token);
+    let out = '';
+    for await (const part of res.text) out += part;
+    return out;
+  } finally {
+    source.dispose();
+  }
 }
 
 function registerChatParticipant(

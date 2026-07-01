@@ -9,6 +9,13 @@ function service(mode: RewriteConfig['mode']): RewriteService {
   return new RewriteService(emptyCorpus, async () => ({ mode, fewShotK: 3, coach }));
 }
 
+function serviceWithLlm(
+  mode: RewriteConfig['mode'],
+  llm: (system: string, user: string) => Promise<string>,
+): RewriteService {
+  return new RewriteService(emptyCorpus, async () => ({ mode, fewShotK: 3, coach }), llm);
+}
+
 describe('cleanRewrite', () => {
   it('strips code fences and surrounding quotes', () => {
     expect(cleanRewrite('```\nFix the bug.\n```')).toBe('Fix the bug.');
@@ -17,16 +24,18 @@ describe('cleanRewrite', () => {
 });
 
 describe('RewriteService (offline)', () => {
-  it('returns a leaner rewrite for a padded, vague prompt', async () => {
+  it('strips politeness for a padded prompt', async () => {
     const promptText =
-      'Could you please, if it is not too much trouble, kindly help me make the thing work better, you know what I mean.';
+      'Could you please, if it is not too much trouble, kindly help me make the thing work better. Thanks so much!';
     const r = await service('offline').rewrite({ promptText });
     expect(r.source).toBe('offline');
     expect(r.rewrittenPrompt).toBeTruthy();
     expect(r.rewrittenPrompt!.length).toBeLessThan(promptText.length);
+    expect(r.rewrittenPrompt!.toLowerCase()).not.toContain('thanks');
+    expect(r.rewrittenPrompt!.toLowerCase()).not.toContain('please');
   });
 
-  it('net-savings guard: no rewrite for an already-lean prompt', async () => {
+  it('no rewrite for an already-lean prompt', async () => {
     const r = await service('offline').rewrite({
       promptText: 'Add a unit test for parseEmail covering empty, valid, and malformed input.',
     });
@@ -42,5 +51,32 @@ describe('RewriteService (offline)', () => {
   it('empty input yields nothing', async () => {
     const r = await service('offline').rewrite({ promptText: '   ' });
     expect(r.source).toBe('none');
+  });
+});
+
+describe('RewriteService (auto / LM)', () => {
+  it('always surfaces an explicitly-produced LM rewrite, even when longer (clarified)', async () => {
+    const longer =
+      'Refactor validateEmail in src/utils.ts to use one regex and return a typed Result; add a test for empty and malformed input.';
+    const r = await serviceWithLlm('auto', async () => longer).rewrite({ promptText: 'fix the email thing' });
+    expect(r.source).toBe('llm');
+    expect(r.rewrittenPrompt).toBe(longer);
+    expect(r.clarified).toBe(true);
+  });
+
+  it('reports % saved when the LM rewrite is shorter', async () => {
+    const r = await serviceWithLlm('auto', async () => 'Fix login.').rewrite({
+      promptText: 'Please could you kindly help me fix the login flow, thank you so much.',
+    });
+    expect(r.source).toBe('llm');
+    expect(r.estimatedTokenReductionPct).toBeGreaterThan(0);
+  });
+
+  it('falls back to the offline cleanup when the LM fails', async () => {
+    const r = await serviceWithLlm('auto', async () => {
+      throw new Error('no access');
+    }).rewrite({ promptText: 'Please kindly fix the bug, thanks!' });
+    expect(r.source).toBe('offline');
+    expect(r.rewrittenPrompt).toBeTruthy();
   });
 });

@@ -17,7 +17,7 @@ const RETRY_FILLER =
 
 // Politeness / hedging padding stripped from the rewrite so the real ask stands out.
 const FILLER_PATTERN =
-  /\b(could you please|if it'?s not too much trouble|if it is not too much trouble|if possible|i was wondering if|i would (?:really )?(?:appreciate|like)|would you mind|when you get a chance|kindly|thanks in advance|maybe|possibly|kind of|sort of|the usual stuff|please)\b[.,!]?/gi;
+  /\b(?:could you please|can you please|would you please|could you|can you|would you mind|if it'?s not too much trouble|if it is not too much trouble|if you (?:could|can|don'?t mind)|if possible|i was wondering if|i(?:'d| would) (?:really |just )?(?:appreciate|like|love)(?: it| this)?(?: if)?|when you (?:get a chance|have (?:a )?(?:moment|minute|sec|time))|whenever you (?:can|get a chance)|no rush|feel free to|thank you(?: so much| very much| a lot| in advance)?|thanks(?: so much| a lot| a ton| in advance)?|much appreciated|i (?:really )?appreciate(?: it| this)?|cheers|kindly|maybe|possibly|kind of|sort of|the usual stuff|please|pls|plz)\b[.,!]*/gi;
 
 function dedupeSentences(text: string): string {
   const seen = new Set<string>();
@@ -37,14 +37,22 @@ function dedupeSentences(text: string): string {
  * appending any coaching guidance — so it's always leaner. Used by the auto-rewriter.
  */
 export function leanRewrite(promptText: string): string {
-  let core = dedupeSentences(promptText)
-    .replace(RETRY_FILLER, '')
-    .replace(FILLER_PATTERN, '')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\s+([.,!?])/g, '$1')
-    .replace(/^(?:and|also|so|well|um|please)[,\s]+/i, '')
-    .trim();
+  // Strip filler per sentence and drop sentences that become empty (e.g. "Thanks!").
+  const sentences = splitSentences(dedupeSentences(promptText));
+  const cleaned = sentences
+    .map((s) =>
+      s
+        .replace(RETRY_FILLER, '')
+        .replace(FILLER_PATTERN, '')
+        .replace(/^(?:and|also|so|well|um|ok|okay|hi|hey|hello)[,\s]+/i, '')
+        .replace(/\s{2,}/g, ' ')
+        .replace(/\s+([.,!?;:])/g, '$1')
+        .replace(/^[\s,;:.!?-]+/, '')
+        .trim(),
+    )
+    .filter((s) => s.replace(/[^a-z0-9]/gi, '').length >= 2);
 
+  let core = cleaned.join(' ').replace(/\s{2,}/g, ' ').trim();
   if (!core || core.replace(/[^a-z0-9]/gi, '').length < 3) {
     core = 'State the exact task and the target (file / function / component)';
   }

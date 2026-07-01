@@ -304,15 +304,17 @@
           "enum": [
             "off",
             "offline",
+            "auto",
             "llm"
           ],
           "enumDescriptions": [
             "No automatic rewrite.",
-            "Deterministic offline rewrite — zero token cost (recommended default).",
-            "Corpus few-shot rewrite via a (cheap) configured model, style-matched; falls back to offline on any error."
+            "Deterministic offline cleanup only (strips filler/politeness) — zero tokens.",
+            "Use your own Copilot model (via VS Code) for a real rewrite; falls back to offline cleanup if unavailable (recommended).",
+            "Use an external LLM provider configured under tokentama.coaching."
           ],
-          "default": "offline",
-          "description": "How the 'Rewrite in my style' action produces a leaner prompt. Only ever surfaces a rewrite that is actually shorter, so using it always saves tokens."
+          "default": "auto",
+          "description": "How the 'Rewrite in my style' action produces a leaner, more precise prompt."
         },
         "tokentama.rewriter.model": {
           "type": "string",

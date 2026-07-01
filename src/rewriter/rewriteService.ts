@@ -1,13 +1,9 @@
 import type { CoachConfig } from '@tokentama/llm-adapters';
-import { chatComplete, leanRewrite } from '@tokentama/llm-adapters';
-import { scorePrompt } from '@tokentama/scoring-engine';
+import { chatComplete, isCoachConfigured, leanRewrite } from '@tokentama/llm-adapters';
 import type { TrainingPair } from '../data/corpusStore';
 import { buildRewriteMessages, retrievePairs } from './corpusRetrieval';
 
-/** Minimum score gain for a longer rewrite to count as "clearer" (worth the tokens). */
-const CLARITY_MARGIN = 8;
-
-export type RewriterMode = 'off' | 'offline' | 'llm';
+export type RewriterMode = 'off' | 'offline' | 'auto' | 'llm';
 
 export interface RewriteConfig {
   mode: RewriterMode;
@@ -17,8 +13,9 @@ export interface RewriteConfig {
 
 export interface RewriteResult {
   rewrittenPrompt?: string;
+  /** Positive % when the rewrite is shorter; undefined when it adds specificity. */
   estimatedTokenReductionPct?: number;
-  /** True when the rewrite is longer but reduces vagueness to avoid retries. */
+  /** True when the rewrite is longer because it added specifics to avoid retries. */
   clarified?: boolean;
   source: 'offline' | 'llm' | 'none';
   /** How many corpus examples informed the rewrite. */
@@ -28,6 +25,12 @@ export interface RewriteResult {
 export interface CorpusPairs {
   trainingPairs(): TrainingPair[];
 }
+
+/**
+ * A single-turn completion (system, user) → text. Injected so the service can use
+ * VS Code's Language Model API — the user's own Copilot models, no API key.
+ */
+export type LlmComplete = (system: string, user: string) => Promise<string>;
 
 /** Strip code fences / surrounding quotes an LLM might wrap the rewrite in. */
 export function cleanRewrite(raw: string): string {
@@ -39,18 +42,20 @@ export function cleanRewrite(raw: string): string {
 }
 
 /**
- * Automatic prompt rewriter. Savings-first:
- *  - offline (default): deterministic heuristic rewrite, zero token cost.
- *  - llm: corpus few-shot through a (cheap) configured model, style-matched,
- *    falling back to the offline rewrite on any failure.
+ * Automatic prompt rewriter. When asked explicitly it uses a real model to turn a
+ * rough/vague ask into a precise, self-contained prompt that gets the SAME result
+ * with fewer total tokens — adding the minimal specifics needed to avoid retries,
+ * or cutting filler when the prompt is padded.
  *
- * A net-savings guard means we only ever surface a rewrite that is genuinely
- * leaner than the original, so using the rewrite always saves tokens downstream.
+ * Backends, in order: the injected VS Code Language Model (your own Copilot models,
+ * no key), then an external provider if configured, then the offline cleaning
+ * rewrite. An explicitly-requested rewrite is always shown.
  */
 export class RewriteService {
   constructor(
     private readonly corpus: CorpusPairs,
     private readonly getConfig: () => Promise<RewriteConfig>,
+    private readonly llmComplete?: LlmComplete,
   ) {}
 
   async rewrite(input: { promptText: string; model?: string }): Promise<RewriteResult> {
@@ -65,42 +70,51 @@ export class RewriteService {
       model: input.model,
     });
 
-    if (cfg.mode === 'llm') {
-      try {
-        const { system, user } = buildRewriteMessages(prompt, examples);
-        const maxTokens = Math.min(400, Math.ceil(prompt.length / 3) + 60);
-        const raw = await chatComplete(cfg.coach, system, user, { temperature: 0.3, maxTokens });
-        const cleaned = cleanRewrite(raw);
-        const result = this.finalize(prompt, cleaned, 'llm', examples.length);
+    if (cfg.mode === 'llm' || cfg.mode === 'auto') {
+      const raw = await this.tryLlm(prompt, examples, cfg);
+      if (raw) {
+        const result = this.present(prompt, cleanRewrite(raw), 'llm', examples.length);
         if (result.rewrittenPrompt) return result;
-      } catch {
-        /* fall back to the offline rewrite below */
       }
     }
 
-    return this.finalize(prompt, this.offlineRewrite(prompt), 'offline', examples.length);
+    return this.present(prompt, leanRewrite(prompt), 'offline', examples.length);
   }
 
-  private offlineRewrite(prompt: string): string {
-    // Cleaning-only lean rewrite — never appends guidance, so it's genuinely shorter.
-    return leanRewrite(prompt);
-  }
-
-  private scoreOf(text: string): number {
-    return scorePrompt({
-      sessionId: 'rewrite',
-      userId: 'local',
-      promptText: text,
-      metadata: { promptLengthChars: text.length },
-    }).overallScore;
+  /** Try the best available model backend; returns raw text or undefined. */
+  private async tryLlm(
+    prompt: string,
+    examples: TrainingPair[],
+    cfg: RewriteConfig,
+  ): Promise<string | undefined> {
+    const { system, user } = buildRewriteMessages(prompt, examples);
+    // Prefer the user's own Copilot models via the injected LM (no key required).
+    if (this.llmComplete) {
+      try {
+        const out = await this.llmComplete(system, user);
+        if (out && out.trim()) return out;
+      } catch {
+        /* try the next backend */
+      }
+    }
+    // Fall back to an explicitly configured external provider, if any.
+    if (isCoachConfigured(cfg.coach)) {
+      try {
+        const maxTokens = Math.min(500, Math.ceil(prompt.length / 3) + 120);
+        return await chatComplete(cfg.coach, system, user, { temperature: 0.3, maxTokens });
+      } catch {
+        /* fall through to offline */
+      }
+    }
+    return undefined;
   }
 
   /**
-   * Accept a rewrite only when it lowers EXPECTED total tokens: either it's
-   * genuinely shorter, or it's meaningfully clearer (less vague) so it avoids a
-   * retry. This keeps the rewriter from shortening prompts into vagueness.
+   * Present a produced rewrite. Since the user asked for it explicitly, always show
+   * a real, different rewrite — reporting % saved when shorter, or marking it
+   * "clarified" (added specifics to succeed first try) when it's longer.
    */
-  private finalize(
+  private present(
     original: string,
     rewrite: string | undefined,
     source: 'offline' | 'llm',
@@ -110,12 +124,10 @@ export class RewriteService {
     const r = rewrite?.trim();
     if (!r || r === o) return { source: 'none', examplesUsed };
     const shorter = r.length < o.length;
-    const clearer = !shorter && this.scoreOf(r) >= this.scoreOf(o) + CLARITY_MARGIN;
-    if (!shorter && !clearer) return { source: 'none', examplesUsed };
     return {
       rewrittenPrompt: r,
       estimatedTokenReductionPct: shorter ? Math.round((1 - r.length / o.length) * 100) : undefined,
-      clarified: clearer,
+      clarified: !shorter,
       source,
       examplesUsed,
     };
