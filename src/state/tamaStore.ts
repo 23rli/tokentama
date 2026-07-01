@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { ScorePromptResponse, Subscores, TokenEstimate, ModelInfo } from '@tokentama/shared-types';
 import { scoreToState, computeHealthUpdate, DEFAULT_HEALTH_CONFIG, type HealthModelConfig } from '@tokentama/scoring-engine';
 import { classifyDifficulty } from '../analysis/taskDifficulty';
+import type { OutcomeReport } from '../analysis/outcomes';
 import type {
   TamaState,
   ScorePoint,
@@ -63,6 +64,7 @@ export class TamaStore {
 
   private data: PersistShape;
   private _captureEnabled: boolean;
+  private outcomesProvider?: () => OutcomeReport;
 
   constructor(private readonly context: vscode.ExtensionContext) {
     this.data = context.globalState.get<PersistShape>(STATE_KEY) ?? TamaStore.empty();
@@ -96,6 +98,16 @@ export class TamaStore {
   latestOverall(sessionId: string): number | null {
     const v = this.data.lastOverallBySession[sessionId];
     return typeof v === 'number' ? v : null;
+  }
+
+  /** The current session's model, without recomputing the full state snapshot. */
+  currentModel(): ModelInfo | undefined {
+    return this.data.model;
+  }
+
+  /** Provide a lazy outcomes computation (from the corpus), read on each getState. */
+  setOutcomesProvider(fn: () => OutcomeReport): void {
+    this.outcomesProvider = fn;
   }
 
   recordScore(resp: ScorePromptResponse, opts: RecordScoreOptions): void {
@@ -238,6 +250,7 @@ export class TamaStore {
       model: this.data.model,
       captureEnabled: this._captureEnabled,
       preliminary: this.data.preliminary ?? false,
+      outcomes: this.outcomesProvider?.(),
     };
   }
 

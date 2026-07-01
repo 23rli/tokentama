@@ -8,6 +8,7 @@ import { ImpactTrio } from './components/ImpactTrio';
 import { LiveData } from './components/LiveData';
 import { ContextPanel } from './components/ContextPanel';
 import { RightSizePanel } from './components/RightSizePanel';
+import { OutcomesPanel } from './components/OutcomesPanel';
 import { QualityBars } from './components/QualityBars';
 import { CoachingPanel } from './components/CoachingPanel';
 
@@ -44,6 +45,7 @@ export function App() {
         <LiveData state={state} />
         <ContextPanel lastEvent={state.lastEvent} model={state.model} />
         <RightSizePanel lastEvent={state.lastEvent} model={state.model} />
+        <OutcomesPanel outcomes={state.outcomes} />
         <QualityBars lastEvent={state.lastEvent} />
         <CoachingPanel tip={state.tip} lastEvent={state.lastEvent} />
       </div>

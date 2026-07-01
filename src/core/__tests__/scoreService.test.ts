@@ -6,7 +6,10 @@ import type { CoachConfig } from '@tokentama/llm-adapters';
 // scoreDraft is pure (offline heuristic, no store/telemetry access), so we can
 // construct the service with stub dependencies.
 function makeService(): ScoreService {
-  const store = { getState: () => ({ model: undefined }) } as unknown as TamaStore;
+  const store = {
+    getState: () => ({ model: undefined }),
+    currentModel: () => undefined,
+  } as unknown as TamaStore;
   const getCoachConfig = async (): Promise<CoachConfig> => ({ provider: 'none' }) as CoachConfig;
   return new ScoreService(store, getCoachConfig);
 }

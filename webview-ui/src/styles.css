@@ -1046,6 +1046,28 @@ button.ghost:hover {
   line-height: 1.4;
   color: var(--vscode-foreground);
 }
+.outcomes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+  border-radius: 10px;
+  background: var(--vscode-editorWidget-background, rgba(128, 128, 128, 0.06));
+}
+.outcomes-line {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.outcomes-line.good {
+  color: var(--vscode-charts-green, #3fb950);
+}
+.outcomes-sub {
+  margin: 0;
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+}
 .context-advisory {
   font-size: 11px;
   line-height: 1.4;

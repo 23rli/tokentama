@@ -15,6 +15,7 @@ import { CorpusStore } from './data/corpusStore';
 import { RewriteService, type RewriteConfig, type RewriterMode } from './rewriter/rewriteService';
 import { summarizeContext, historyAdvisory } from './analysis/contextBreakdown';
 import { buildSessionSummary } from './analysis/sessionSummary';
+import { computeOutcomes } from './analysis/outcomes';
 
 const SECRET_KEY = 'tokentama.llmApiKey';
 
@@ -55,6 +56,9 @@ export function activate(context: vscode.ExtensionContext): void {
     () => vscode.workspace.getConfiguration('tokentama.corpus').get<boolean>('enabled', true),
     () => vscode.workspace.getConfiguration('tokentama.corpus').get<boolean>('storeRawText', true),
   );
+  // Close the quality loop: outcomes (retry reduction from adoption) computed lazily
+  // from the in-memory corpus and surfaced in state.
+  store.setOutcomesProvider(() => computeOutcomes(corpus.all()));
 
   const scoreService = new ScoreService(store, getCoachConfig, log, telemetry, corpus, () =>
     corpus.all(),
@@ -436,7 +440,12 @@ async function exportPilotData(
   }
   const metrics = store.getState().metrics;
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const summary = { exportedAt: new Date().toISOString(), eventCount: events.length, metrics };
+  const summary = {
+    exportedAt: new Date().toISOString(),
+    eventCount: events.length,
+    metrics,
+    outcomes: store.getState().outcomes,
+  };
   const json = JSON.stringify({ summary, events }, null, 2);
 
   const cols = [

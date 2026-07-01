@@ -221,7 +221,7 @@ export class ScoreService {
     }
 
     // Retry risk: a re-ask re-sends the whole turn, so this is the costliest miss.
-    const model = this.store.getState().model?.family;
+    const model = this.store.currentModel()?.family;
     const prior = this.corpusReader
       ? similarRetryStats(this.corpusReader(), categories, model)
       : undefined;

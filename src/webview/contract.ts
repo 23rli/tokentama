@@ -3,8 +3,11 @@
  * Types only — safe to import from both the Node host and the browser webview.
  */
 import type { PetWorldState, Subscores, WasteComponent, ModelInfo, ContextSlice } from '@tokentama/shared-types';
+import type { OutcomeReport } from '../analysis/outcomes';
 
 export type { PetWorldState, Subscores, WasteComponent, ModelInfo, ContextSlice } from '@tokentama/shared-types';
+
+export type { OutcomeReport } from '../analysis/outcomes';
 
 /** A single scored prompt, flattened for display in the webview. */
 export interface ScoredEventView {
@@ -130,6 +133,8 @@ export interface TamaState {
   /** The session's selected model + its pricing/capabilities, when known. */
   model?: ModelInfo;
   captureEnabled: boolean;
+  /** Aggregate coaching-outcome signal (retry reduction from adoption). */
+  outcomes?: OutcomeReport;
 }
 
 /** Messages sent host → webview. */
