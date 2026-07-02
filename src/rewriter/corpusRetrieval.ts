@@ -31,15 +31,16 @@ export function buildRewriteMessages(
   portfolio?: string,
 ): { system: string; user: string } {
   const base =
-    "You COMPRESS a developer's prompt so it uses FEWER tokens while producing the SAME " +
-    'result. This is a rewrite they will paste directly into Copilot.\n' +
-    '- KEEP every concrete detail they gave: file/function/component names, requirements, ' +
-    'constraints, and any facts they pasted. Never drop information.\n' +
-    '- CUT filler, politeness, hedging, and repetition. Use the fewest words that still work.\n' +
-    "- NEVER invent details they didn't give — no made-up file names, APIs, or requirements.\n" +
-    '- If the prompt is already tight and cannot be shortened without losing meaning, return it ' +
-    'UNCHANGED.\n' +
-    '- Output ONLY the rewritten prompt text \u2014 no preamble, quotes, code fences, advice, or notes.';
+    "You rewrite a developer's rough prompt into a clear, specific, self-contained prompt " +
+    'that gets the RIGHT result on the first try.\n' +
+    '- Preserve their intent and every concrete detail they gave (file/function/component ' +
+    'names, requirements, constraints, and any facts they pasted). Never drop information.\n' +
+    '- Make it unambiguous and actionable: state the goal, the target, and the expected output ' +
+    'plainly. Fixing the ask matters more than making it short.\n' +
+    '- Cut filler, politeness, and repetition, but never at the cost of clarity.\n' +
+    "- NEVER invent specifics they didn't give (no made-up file names, APIs, or requirements). " +
+    'If a detail is genuinely missing, phrase the prompt so the model asks for or handles it.\n' +
+    '- Output ONLY the rewritten prompt \u2014 no advice, options, notes, preamble, quotes, or code fences.';
   // The compact profile replaces stuffing many examples — cheaper and personalized.
   const system = portfolio ? `${base}\n\n${portfolio}` : base;
   const shots = examples

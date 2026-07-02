@@ -17,9 +17,9 @@ export interface RewriteConfig {
 
 export interface RewriteResult {
   rewrittenPrompt?: string;
-  /** Positive % of tokens saved (a rewrite is only ever offered when it's shorter). */
+  /** Positive % of tokens saved when the rewrite happens to be shorter; else undefined. */
   estimatedTokenReductionPct?: number;
-  /** Estimated number of tokens saved vs. the original prompt. */
+  /** Estimated tokens saved when the rewrite is shorter than the original; else undefined. */
   estimatedTokensSaved?: number;
   source: 'offline' | 'llm' | 'none';
   /** How many corpus examples informed the rewrite. */
@@ -63,9 +63,15 @@ export class RewriteService {
     private readonly getConfig: () => Promise<RewriteConfig>,
     private readonly llmComplete?: LlmComplete,
     private readonly getPortfolio?: () => string | undefined,
+    private readonly log?: (message: string) => void,
   ) {}
 
-  async rewrite(input: { promptText: string; model?: string }): Promise<RewriteResult> {
+  async rewrite(input: {
+    promptText: string;
+    model?: string;
+    /** User clicked “Rewrite in my style” — always use the model, skip the cost gate. */
+    explicit?: boolean;
+  }): Promise<RewriteResult> {
     const prompt = input.promptText;
     if (!prompt.trim()) return { source: 'none', examplesUsed: 0 };
 
@@ -77,35 +83,32 @@ export class RewriteService {
       model: input.model,
     });
 
-    if (cfg.mode === 'llm' || (cfg.mode === 'auto' && this.worthLlm(prompt))) {
+    const useLlm = cfg.mode === 'llm' || (cfg.mode === 'auto' && (input.explicit || this.worthLlm(prompt)));
+    if (useLlm) {
       const llm = await this.tryLlm(prompt, examples, cfg);
       if (llm) {
-        // Only ever offer something SHORTER than the original: the model rewrite or
-        // the free offline clean, whichever is leaner. If neither is shorter, offer
-        // NO rewrite (the prompt is already tight) — we never hand back a longer one.
-        const o = prompt.trim();
-        const lm = cleanRewrite(llm.raw).trim();
-        const off = leanRewrite(prompt).trim();
-        const best = [lm, off]
-          .filter((c) => c && c !== o && c.length < o.length)
-          .sort((a, b) => a.length - b.length)[0];
-        if (best) {
-          const result = this.present(prompt, best, best === lm ? 'llm' : 'offline', examples.length);
-          result.llmTokensSpent = llm.tokensSpent;
-          return result;
-        }
-        // Nothing leaner than the original — say so, but still account for the spend.
-        return { source: 'none', examplesUsed: examples.length, llmTokensSpent: llm.tokensSpent };
+        // Surface the model's improved prompt as-is — it fixes the ask, whether or
+        // not that makes it shorter. (We report token savings only when it is.)
+        const result = this.present(prompt, cleanRewrite(llm.raw), 'llm', examples.length);
+        result.llmTokensSpent = llm.tokensSpent;
+        return result;
       }
+      this.log?.('Rewrite: no model backend available — using the offline cleanup.');
     }
 
-    return this.present(prompt, leanRewrite(prompt), 'offline', examples.length);
+    // Offline fallback is cleanup-only, so only surface it when it genuinely
+    // shortens the prompt (a bare capitalization tweak isn't worth showing).
+    const off = leanRewrite(prompt);
+    if (off.trim().length < prompt.trim().length) {
+      return this.present(prompt, off, 'offline', examples.length);
+    }
+    return { source: 'none', examplesUsed: examples.length };
   }
 
   /**
-   * Cost gate for `auto`: only spend an LLM call when there's real length to
-   * compress. Short prompts have nothing to gain (and we never invent detail to
-   * pad them), so they stay offline at zero tokens — spending fewer, not more.
+   * Cost gate for automatic (non-explicit) `auto` rewrites: only spend a model call
+   * when the prompt has enough substance to improve. An explicit “Rewrite in my
+   * style” click bypasses this — that's a direct request for the model.
    */
   private worthLlm(prompt: string): boolean {
     return prompt.trim().length >= MIN_LLM_CHARS;
@@ -123,29 +126,35 @@ export class RewriteService {
     // Prefer the user's own Copilot models via the injected LM (no key required).
     if (this.llmComplete) {
       try {
+        this.log?.('Rewrite: asking your Copilot model…');
         const out = await this.llmComplete(system, user);
-        if (out && out.trim()) return { raw: out, tokensSpent: spend(out) };
-      } catch {
-        /* try the next backend */
+        if (out && out.trim()) {
+          this.log?.('Rewrite: Copilot model responded.');
+          return { raw: out, tokensSpent: spend(out) };
+        }
+        this.log?.('Rewrite: Copilot model returned nothing — trying the next backend.');
+      } catch (e) {
+        this.log?.(`Rewrite: Copilot model unavailable (${(e as Error).message}).`);
       }
     }
     // Fall back to an explicitly configured external provider, if any.
     if (isCoachConfigured(cfg.coach)) {
       try {
+        this.log?.('Rewrite: asking the configured provider…');
         const maxTokens = Math.min(500, Math.ceil(prompt.length / 3) + 120);
         const out = await chatComplete(cfg.coach, system, user, { temperature: 0.3, maxTokens });
         return { raw: out, tokensSpent: spend(out) };
-      } catch {
-        /* fall through to offline */
+      } catch (e) {
+        this.log?.(`Rewrite: provider failed (${(e as Error).message}).`);
       }
     }
     return undefined;
   }
 
   /**
-   * Present a produced rewrite. A rewrite is only ever surfaced when it genuinely
-   * saves tokens; a longer or equal result is discarded (source 'none'), because
-   * the whole point of the app is to spend FEWER tokens, never more.
+   * Present a produced rewrite. The rewrite's job is to FIX the prompt so it lands
+   * the right result — it may be shorter, the same length, or longer. We surface any
+   * genuinely different rewrite and report token savings only when it is shorter.
    */
   private present(
     original: string,
@@ -155,15 +164,14 @@ export class RewriteService {
   ): RewriteResult {
     const o = original.trim();
     const r = rewrite?.trim();
-    if (!r || r === o || r.length >= o.length) return { source: 'none', examplesUsed };
+    if (!r || r === o) return { source: 'none', examplesUsed };
     const before = estimateTokens(o);
     const after = estimateTokens(r);
     const saved = before - after;
-    if (saved <= 0) return { source: 'none', examplesUsed };
     return {
       rewrittenPrompt: r,
-      estimatedTokenReductionPct: Math.round((saved / before) * 100),
-      estimatedTokensSaved: saved,
+      estimatedTokenReductionPct: saved > 0 ? Math.round((saved / before) * 100) : undefined,
+      estimatedTokensSaved: saved > 0 ? saved : undefined,
       source,
       examplesUsed,
     };

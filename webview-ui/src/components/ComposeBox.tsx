@@ -90,18 +90,20 @@ export function ComposeBox({ result, auto }: { result?: ComposeResult; auto?: Au
       {rewrite ? (
         <div class="compose-rewrite">
           <div class="rewrite-head">
-            {rewriteFromAuto ? 'Leaner rewrite · your style' : 'Leaner rewrite'}
+            {rewriteFromAuto
+              ? auto!.source === 'llm'
+                ? 'Rewrite · your Copilot model'
+                : 'Rewrite · offline'
+              : 'Suggested rewrite'}
             {rewriteFromAuto && auto!.source === 'llm' && auto!.examplesUsed > 0 && (
-              <span class="rewrite-badge"> · {auto!.examplesUsed} examples</span>
+              <span class="rewrite-badge"> · {auto!.examplesUsed} of your examples</span>
             )}
           </div>
           <pre class="rewrite-body">{rewrite}</pre>
           <p class="rewrite-savings">
             {savedTokens != null && savedTokens > 0
               ? `Saves ~${savedTokens} tokens${savingsPct != null ? ` (${Math.round(savingsPct)}%)` : ''}`
-              : savingsPct != null
-                ? `Saves ~${Math.round(savingsPct)}% of tokens`
-                : 'Leaner — same result'}
+              : 'Sharper prompt — aims to land the right result on the first try'}
           </p>
         </div>
       ) : (

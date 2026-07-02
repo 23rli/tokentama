@@ -55,15 +55,16 @@ describe('RewriteService (offline)', () => {
 });
 
 describe('RewriteService (auto / LM)', () => {
-  it('never surfaces a rewrite that is longer than the original', async () => {
-    const longer =
+  it('surfaces the model\u2019s improved rewrite even when it is not shorter', async () => {
+    const improved =
       'Refactor validateEmail in src/utils.ts to use one regex and return a typed Result; add a test for empty and malformed input.';
-    const r = await serviceWithLlm('llm', async () => longer).rewrite({ promptText: 'fix the email thing' });
-    expect(r.rewrittenPrompt).toBeUndefined();
-    expect(r.source).toBe('none');
+    const r = await serviceWithLlm('llm', async () => improved).rewrite({ promptText: 'fix the email thing' });
+    expect(r.source).toBe('llm');
+    expect(r.rewrittenPrompt).toBe(improved);
+    expect(r.estimatedTokensSaved).toBeUndefined(); // longer — no false savings claim
   });
 
-  it('reports tokens saved when the LM rewrite is shorter', async () => {
+  it('reports tokens saved when the rewrite is shorter', async () => {
     const r = await serviceWithLlm('auto', async () => 'Fix login.').rewrite({
       promptText: 'Please could you kindly help me fix the login flow in the app, thank you so very much.',
     });
@@ -95,15 +96,26 @@ describe('RewriteService (cost-aware auto gating)', () => {
     expect(r.source).not.toBe('llm');
   });
 
-  it('does NOT spend an LLM call (or invent detail) for a short vague prompt', async () => {
+  it('does NOT spend an LLM call for a short prompt in the background (non-explicit)', async () => {
     let called = false;
     const svc = serviceWithLlm('auto', async () => {
       called = true;
       return 'Fix the login flow in src/auth/login.ts and add a test.';
     });
     const r = await svc.rewrite({ promptText: 'fix the login' });
-    expect(called).toBe(false); // short + vague: nothing to compress, and we never invent
+    expect(called).toBe(false); // short + not explicitly requested
     expect(r.source).toBe('none');
+  });
+
+  it('an explicit request always uses the model, even for a short prompt', async () => {
+    let called = false;
+    const svc = serviceWithLlm('auto', async () => {
+      called = true;
+      return 'Rename foo to bar throughout bar.ts and update its callers.';
+    });
+    const r = await svc.rewrite({ promptText: 'rename foo', explicit: true });
+    expect(called).toBe(true);
+    expect(r.source).toBe('llm');
   });
 
   it('reports the tokens the LLM rewrite call itself spent (for net accounting)', async () => {

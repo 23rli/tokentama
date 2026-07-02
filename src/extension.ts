@@ -86,7 +86,7 @@ export function activate(context: vscode.ExtensionContext): void {
       coach: model ? { ...coach, deployment: model } : coach,
     };
   };
-  const rewriteService = new RewriteService(corpus, getRewriteConfig, lmRewrite, getPortfolio);
+  const rewriteService = new RewriteService(corpus, getRewriteConfig, lmRewrite, getPortfolio, log);
 
   const statusBar = new StatusBar();
   context.subscriptions.push(statusBar);
@@ -204,8 +204,13 @@ export function activate(context: vscode.ExtensionContext): void {
     scoreDraft: (text) => scoreService.scoreDraft(text),
     autoRewrite: async (text) => {
       const model = store.getState().model?.family;
-      const r = await rewriteService.rewrite({ promptText: text, model });
+      const r = await rewriteService.rewrite({ promptText: text, model, explicit: true });
       if (r.llmTokensSpent) store.addToolSpend(r.llmTokensSpent);
+      log(
+        `Rewrite requested — source: ${r.source}${
+          r.llmTokensSpent ? `, spent ~${r.llmTokensSpent} tokens` : ''
+        }.`,
+      );
       return {
         text,
         rewrittenPrompt: r.rewrittenPrompt,
