@@ -135,7 +135,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // Capture scope: 'window' pins to THIS window's sessions; 'all' follows the
     // globally-newest Copilot session across every window (use when Tokentama
     // runs in a different window than the one you code in).
-    const scope = captureCfg.get<string>('scope', 'window');
+    const scope = captureCfg.get<string>('scope', 'all');
     const hashScope = scope === 'all' ? undefined : workspaceHash;
     if (scope !== 'all' && !workspaceHash) {
       log(
@@ -229,7 +229,13 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.commands.executeCommand('tokentama.dashboard.focus'),
     ),
     vscode.commands.registerCommand('tokentama.toggleCapture', toggleCapture),
-    vscode.commands.registerCommand('tokentama.resetEcosystem', () => {
+    vscode.commands.registerCommand('tokentama.resetEcosystem', async () => {
+      const choice = await vscode.window.showWarningMessage(
+        'Reset Tokentama? This clears your pet health, scores, and session history for this workspace. Captured chats will be re-tracked as new prompts arrive.',
+        { modal: true },
+        'Reset',
+      );
+      if (choice !== 'Reset') return;
       store.reset();
       void vscode.window.showInformationMessage('Tokentama ecosystem reset.');
     }),
@@ -413,7 +419,7 @@ function captureSelfTest(
 ): void {
   const cfg = vscode.workspace.getConfiguration('tokentama.capture');
   const mode = cfg.get<string>('mode', 'hybrid');
-  const scope = cfg.get<string>('scope', 'window');
+  const scope = cfg.get<string>('scope', 'all');
   const hashScope = scope === 'all' ? undefined : workspaceHash;
 
   const lines: string[] = ['', '=== Tokentama capture self-test ==='];

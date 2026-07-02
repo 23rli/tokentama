@@ -104,6 +104,8 @@ const DEMO_STEPS: DemoStep[] = [
 export class ScoreService {
   private readonly trackers = new Map<string, SessionTracker>();
   private readonly ingestTrackers = new Map<string, SessionTracker>();
+  /** Finalized Copilot turns already recorded, so a turn is never scored twice. */
+  private readonly recordedTurns = new Set<string>();
   private manualTurn = 0;
   private demoRunning = false;
   private insightsCache?: { size: number; insights: CorpusInsights };
@@ -163,6 +165,12 @@ export class ScoreService {
     opts: { preliminary?: boolean } = {},
   ): Promise<number> {
     const preliminary = opts.preliminary === true;
+    const turnKey = `${event.sessionId}:${event.turnIndex}`;
+    // Idempotent: a finalized Copilot turn is scored ONCE. A manual rescan (or a
+    // re-emit) hitting an already-recorded turn must NOT chip health again.
+    if (!preliminary && source === 'copilot' && this.recordedTurns.has(turnKey)) {
+      return this.store.latestOverall(event.sessionId) ?? 0;
+    }
     const request = this.tracker(event.sessionId).toScoreRequest(event, { record: !preliminary });
     const previousScore = this.store.latestOverall(event.sessionId);
     const resp = scorePrompt(request, { previousScore: previousScore ?? undefined });
@@ -179,7 +187,16 @@ export class ScoreService {
       model: event.model,
     };
     if (preliminary) this.store.previewScore(resp, recordOpts);
-    else this.store.recordScore(resp, recordOpts);
+    else {
+      this.store.recordScore(resp, recordOpts);
+      if (source === 'copilot') {
+        this.recordedTurns.add(turnKey);
+        if (this.recordedTurns.size > 5000) {
+          const oldest = this.recordedTurns.values().next().value;
+          if (oldest) this.recordedTurns.delete(oldest);
+        }
+      }
+    }
     if (!preliminary) {
       this.reportTelemetry(event, request, resp, tip, source);
       this.recordToCorpus(

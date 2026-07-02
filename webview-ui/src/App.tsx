@@ -3,6 +3,7 @@ import type { AutoRewriteView, ComposeResult, TamaState, HostMessage } from '../
 import { post } from './vscodeApi';
 import { PetStage } from './components/PetStage';
 import { ScoreHeader } from './components/ScoreHeader';
+import { RecentStrip } from './components/RecentStrip';
 import { ComposeBox } from './components/ComposeBox';
 import { ImpactTrio } from './components/ImpactTrio';
 import { LiveData } from './components/LiveData';
@@ -40,16 +41,17 @@ export function App() {
       <div class="app-main">
         <PetStage world={state.world} score={state.overallScore} />
         <ScoreHeader state={state} />
+        <RecentStrip events={state.recentEvents} />
         <ComposeBox result={compose} auto={auto} />
         <ImpactTrio metrics={state.metrics} />
+        <ContextPanel lastEvent={state.lastEvent} model={state.model} />
+        <OutcomesPanel outcomes={state.outcomes} />
         <CoachingPanel tip={state.tip} lastEvent={state.lastEvent} />
         <details class="insights">
-          <summary>Insights</summary>
+          <summary>More insights</summary>
           <div class="insights-body">
             <LiveData state={state} />
-            <ContextPanel lastEvent={state.lastEvent} model={state.model} />
             <RightSizePanel lastEvent={state.lastEvent} model={state.model} />
-            <OutcomesPanel outcomes={state.outcomes} />
             <QualityBars lastEvent={state.lastEvent} />
           </div>
         </details>
@@ -59,11 +61,8 @@ export function App() {
         <button class="primary" disabled={busy} onClick={() => post({ type: 'scorePrompt' })}>
           Score a prompt
         </button>
-        <button class="ghost" disabled={busy} onClick={() => post({ type: 'runDemo' })}>
-          {busy ? '▶ Running…' : '▶ Demo'}
-        </button>
         <button class="ghost" disabled={busy} onClick={() => post({ type: 'toggleCapture' })}>
-          {state.captureEnabled ? '◉ Capture' : '○ Capture'}
+          {state.captureEnabled ? '◉ Capture on' : '○ Capture off'}
         </button>
         <button class="ghost" disabled={busy} onClick={() => post({ type: 'reset' })}>
           Reset

@@ -40,6 +40,8 @@ interface PersistShape {
   lastOverallBySession: Record<string, number>;
   /** Cumulative tokens Tokentama itself has spent (LLM rewrites) — for net accounting. */
   toolTokensSpent: number;
+  /** Most recent finalized events (newest first) so a prompt doesn't vanish from view. */
+  recentEvents?: ScoredEventView[];
 }
 
 export interface RecordScoreOptions {
@@ -157,6 +159,7 @@ export class TamaStore {
     };
 
     this.data.lastEvent = event;
+    this.data.recentEvents = [event, ...(this.data.recentEvents ?? [])].slice(0, 6);
     this.data.lastSubscores = resp.subscores;
     this.data.tip = opts.tip;
     if (opts.model) this.data.model = opts.model;
@@ -270,6 +273,7 @@ export class TamaStore {
       captureEnabled: this._captureEnabled,
       preliminary: this.data.preliminary ?? false,
       outcomes: this.outcomesProvider?.(),
+      recentEvents: this.data.recentEvents ?? [],
     };
   }
 

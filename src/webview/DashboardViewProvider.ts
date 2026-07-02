@@ -51,7 +51,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
         void vscode.commands.executeCommand('tokentama.scorePrompt');
         break;
       case 'reset':
-        this.store.reset();
+        void vscode.commands.executeCommand('tokentama.resetEcosystem');
         break;
       case 'toggleCapture':
         this.handlers.toggleCapture();

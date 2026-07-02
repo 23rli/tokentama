@@ -145,6 +145,8 @@ export interface TamaState {
   captureEnabled: boolean;
   /** Aggregate coaching-outcome signal (retry reduction from adoption). */
   outcomes?: OutcomeReport;
+  /** Most recent finalized scored events (newest first) for the recent strip. */
+  recentEvents?: ScoredEventView[];
 }
 
 /** Messages sent host → webview. */

@@ -81,8 +81,19 @@ export class RewriteService {
     if (cfg.mode === 'llm' || (cfg.mode === 'auto' && this.worthLlm(prompt))) {
       const llm = await this.tryLlm(prompt, examples, cfg);
       if (llm) {
-        const result = this.present(prompt, cleanRewrite(llm.raw), 'llm', examples.length);
-        if (result.rewrittenPrompt) {
+        // Prefer whatever is genuinely SHORTER than the original (real token save):
+        // the model rewrite or the free offline clean, whichever is leaner. Only if
+        // nothing can be shortened do we keep the model's longer clarified version.
+        const o = prompt.trim();
+        const lm = cleanRewrite(llm.raw).trim();
+        const off = leanRewrite(prompt).trim();
+        const distinct = [lm, off].filter((c) => c && c !== o);
+        const shorter = distinct
+          .filter((c) => c.length < o.length)
+          .sort((a, b) => a.length - b.length);
+        const best = shorter[0] ?? (lm && lm !== o ? lm : distinct.sort((a, b) => a.length - b.length)[0]);
+        if (best) {
+          const result = this.present(prompt, best, best === lm ? 'llm' : 'offline', examples.length);
           result.llmTokensSpent = llm.tokensSpent;
           return result;
         }

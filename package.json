@@ -134,41 +134,6 @@
     "menus": {
       "view/title": [
         {
-          "command": "tokentama.rescan",
-          "when": "view == tokentama.dashboard",
-          "group": "navigation@0"
-        },
-        {
-          "command": "tokentama.diagnostics",
-          "when": "view == tokentama.dashboard",
-          "group": "navigation@3"
-        },
-        {
-          "command": "tokentama.captureSelfTest",
-          "when": "view == tokentama.dashboard",
-          "group": "navigation@3"
-        },
-        {
-          "command": "tokentama.runDemo",
-          "when": "view == tokentama.dashboard",
-          "group": "navigation@4"
-        },
-        {
-          "command": "tokentama.exportPilotData",
-          "when": "view == tokentama.dashboard",
-          "group": "navigation@5"
-        },
-        {
-          "command": "tokentama.ingestHistory",
-          "when": "view == tokentama.dashboard",
-          "group": "navigation@6"
-        },
-        {
-          "command": "tokentama.compactSession",
-          "when": "view == tokentama.dashboard",
-          "group": "navigation@7"
-        },
-        {
           "command": "tokentama.scorePrompt",
           "when": "view == tokentama.dashboard",
           "group": "navigation@1"
@@ -290,9 +255,9 @@
           ],
           "enumDescriptions": [
             "Capture only THIS window's Copilot sessions.",
-            "Follow the globally-newest Copilot session across every window (use when Tokentama runs in a different window than the one you code in)."
+            "Track every Copilot chat across all windows (recommended — just works as one app)."
           ],
-          "default": "window",
+          "default": "all",
           "description": "Which Copilot sessions live capture watches."
         },
         "tokentama.telemetry.enabled": {
