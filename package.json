@@ -90,6 +90,12 @@
         "icon": "$(info)"
       },
       {
+        "command": "tokentama.captureSelfTest",
+        "title": "Capture self-test (what is it reading?)",
+        "category": "Tokentama",
+        "icon": "$(checklist)"
+      },
+      {
         "command": "tokentama.runDemo",
         "title": "Run Tokentama demo",
         "category": "Tokentama",
@@ -134,6 +140,11 @@
         },
         {
           "command": "tokentama.diagnostics",
+          "when": "view == tokentama.dashboard",
+          "group": "navigation@3"
+        },
+        {
+          "command": "tokentama.captureSelfTest",
           "when": "view == tokentama.dashboard",
           "group": "navigation@3"
         },

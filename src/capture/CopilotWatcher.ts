@@ -126,6 +126,20 @@ export class CopilotWatcher implements vscode.Disposable {
     }
   }
 
+  /** Whether a specific turn has already been captured (for the self-test). */
+  isSeen(sessionId: string, turnIndex: number): boolean {
+    return this.seen.has(`${sessionId}:${turnIndex}`);
+  }
+
+  /** Live capture state, for the self-test diagnostics command. */
+  diagnostics(): { seen: number; pending: number; trackedSessions: number } {
+    return {
+      seen: this.seen.size,
+      pending: this.pendingSince.size,
+      trackedSessions: this.sessionMtimes.size,
+    };
+  }
+
   dispose(): void {
     if (this.debounce) clearTimeout(this.debounce);
     if (this.poll) clearInterval(this.poll);

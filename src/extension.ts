@@ -239,6 +239,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tokentama.diagnostics', () =>
       showCaptureDiagnostics(workspaceHash, output),
     ),
+    vscode.commands.registerCommand('tokentama.captureSelfTest', () =>
+      captureSelfTest(workspaceHash, () => watcher, store, output),
+    ),
     vscode.commands.registerCommand('tokentama.runDemo', () => scoreService.runDemo()),
     vscode.commands.registerCommand('tokentama.setLlmApiKey', () => setLlmApiKey(context)),
     vscode.commands.registerCommand('tokentama.exportPilotData', () =>
@@ -382,6 +385,103 @@ async function showCaptureDiagnostics(
   } catch (err) {
     lines.push(`error: ${String(err)}`);
   }
+
+  for (const line of lines) output.appendLine(line);
+  output.show(true);
+}
+
+/** Relative "time ago" for a mtime, for the self-test readout. */
+function timeAgo(ms: number): string {
+  if (!ms) return 'never';
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.round(s / 60)}m ago`;
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+  return `${Math.round(s / 86400)}d ago`;
+}
+
+/**
+ * Capture self-test: report exactly which chats capture sees, which turns it
+ * would emit next, and confirm other windows' chats are excluded — so the numbers
+ * can be trusted before relying on them.
+ */
+function captureSelfTest(
+  workspaceHash: string | undefined,
+  getWatcher: () => CopilotWatcher | undefined,
+  store: TamaStore,
+  output: vscode.OutputChannel,
+): void {
+  const cfg = vscode.workspace.getConfiguration('tokentama.capture');
+  const mode = cfg.get<string>('mode', 'hybrid');
+  const scope = cfg.get<string>('scope', 'window');
+  const hashScope = scope === 'all' ? undefined : workspaceHash;
+
+  const lines: string[] = ['', '=== Tokentama capture self-test ==='];
+  lines.push(`config: mode=${mode} · scope=${scope} · capture=${store.captureEnabled ? 'on' : 'off'}`);
+  lines.push(
+    `this window hash: ${workspaceHash ?? '(none — no folder open)'} → scanning: ${
+      hashScope ?? 'ALL windows'
+    }`,
+  );
+
+  const watcher = getWatcher();
+  if (watcher) {
+    const d = watcher.diagnostics();
+    lines.push(
+      `watcher: RUNNING · ${d.seen} turns already captured · ${d.pending} awaiting real tokens · ${d.trackedSessions} chats tracked`,
+    );
+  } else {
+    lines.push(
+      `watcher: NOT running (mode=event, capture off, or no window-scoped session). Live scoring uses @tokentama / compose.`,
+    );
+  }
+
+  let sessions: ReturnType<typeof listCopilotSessions> = [];
+  try {
+    sessions = listCopilotSessions(undefined, hashScope);
+  } catch {
+    sessions = [];
+  }
+  lines.push('', `in-scope chats (newest first): ${sessions.length}`);
+  sessions.slice(0, 8).forEach((s, i) => {
+    let events: ReturnType<typeof readSessionEvents> = [];
+    try {
+      events = readSessionEvents(s).filter((e) => e.promptText.trim());
+    } catch {
+      /* unreadable */
+    }
+    const real = events.filter((e) => e.tokens && !e.tokens.estimated).length;
+    const unseen = watcher
+      ? events.filter((e) => !watcher.isSeen(e.sessionId, e.turnIndex)).length
+      : events.length;
+    const marker = i === 0 ? '▶' : ' ';
+    lines.push(
+      `${marker} ${s.sessionId.slice(0, 8)} · ${events.length} turns (${real} real) · ${unseen} not-yet-captured · ${timeAgo(
+        s.modifiedMs,
+      )}`,
+    );
+    const last = events[events.length - 1];
+    if (last) {
+      lines.push(`     latest: "${last.promptText.slice(0, 70).replace(/\s+/g, ' ')}"`);
+    }
+  });
+
+  if (hashScope) {
+    let others = 0;
+    try {
+      others = listCopilotSessions(undefined, undefined).filter(
+        (s) => s.workspaceHash !== hashScope,
+      ).length;
+    } catch {
+      /* ignore */
+    }
+    lines.push('', `isolation: ${others} chat(s) in OTHER windows are excluded (scope=window).`);
+  } else {
+    lines.push('', 'isolation: scope=all — capturing the newest chat across ALL windows.');
+  }
+  lines.push(
+    'verdict: capture emits ONLY not-yet-captured turns from the in-scope chats above; it does not replay history.',
+  );
 
   for (const line of lines) output.appendLine(line);
   output.show(true);
