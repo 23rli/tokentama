@@ -8,6 +8,7 @@ build/
 release/
 *.tsbuildinfo
 *.vsix
+scripts/.bench.cjs
 .vite/
 
 # Test / coverage

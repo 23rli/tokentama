@@ -317,7 +317,8 @@
     "vsce:package": "vsce package",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "bench": "node scripts/run-bench.mjs"
   },
   "dependencies": {
     "preact": "^10.25.4"

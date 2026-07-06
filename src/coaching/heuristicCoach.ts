@@ -1,5 +1,5 @@
 import type { TipRequest, TipResponse, WasteCategory } from '@tokentama/shared-types';
-import { splitSentences } from '@tokentama/scoring-engine';
+import { similarity, splitSentences, tokenizeWords } from '@tokentama/scoring-engine';
 
 /** Playful one-liners per dominant waste category (design doc §11.3 tone). */
 const SHORT_TIPS: Record<WasteCategory, string> = {
@@ -15,48 +15,96 @@ const SHORT_TIPS: Record<WasteCategory, string> = {
 const RETRY_FILLER =
   /\b(still not working|still broken|try again|same as before|just fix it|fix it)\b[.,!]?/gi;
 
-// Politeness / hedging padding stripped from the rewrite so the real ask stands out.
-const FILLER_PATTERN =
-  /\b(?:could you please|can you please|would you please|could you|can you|would you mind|if it'?s not too much trouble|if it is not too much trouble|if you (?:could|can|don'?t mind)|if possible|i was wondering if|i(?:'d| would) (?:really |just )?(?:appreciate|like|love)(?: it| this)?(?: if)?|when you (?:get a chance|have (?:a )?(?:moment|minute|sec|time))|whenever you (?:can|get a chance)|no rush|feel free to|thank you(?: so much| very much| a lot| in advance)?|thanks(?: so much| a lot| a ton| in advance)?|much appreciated|i (?:really )?appreciate(?: it| this)?|cheers|kindly|maybe|possibly|kind of|sort of|the usual stuff|please|pls|plz)\b[.,!]*/gi;
+// Politeness that forms a whole LEADING clause ("Could you please, ").
+const LEAD_POLITE =
+  /^(?:could you please|can you please|would you please|could you|can you|would you mind|i was wondering if you could|i wonder if you could|when you (?:get a chance|have (?:a )?(?:moment|minute|sec|time))|whenever you (?:can|get a chance)|please|pls|plz|kindly)\b[\s,]*/i;
 
-function dedupeSentences(text: string): string {
-  const seen = new Set<string>();
-  return splitSentences(text)
-    .filter((s) => {
-      const key = s.toLowerCase().replace(/\s+/g, ' ').trim();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .join(' ');
+// Politeness that forms a whole TRAILING clause ("…, thanks so much!").
+const TRAIL_POLITE =
+  /[\s,;-]*(?:please|kindly|thank you(?: so much| very much| a lot| in advance)?|thanks(?: so much| a lot| a ton| in advance)?|thx|i(?:'d| would)?\s*(?:really\s*)?appreciate(?: it| this)?(?: if)?|much appreciated|cheers|no rush|if possible|if (?:that|it) makes sense|if it'?s not too much trouble|if you don'?t mind)[.!?,\s]*$/i;
+
+// A friendly greeting opener ("Hi there, ", "Hello team — ", "Hey! ").
+const GREETING =
+  /^(?:hi|hey|hello|greetings|good (?:morning|afternoon|evening)|dear)\b[\s,!.-]*(?:there|all|team|everyone|folks)?[\s,!.-]*/i;
+
+// Discourse fillers safe to drop from the START of a sentence.
+const LEAD_FILLER = /^(?:so|well|basically|okay|ok|now|right|um|uh|and|also)\b[\s,]+/i;
+
+// Hedges/politeness safe to remove mid-sentence without breaking the ask.
+const INLINE_POLITE =
+  /\b(?:if it'?s not too much trouble|if it is not too much trouble|if you don'?t mind|if possible|no rush|feel free to|please|kindly)\b[,]?/gi;
+const HEDGES =
+  /\b(?:you know|basically|kind of|kinda|sort of|sorta|a little bit|a bit|i guess|i mean|some sort of|some kind of|maybe|perhaps|possibly)\b[,]?/gi;
+
+// A marker that signals the sentence restates earlier context.
+const RESTATE =
+  /^(?:again|as (?:i|mentioned)|to reiterate|just to (?:repeat|reiterate)|like i said|as i said|repeating|to recap)\b[,\s]*/i;
+
+// Function words + politeness that don't count as the "content" of an ask.
+const STOP = new Set(
+  (
+    'a an the and or but nor for yet so of to in into on onto at by from with about over under as ' +
+    'is are was were be been being am do does did done doing can could would should will shall may might must ' +
+    'i you we they he she it me my mine your yours our ours their them us him her his its ' +
+    'just really very much quite rather somewhat kind sort also then here there this that these those ' +
+    'please kindly thanks thank thankyou thx appreciate appreciated cheers grateful help out ' +
+    'thing things something anything stuff make made get got'
+  ).split(' '),
+);
+
+/** Words in a sentence that carry actual meaning (not stopwords/politeness). */
+function contentWords(text: string): string[] {
+  return tokenizeWords(text).filter((w) => !STOP.has(w));
+}
+
+/** A sentence that is essentially a greeting or gratitude with no real ask. */
+function isFillerOnly(raw: string, cleaned: string): boolean {
+  const count = contentWords(cleaned).length;
+  if (count < 2) return true;
+  const gratitude = /\b(?:thanks?|thank you|thx|appreciate|grateful|cheers)\b/i.test(raw);
+  return gratitude && count < 4;
 }
 
 /**
- * Cleaning-only lean rewrite: dedupe sentences, strip retry + politeness padding,
- * tidy punctuation. Produces the shortest faithful version of the prompt WITHOUT
- * appending any coaching guidance — so it's always leaner. Used by the auto-rewriter.
+ * Cleaning-only lean rewrite: drop greeting/gratitude and re-pasted (duplicate or
+ * near-duplicate) sentences, strip retry + politeness padding and safe hedges, tidy
+ * punctuation. Produces the shortest FAITHFUL version of the prompt with no added
+ * guidance — so it stays grammatical and is always leaner. Used by the auto-rewriter.
  */
 export function leanRewrite(promptText: string): string {
-  // Strip filler per sentence and drop sentences that become empty (e.g. "Thanks!").
-  const sentences = splitSentences(dedupeSentences(promptText));
-  const cleaned = sentences
-    .map((s) =>
-      s
-        .replace(RETRY_FILLER, '')
-        .replace(FILLER_PATTERN, '')
-        .replace(/^(?:and|also|so|well|um|ok|okay|hi|hey|hello)[,\s]+/i, '')
-        .replace(/\s{2,}/g, ' ')
-        .replace(/\s+([.,!?;:])/g, '$1')
-        .replace(/^[\s,;:.!?-]+/, '')
-        .trim(),
-    )
-    .filter((s) => s.replace(/[^a-z0-9]/gi, '').length >= 2);
+  const kept: string[] = [];
+  for (const raw of splitSentences(promptText)) {
+    let s = raw
+      .replace(RETRY_FILLER, '')
+      .replace(GREETING, '')
+      .replace(LEAD_FILLER, '')
+      .replace(LEAD_POLITE, '')
+      .replace(TRAIL_POLITE, '')
+      .replace(INLINE_POLITE, '')
+      .replace(HEDGES, '')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\s+([.,!?;:])/g, '$1')
+      .replace(/^[\s,;:.!?-]+/, '')
+      .trim();
+    if (!s || isFillerOnly(raw, s)) continue;
 
-  let core = cleaned.join(' ').replace(/\s{2,}/g, ' ').trim();
+    // Explicit restatement ("Again, …") that echoes earlier content → drop it;
+    // otherwise strip only the marker and keep the (genuinely new) content.
+    if (RESTATE.test(raw)) {
+      if (kept.length && similarity(kept.join(' '), s) >= 0.25) continue;
+      s = s.replace(RESTATE, '').trim();
+      if (!s) continue;
+    }
+    // Skip exact / near-duplicate re-pastes of something already kept.
+    if (kept.some((k) => similarity(k, s) >= 0.6)) continue;
+
+    kept.push(s.charAt(0).toUpperCase() + s.slice(1));
+  }
+
+  let core = kept.join(' ').replace(/\s{2,}/g, ' ').trim();
   if (!core || core.replace(/[^a-z0-9]/gi, '').length < 3) {
     core = 'State the exact task and the target (file / function / component)';
   }
-  core = core.charAt(0).toUpperCase() + core.slice(1);
   if (!/[.!?]$/.test(core)) core += '.';
   return core;
 }
