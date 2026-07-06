@@ -11,6 +11,7 @@ release/
 scripts/.bench.cjs
 scripts/.bench-history.cjs
 scripts/.bench-human.cjs
+scripts/.bench-cache.cjs
 .vite/
 
 # Test / coverage

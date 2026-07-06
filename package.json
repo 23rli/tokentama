@@ -330,7 +330,8 @@
     "test:watch": "vitest",
     "bench": "node scripts/run-bench.mjs",
     "bench:history": "node scripts/run-bench.mjs bench-history.ts",
-    "bench:human": "node scripts/run-bench.mjs bench-human.ts"
+    "bench:human": "node scripts/run-bench.mjs bench-human.ts",
+    "bench:cache": "node scripts/run-bench.mjs bench-cache.ts"
   },
   "dependencies": {
     "preact": "^10.25.4"
