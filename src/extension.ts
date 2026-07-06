@@ -207,12 +207,28 @@ export function activate(context: vscode.ExtensionContext): void {
       const state = store.getState();
       const model = state.model?.family;
       const recentContext = buildRecentContext(state.recentEvents, corpus.all(), text);
-      const r = await rewriteService.rewrite({ promptText: text, model, recentContext });
+      // Only spend a model call when it's likely to HELP (vague / retry-prone /
+      // wasteful) and we're under the session rewrite-token budget. Verbose-but-clear
+      // prompts get the free offline cleanup instead — protects net savings from
+      // speculative spend that would never be adopted.
+      const draft = scoreService.scoreDraft(text);
+      const beneficial =
+        draft.retryRisk === 'high' ||
+        draft.retryRisk === 'medium' ||
+        !!draft.contextGapHint ||
+        draft.overallScore < 70;
+      const budget = vscode.workspace
+        .getConfiguration('tokentama.rewriter')
+        .get<number>('sessionTokenBudget', 20000);
+      const withinBudget = budget <= 0 || store.toolSpend() < budget;
+      const allowModel = beneficial && withinBudget;
+      const r = await rewriteService.rewrite({ promptText: text, model, recentContext, allowModel });
       if (r.llmTokensSpent) store.addToolSpend(r.llmTokensSpent);
+      const skipped = allowModel ? '' : ` (model skipped: ${!withinBudget ? 'budget' : 'low benefit'})`;
       log(
         `Rewrite requested — source: ${r.source}${
           r.llmTokensSpent ? `, spent ~${r.llmTokensSpent} tokens` : ''
-        }.`,
+        }${skipped}.`,
       );
       return {
         text,

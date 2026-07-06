@@ -135,4 +135,28 @@ describe('RewriteService (cost-aware auto gating)', () => {
     await svc.rewrite({ promptText: 'Rename foo in bar.ts.' });
     expect(called).toBe(true);
   });
+
+  it('allowModel:false suppresses the model call (budget / low benefit) — offline only', async () => {
+    let called = false;
+    const svc = serviceWithLlm('auto', async () => {
+      called = true;
+      return 'Fix the login flow in src/auth/login.ts.';
+    });
+    const r = await svc.rewrite({
+      promptText: 'Please kindly fix the login flow in the checkout page, it is broken somehow, thanks a lot!',
+      allowModel: false,
+    });
+    expect(called).toBe(false); // model skipped
+    expect(r.source).not.toBe('llm'); // offline cleanup (or none)
+  });
+
+  it('an explicit request overrides allowModel:false', async () => {
+    let called = false;
+    const svc = serviceWithLlm('auto', async () => {
+      called = true;
+      return 'Rename foo to bar throughout bar.ts.';
+    });
+    await svc.rewrite({ promptText: 'rename foo', explicit: true, allowModel: false });
+    expect(called).toBe(true);
+  });
 });

@@ -73,6 +73,8 @@ export class RewriteService {
     explicit?: boolean;
     /** Recent session context (files/targets and last asks) to resolve references. */
     recentContext?: string;
+    /** When false, never spend a model call (over budget / unlikely to help) — offline only. */
+    allowModel?: boolean;
   }): Promise<RewriteResult> {
     const prompt = input.promptText;
     if (!prompt.trim()) return { source: 'none', examplesUsed: 0 };
@@ -85,7 +87,8 @@ export class RewriteService {
       model: input.model,
     });
 
-    const useLlm = cfg.mode === 'llm' || (cfg.mode === 'auto' && (input.explicit || this.worthLlm(prompt)));
+    const wantModel = cfg.mode === 'llm' || (cfg.mode === 'auto' && this.worthLlm(prompt));
+    const useLlm = input.explicit || (input.allowModel !== false && wantModel);
     if (useLlm) {
       const llm = await this.tryLlm(prompt, examples, cfg, input.recentContext);
       if (llm) {

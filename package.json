@@ -306,6 +306,11 @@
           "type": "number",
           "default": 3,
           "description": "How many similar past rewrites from your corpus to use as style examples for llm-mode rewrites."
+        },
+        "tokentama.rewriter.sessionTokenBudget": {
+          "type": "number",
+          "default": 20000,
+          "description": "Max tokens Tokentama may spend on automatic model rewrites per session before it falls back to the free offline cleanup. Protects net savings from speculative spend. 0 disables the cap."
         }
       }
     }
