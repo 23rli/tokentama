@@ -10,6 +10,7 @@ release/
 *.vsix
 scripts/.bench.cjs
 scripts/.bench-history.cjs
+scripts/.bench-human.cjs
 .vite/
 
 # Test / coverage
