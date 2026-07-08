@@ -1,15 +1,14 @@
 import type { TamaState } from '../../../src/webview/contract';
-import { fmtNum, fmtUsd } from '../format';
+import { fmtNum } from '../format';
 
 /**
- * Compact strip surfacing the REAL Copilot data we pull from the chat session:
- * the model/agent + reasoning level, this prompt's token usage, and the running
- * session totals — so it's clear the dashboard is reading live metered data.
+ * The model/agent context: which model, reasoning effort, and context window are
+ * live in this session. Cost/token numbers live in the forecast + session-cost
+ * cards, so they're deliberately NOT repeated here.
  */
 export function LiveData({ state }: { state: TamaState }) {
   const m = state.model;
   const e = state.lastEvent;
-  const metrics = state.metrics;
   const efforts = m?.reasoningEfforts ?? [];
   // Prefer the effort the session ACTUALLY selected; fall back to the model's
   // supported range only when the concrete choice isn't recorded.
@@ -46,25 +45,6 @@ export function LiveData({ state }: { state: TamaState }) {
           <span class="livedata-val">{reasoningLine}</span>
         </div>
       )}
-
-      <div class="livedata-row">
-        <span class="livedata-key">This prompt</span>
-        <span class="livedata-val">
-          {e
-            ? `${fmtNum(e.inputTokens)} in · ${fmtNum(e.outputTokens)} out` +
-              (e.copilotCredits != null ? ` · ${e.copilotCredits.toFixed(1)} cr` : '')
-            : '—'}
-        </span>
-      </div>
-
-      <div class="livedata-row">
-        <span class="livedata-key">Session</span>
-        <span class="livedata-val">
-          {`${fmtNum(metrics.totalTokens)} tokens · ${fmtNum(metrics.totalCredits)} AIC` +
-            (metrics.totalCreditsEstimated ? ' (est.)' : '') +
-            (metrics.hasUsdRate ? ` · ${fmtUsd(metrics.totalCostUsd)}` : '')}
-        </span>
-      </div>
     </section>
   );
 }

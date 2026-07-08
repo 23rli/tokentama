@@ -6,7 +6,6 @@ import { ForecastPanel } from './components/ForecastPanel';
 import { ContextPanel } from './components/ContextPanel';
 import { ImpactTrio } from './components/ImpactTrio';
 import { LiveData } from './components/LiveData';
-import { RecentStrip } from './components/RecentStrip';
 import { ComposeBox } from './components/ComposeBox';
 
 export function App() {
@@ -45,7 +44,6 @@ export function App() {
         />
         <ImpactTrio metrics={state.metrics} forecast={state.forecast} />
         <LiveData state={state} />
-        <RecentStrip events={state.recentEvents} />
 
         {/* Compose — a single minimizable box at the end. */}
         <details class="compose-fold">

@@ -27,6 +27,8 @@ export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {
   const blown = f?.sustainability === 'overloaded';
   const series = f?.contextSeries ?? [];
   const peak = series.length ? Math.max(...series) : 1;
+  const resets = series.reduce((n, v, i) => (i > 0 && v < series[i - 1] * 0.6 ? n + 1 : n), 0);
+  const pct = f?.loadFraction != null ? Math.round(f.loadFraction * 100) : undefined;
 
   return (
     <section class={`card gauge${blown ? ' gauge-blown' : ''}`}>
@@ -39,7 +41,9 @@ export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {
 
       <div class="gauge-loadrow">
         <span class={`gauge-load${f ? '' : ' muted'}`}>{f ? fmtNum(f.contextTokens) : '—'}</span>
-        <span class="gauge-limit">{f?.contextLimit ? `of ${fmtNum(f.contextLimit)} limit` : 'carried each turn'}</span>
+        <span class="gauge-limit">
+          {f?.contextLimit ? `of ${fmtNum(f.contextLimit)}${pct != null ? ` · ${pct}%` : ''}` : 'carried each turn'}
+        </span>
       </div>
 
       <div class="gauge-track">
@@ -47,19 +51,32 @@ export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {
       </div>
 
       {series.length > 1 && (
-        <div class="gauge-spark" title="Context (input tokens) per turn — drops are summarization resets">
-          {series.map((v, i) => (
-            <span
-              key={i}
-              class="gauge-bar"
-              style={{
-                height: `${Math.max(4, Math.round((v / peak) * 100))}%`,
-                background: i === series.length - 1 ? band.color : 'var(--vscode-descriptionForeground, #8b949e)',
-                opacity: i === series.length - 1 ? 1 : 0.5,
-              }}
-            />
-          ))}
-        </div>
+        <>
+          <div class="gauge-sparkhead">
+            <span>Per-turn context</span>
+            <span class="gauge-sparkmeta">
+              {series.length} turns{resets > 0 ? ` · ${resets} reset${resets > 1 ? 's' : ''}` : ''} · peak {fmtNum(peak)}
+            </span>
+          </div>
+          <div class="gauge-spark">
+            {series.map((v, i) => (
+              <span
+                key={i}
+                class="gauge-bar"
+                title={`Turn ${i + 1}: ${fmtNum(v)} tokens`}
+                style={{
+                  height: `${Math.max(3, Math.round((v / peak) * 100))}%`,
+                  background: i === series.length - 1 ? band.color : 'var(--vscode-descriptionForeground, #8b949e)',
+                  opacity: i === series.length - 1 ? 1 : 0.45,
+                }}
+              />
+            ))}
+          </div>
+          <div class="gauge-sparkaxis">
+            <span>turn 1</span>
+            <span>now</span>
+          </div>
+        </>
       )}
 
       <p class={`gauge-caption${f ? '' : ' muted'}`} style={{ color: f ? band.color : undefined }}>

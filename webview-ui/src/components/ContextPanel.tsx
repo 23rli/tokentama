@@ -43,7 +43,6 @@ export function ContextPanel({
     <section class="card context">
       <div class="context-head">
         <span class="section-title">Where your tokens go</span>
-        <span class="context-total">{fmtNum(summary.totalTokens)} in</span>
       </div>
 
       <div class="context-bar">

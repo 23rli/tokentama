@@ -1699,61 +1699,42 @@ button.ghost:hover {
   padding: 12px 14px;
 }
 
-/* -- Forecast hero -------------------------------------------------------- */
-.fc { border-left-color: var(--vscode-textLink-foreground, #539bf5); }
-.fc-top {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 11px; letter-spacing: 0.4px;
-  color: var(--vscode-descriptionForeground, #8b949e);
-  border-bottom: 1px solid var(--vscode-panel-border, #30363d);
-  padding-bottom: 8px; margin-bottom: 10px;
+/* -- NOW box (session + current prompt) ----------------------------------- */
+.now { border-left-color: var(--vscode-descriptionForeground, #8b949e); }
+.now-top {
+  display: flex; align-items: center; gap: 8px; font-size: 11px;
+  color: var(--vscode-descriptionForeground, #8b949e); margin-bottom: 8px;
 }
-.fc-track { color: var(--vscode-textLink-foreground, #539bf5); font-weight: 700; letter-spacing: 0.6px; }
-.fc-sid { flex: 1; font-variant-numeric: tabular-nums; }
-.fc-acc {
-  font-weight: 600; padding: 1px 6px;
-  background: var(--vscode-badge-background, #30363d);
-  color: var(--vscode-badge-foreground, #e6edf3);
+.now-sid { font-weight: 600; color: var(--vscode-foreground); font-variant-numeric: tabular-nums; }
+.now-turn { font-variant-numeric: tabular-nums; }
+.now-acc {
+  margin-left: auto; font-weight: 600; padding: 1px 6px;
+  background: var(--vscode-badge-background, #30363d); color: var(--vscode-badge-foreground, #e6edf3);
 }
-.fc-current { margin-bottom: 10px; }
-.fc-label {
-  display: block; font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase;
-  color: var(--vscode-descriptionForeground, #8b949e); margin-bottom: 3px;
-}
-.fc-prompt {
+.now-prompt {
   margin: 0; font-size: 13px; line-height: 1.4; color: var(--vscode-foreground);
   overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
-.fc-herobox {
-  background: var(--vscode-textBlockQuote-background, rgba(83, 155, 245, 0.06));
-  border: 1px solid var(--vscode-panel-border, #30363d);
-  border-left: 2px solid var(--vscode-textLink-foreground, #539bf5);
-  padding: 10px 12px;
-}
-.fc-kicker {
+
+/* -- NEXT box (the one predicted number) ---------------------------------- */
+.next { border-left-color: var(--vscode-textLink-foreground, #539bf5); }
+.next-kicker {
   display: block; font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase;
   font-weight: 600; color: var(--vscode-descriptionForeground, #8b949e);
 }
-.fc-num-row { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; flex-wrap: wrap; }
-.fc-number {
-  font-size: 38px; font-weight: 800; line-height: 1; letter-spacing: -1px;
+.next-num-row { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.next-number {
+  font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -1px;
   font-variant-numeric: tabular-nums; color: var(--vscode-foreground);
 }
-.fc-unit { font-size: 13px; color: var(--vscode-descriptionForeground, #8b949e); }
-.fc-credits { margin-left: auto; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.fc-range {
-  font-size: 12px; margin-top: 4px; font-variant-numeric: tabular-nums;
+.next-unit { font-size: 14px; color: var(--vscode-descriptionForeground, #8b949e); }
+.next-credits { margin-left: auto; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.next-range {
+  font-size: 12px; margin-top: 6px; font-variant-numeric: tabular-nums;
   color: var(--vscode-descriptionForeground, #8b949e);
 }
-.fc-hedge { color: var(--vscode-editorWarning-foreground, #d29922); }
-.fc-real { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; font-variant-numeric: tabular-nums; }
-.fc-real-k {
-  font-size: 11px; letter-spacing: 0.3px; text-transform: uppercase;
-  color: var(--vscode-descriptionForeground, #8b949e);
-}
-.fc-real-v { font-size: 14px; font-weight: 700; }
-.fc-real-c { font-size: 12px; color: var(--vscode-descriptionForeground, #8b949e); margin-left: auto; }
-.fc-warn {
+.next-hedge { color: var(--vscode-editorWarning-foreground, #d29922); }
+.next-warn {
   margin-top: 10px; font-size: 12px; color: var(--vscode-editorWarning-foreground, #f0883e);
   background: var(--vscode-inputValidation-warningBackground, rgba(240, 136, 62, 0.1));
   padding: 7px 9px; border-left: 2px solid var(--vscode-editorWarning-foreground, #f0883e);
@@ -1775,9 +1756,22 @@ button.ghost:hover {
   background: var(--vscode-input-background, rgba(255, 255, 255, 0.08));
 }
 .gauge-fill { height: 100%; transition: width 0.4s ease, background 0.4s ease; }
-.gauge-spark { display: flex; align-items: flex-end; gap: 2px; height: 34px; margin: 10px 0 6px; }
+.gauge-sparkhead {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin: 12px 0 4px; font-size: 10px; letter-spacing: 0.4px; text-transform: uppercase;
+  color: var(--vscode-descriptionForeground, #8b949e);
+}
+.gauge-sparkmeta { font-variant-numeric: tabular-nums; }
+.gauge-spark {
+  display: flex; align-items: flex-end; gap: 2px; height: 40px;
+  border-bottom: 1px solid var(--vscode-panel-border, #30363d); padding-bottom: 1px;
+}
 .gauge-bar { flex: 1; min-width: 2px; transition: height 0.3s ease; }
-.gauge-caption { font-size: 12px; margin: 4px 0 0; }
+.gauge-sparkaxis {
+  display: flex; justify-content: space-between; margin-top: 3px;
+  font-size: 10px; color: var(--vscode-descriptionForeground, #8b949e);
+}
+.gauge-caption { font-size: 12px; margin: 8px 0 0; }
 .gauge-blown { border-left-color: #f85149; animation: gauge-pulse 1.6s ease-in-out infinite; }
 @keyframes gauge-pulse {
   0%, 100% { box-shadow: inset 3px 0 0 0 #f85149; }
