@@ -1701,15 +1701,14 @@ button.ghost:hover {
 
 /* -- NOW box (session + current prompt) ----------------------------------- */
 .now { border-left-color: var(--vscode-descriptionForeground, #8b949e); }
-.now-top {
-  display: flex; align-items: center; gap: 8px; font-size: 11px;
-  color: var(--vscode-descriptionForeground, #8b949e); margin-bottom: 8px;
+.now-meta {
+  display: flex; gap: 6px; font-size: 11px; margin: 2px 0 8px;
+  color: var(--vscode-descriptionForeground, #8b949e); font-variant-numeric: tabular-nums;
 }
-.now-sid { font-weight: 600; color: var(--vscode-foreground); font-variant-numeric: tabular-nums; }
-.now-turn { font-variant-numeric: tabular-nums; }
-.now-acc {
-  margin-left: auto; font-weight: 600; padding: 1px 6px;
-  background: var(--vscode-badge-background, #30363d); color: var(--vscode-badge-foreground, #e6edf3);
+.now-sid { font-weight: 600; color: var(--vscode-foreground); }
+.now-label {
+  display: block; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--vscode-descriptionForeground, #8b949e); margin-bottom: 3px;
 }
 .now-prompt {
   margin: 0; font-size: 13px; line-height: 1.4; color: var(--vscode-foreground);
@@ -1718,22 +1717,23 @@ button.ghost:hover {
 
 /* -- NEXT box (the one predicted number) ---------------------------------- */
 .next { border-left-color: var(--vscode-textLink-foreground, #539bf5); }
-.next-kicker {
-  display: block; font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase;
-  font-weight: 600; color: var(--vscode-descriptionForeground, #8b949e);
-}
-.next-num-row { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.next-num-row { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; }
 .next-number {
   font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -1px;
   font-variant-numeric: tabular-nums; color: var(--vscode-foreground);
 }
 .next-unit { font-size: 14px; color: var(--vscode-descriptionForeground, #8b949e); }
-.next-credits { margin-left: auto; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.next-range {
-  font-size: 12px; margin-top: 6px; font-variant-numeric: tabular-nums;
+.next-detail {
+  font-size: 12.5px; margin-top: 6px; font-variant-numeric: tabular-nums;
   color: var(--vscode-descriptionForeground, #8b949e);
 }
 .next-hedge { color: var(--vscode-editorWarning-foreground, #d29922); }
+.next-acc {
+  margin-top: 10px; padding-top: 8px; font-size: 12px;
+  border-top: 1px solid var(--vscode-panel-border, #30363d);
+  color: var(--vscode-descriptionForeground, #8b949e);
+}
+.next-acc b { color: var(--vscode-charts-green, #3fb950); font-variant-numeric: tabular-nums; }
 .next-warn {
   margin-top: 10px; font-size: 12px; color: var(--vscode-editorWarning-foreground, #f0883e);
   background: var(--vscode-inputValidation-warningBackground, rgba(240, 136, 62, 0.1));
@@ -1743,40 +1743,49 @@ button.ghost:hover {
 /* -- Context-weight gauge ------------------------------------------------- */
 .gauge { border-left-color: #3fb950; }
 .gauge-head { display: flex; justify-content: space-between; align-items: center; }
-.gauge-title {
-  font-size: 11px; letter-spacing: 0.6px; font-weight: 700;
-  color: var(--vscode-descriptionForeground, #8b949e);
-}
 .gauge-band { font-size: 11px; font-weight: 800; letter-spacing: 0.6px; }
-.gauge-loadrow { display: flex; align-items: baseline; gap: 8px; margin: 6px 0 8px; }
+.gauge-loadrow { display: flex; align-items: baseline; gap: 8px; margin: 8px 0 6px; }
 .gauge-load { font-size: 28px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
-.gauge-limit { font-size: 12px; color: var(--vscode-descriptionForeground, #8b949e); }
+.gauge-load-unit { font-size: 12px; color: var(--vscode-descriptionForeground, #8b949e); }
 .gauge-track {
   position: relative; height: 8px; overflow: hidden;
   background: var(--vscode-input-background, rgba(255, 255, 255, 0.08));
 }
 .gauge-fill { height: 100%; transition: width 0.4s ease, background 0.4s ease; }
-.gauge-sparkhead {
-  display: flex; justify-content: space-between; align-items: baseline;
-  margin: 12px 0 4px; font-size: 10px; letter-spacing: 0.4px; text-transform: uppercase;
-  color: var(--vscode-descriptionForeground, #8b949e);
+.gauge-limitline {
+  display: flex; justify-content: space-between; gap: 8px; margin-top: 5px;
+  font-size: 12px; color: var(--vscode-descriptionForeground, #8b949e); font-variant-numeric: tabular-nums;
 }
-.gauge-sparkmeta { font-variant-numeric: tabular-nums; }
+.gauge-cap { font-weight: 600; }
+.gauge-graphwrap { margin-top: 12px; }
+.gauge-graphtitle {
+  display: block; font-size: 10px; letter-spacing: 0.4px; text-transform: uppercase;
+  color: var(--vscode-descriptionForeground, #8b949e); margin-bottom: 4px;
+}
+.gauge-graph { display: flex; gap: 6px; }
+.gauge-yaxis {
+  display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end;
+  width: 34px; height: 44px; font-size: 9px; color: var(--vscode-descriptionForeground, #8b949e);
+  font-variant-numeric: tabular-nums;
+}
 .gauge-spark {
-  display: flex; align-items: flex-end; gap: 2px; height: 40px;
-  border-bottom: 1px solid var(--vscode-panel-border, #30363d); padding-bottom: 1px;
+  flex: 1; display: flex; align-items: flex-end; gap: 2px; height: 44px;
+  border-left: 1px solid var(--vscode-panel-border, #30363d);
+  border-bottom: 1px solid var(--vscode-panel-border, #30363d); padding: 0 0 1px 2px;
 }
 .gauge-bar { flex: 1; min-width: 2px; transition: height 0.3s ease; }
 .gauge-sparkaxis {
-  display: flex; justify-content: space-between; margin-top: 3px;
+  display: flex; justify-content: space-between; margin: 3px 0 0 40px;
   font-size: 10px; color: var(--vscode-descriptionForeground, #8b949e);
 }
-.gauge-caption { font-size: 12px; margin: 8px 0 0; }
 .gauge-blown { border-left-color: #f85149; animation: gauge-pulse 1.6s ease-in-out infinite; }
 @keyframes gauge-pulse {
   0%, 100% { box-shadow: inset 3px 0 0 0 #f85149; }
   50% { box-shadow: inset 3px 0 0 0 #f85149, 0 0 0 2px rgba(248, 81, 73, 0.18); }
 }
+
+/* -- Where tokens go ------------------------------------------------------ */
+.context-sub { font-size: 11px; color: var(--vscode-descriptionForeground, #8b949e); font-variant-numeric: tabular-nums; }
 
 /* -- Compose fold (minimized, at the end) --------------------------------- */
 .compose-fold {

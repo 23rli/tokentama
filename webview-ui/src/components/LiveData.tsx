@@ -8,7 +8,6 @@ import { fmtNum } from '../format';
  */
 export function LiveData({ state }: { state: TamaState }) {
   const m = state.model;
-  const e = state.lastEvent;
   const efforts = m?.reasoningEfforts ?? [];
   // Prefer the effort the session ACTUALLY selected; fall back to the model's
   // supported range only when the concrete choice isn't recorded.
@@ -24,14 +23,9 @@ export function LiveData({ state }: { state: TamaState }) {
     : undefined;
 
   return (
-    <section class="livedata">
+    <section class="card livedata">
       <div class="livedata-head">
-        <span class="livedata-title">Live Copilot data</span>
-        {e && (
-          <span class={`pill ${e.tokensReal ? 'pill-real' : ''}`}>
-            {e.tokensReal ? 'real tokens' : 'estimated'}
-          </span>
-        )}
+        <span class="section-title">Live Copilot data</span>
       </div>
 
       <div class="livedata-row">

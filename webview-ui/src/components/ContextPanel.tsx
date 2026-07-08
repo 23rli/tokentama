@@ -42,7 +42,8 @@ export function ContextPanel({
   return (
     <section class="card context">
       <div class="context-head">
-        <span class="section-title">Where your tokens go</span>
+        <span class="section-title">Where tokens go</span>
+        <span class="context-sub">latest prompt · {fmtNum(summary.totalTokens)}</span>
       </div>
 
       <div class="context-bar">

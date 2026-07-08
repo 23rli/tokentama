@@ -33,7 +33,7 @@ export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {
   return (
     <section class={`card gauge${blown ? ' gauge-blown' : ''}`}>
       <header class="gauge-head">
-        <span class="gauge-title">CONTEXT WEIGHT</span>
+        <span class="section-title">Context weight</span>
         <span class="gauge-band" style={{ color: f ? band.color : undefined }}>
           {f ? band.label.toUpperCase() : '—'}
         </span>
@@ -41,47 +41,53 @@ export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {
 
       <div class="gauge-loadrow">
         <span class={`gauge-load${f ? '' : ' muted'}`}>{f ? fmtNum(f.contextTokens) : '—'}</span>
-        <span class="gauge-limit">
-          {f?.contextLimit ? `of ${fmtNum(f.contextLimit)}${pct != null ? ` · ${pct}%` : ''}` : 'carried each turn'}
-        </span>
+        <span class="gauge-load-unit">tokens carried, re-sent every turn</span>
       </div>
 
       <div class="gauge-track">
         <div class="gauge-fill" style={{ width: `${Math.round(fill * 100)}%`, background: f ? band.color : undefined }} />
       </div>
+      <div class="gauge-limitline">
+        {f?.contextLimit ? (
+          <>
+            <span>{pct}% of the {fmtNum(f.contextLimit)}-token limit</span>
+            <span class="gauge-cap" style={{ color: band.color }}>{band.caption}</span>
+          </>
+        ) : (
+          <span class="muted">Waiting for your first Copilot turn…</span>
+        )}
+      </div>
 
       {series.length > 1 && (
-        <>
-          <div class="gauge-sparkhead">
-            <span>Per-turn context</span>
-            <span class="gauge-sparkmeta">
-              {series.length} turns{resets > 0 ? ` · ${resets} reset${resets > 1 ? 's' : ''}` : ''} · peak {fmtNum(peak)}
-            </span>
-          </div>
-          <div class="gauge-spark">
-            {series.map((v, i) => (
-              <span
-                key={i}
-                class="gauge-bar"
-                title={`Turn ${i + 1}: ${fmtNum(v)} tokens`}
-                style={{
-                  height: `${Math.max(3, Math.round((v / peak) * 100))}%`,
-                  background: i === series.length - 1 ? band.color : 'var(--vscode-descriptionForeground, #8b949e)',
-                  opacity: i === series.length - 1 ? 1 : 0.45,
-                }}
-              />
-            ))}
+        <div class="gauge-graphwrap">
+          <span class="gauge-graphtitle">Tokens carried each turn</span>
+          <div class="gauge-graph">
+            <div class="gauge-yaxis">
+              <span>{fmtNum(peak)}</span>
+              <span>0</span>
+            </div>
+            <div class="gauge-spark">
+              {series.map((v, i) => (
+                <span
+                  key={i}
+                  class="gauge-bar"
+                  title={`Turn ${i + 1}: ${fmtNum(v)} tokens`}
+                  style={{
+                    height: `${Math.max(3, Math.round((v / peak) * 100))}%`,
+                    background: i === series.length - 1 ? band.color : 'var(--vscode-descriptionForeground, #8b949e)',
+                    opacity: i === series.length - 1 ? 1 : 0.45,
+                  }}
+                />
+              ))}
+            </div>
           </div>
           <div class="gauge-sparkaxis">
             <span>turn 1</span>
-            <span>now</span>
+            <span>{resets > 0 ? `${resets} reset${resets > 1 ? 's' : ''}` : ''}</span>
+            <span>now (turn {series.length})</span>
           </div>
-        </>
+        </div>
       )}
-
-      <p class={`gauge-caption${f ? '' : ' muted'}`} style={{ color: f ? band.color : undefined }}>
-        {f ? band.caption : 'Waiting for your first Copilot turn…'}
-      </p>
     </section>
   );
 }

@@ -10,44 +10,45 @@ import { fmtNum } from '../format';
  */
 export function ForecastPanel({ forecast }: { forecast?: ForecastView }) {
   const f = forecast;
-  const acc = f && f.accuracySamples > 0 ? `${Math.round(f.accuracyScore)}/100` : '—';
 
   return (
     <>
       <section class="card now">
-        <header class="now-top">
+        <span class="section-title">Now</span>
+        <div class="now-meta">
           <span class="now-sid">
             {f?.sessionShortId ? `Session ${f.sessionShortId}` : 'No active session'}
           </span>
-          {f && f.turnCount > 0 && <span class="now-turn">turn {f.turnCount}</span>}
-          <span class="now-acc" title="Live self-measured accuracy on your real turns">
-            {acc} accurate
-          </span>
-        </header>
+          {f && f.turnCount > 0 && <span class="now-turn">· turn {f.turnCount}</span>}
+        </div>
+        <span class="now-label">Latest prompt</span>
         <p class={`now-prompt${f?.lastPromptPreview ? '' : ' muted'}`}>
           {f?.lastPromptPreview ?? 'Waiting for your first Copilot turn…'}
         </p>
       </section>
 
       <section class="card next">
-        <span class="next-kicker">Predicted next turn</span>
+        <span class="section-title">Predicted next turn</span>
         <div class="next-num-row">
           <span class={`next-number${f ? '' : ' muted'}`}>{f ? fmtNum(f.predictedInputTokens) : '—'}</span>
-          <span class="next-unit">tokens</span>
-          {f?.predictedCredits != null && (
-            <span class="next-credits">≈ {Math.round(f.predictedCredits).toLocaleString()} AIC</span>
-          )}
+          <span class="next-unit">tokens in</span>
         </div>
-        <div class="next-range">
+        <div class="next-detail">
           {f ? (
             <>
-              range {fmtNum(f.intervalLow)}–{fmtNum(f.intervalHigh)}
+              {f.predictedCredits != null && <>≈ {Math.round(f.predictedCredits).toLocaleString()} credits · </>}
+              likely {fmtNum(f.intervalLow)}–{fmtNum(f.intervalHigh)}
               {f.confidence < 0.4 && <span class="next-hedge"> · low confidence</span>}
             </>
           ) : (
-            'range —'
+            'likely —'
           )}
         </div>
+        {f && f.accuracySamples > 0 && (
+          <div class="next-acc" title={`Median error on ${f.accuracySamples} of your past turns`}>
+            Forecast accuracy <b>{Math.round(f.accuracyScore)}/100</b> — how close past predictions landed
+          </div>
+        )}
         {f?.resetRisk === 'high' && (
           <div class="next-warn">Summarization likely next — a reset may drop cost sharply.</div>
         )}
