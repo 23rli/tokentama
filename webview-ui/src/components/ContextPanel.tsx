@@ -19,7 +19,22 @@ export function ContextPanel({
   const slices = lastEvent?.contextBreakdown;
   const totalIn = lastEvent?.inputTokens ?? 0;
   const summary = summarizeContext(slices, totalIn);
-  if (!summary) return null;
+  if (!summary) {
+    // Always render — a skeleton keeps the dashboard layout fixed before data.
+    return (
+      <section class="context">
+        <div class="context-head">
+          <span class="section-title">Where your tokens go</span>
+          <span class="context-total context-muted">— in</span>
+        </div>
+        <div class="context-bar context-bar-empty" />
+        <p class="context-note context-muted">
+          Waiting for a Copilot turn with token details… the system / tools / history / message
+          split will appear here.
+        </p>
+      </section>
+    );
+  }
   const advisory = toolAdvisory(slices, totalIn, model?.inputPer1M);
   const history = historyAdvisory(summary);
   const unit = model?.inputPer1M != null ? 'AICs' : '';
@@ -67,7 +82,7 @@ export function ContextPanel({
 
       {advisory?.recommend && (
         <div class="context-advisory">
-          🔧 Tool definitions are {advisory.toolPct}% of every prompt ({fmtNum(advisory.toolTokens)}{' '}
+          Tool definitions are {advisory.toolPct}% of every prompt ({fmtNum(advisory.toolTokens)}{' '}
           tokens, re-sent each turn). Disable unused tools / MCP servers to cut this on every turn
           {advisory.costPerDay != null && (
             <> — ≈{advisory.costPerDay.toFixed(1)} {unit}/day saved (est.)</>
@@ -78,7 +93,7 @@ export function ContextPanel({
 
       {history?.recommend && (
         <div class="context-advisory">
-          🧹 This chat carries {fmtNum(history.conversationTokens)} tokens of context/history — re-sent
+          This chat carries {fmtNum(history.conversationTokens)} tokens of context/history — re-sent
           every turn. Compact it into a lean recap and keep going.
           <div class="advisory-actions">
             <button class="primary" onClick={() => post({ type: 'compactSession' })}>

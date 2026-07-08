@@ -128,6 +128,58 @@ export interface SuccessMetrics {
   costUsdWasted: number;
 }
 
+/**
+ * Live cost forecast for the NEXT turn ("precognition") plus the real numbers to
+ * compare it against and the system's self-measured accuracy. Everything here is
+ * either REAL (metered, `real*` fields) or PREDICTED (`predicted*`/interval) — the
+ * UI must label which is which.
+ */
+export interface ForecastView {
+  /** PREDICTED input tokens for the next turn. */
+  predictedInputTokens: number;
+  /** Calibrated interval [low, high] around the prediction. */
+  intervalLow: number;
+  intervalHigh: number;
+  /** PREDICTED Copilot credits for the next turn (cache-aware), when known. */
+  predictedCredits?: number;
+  /** 0..1 confidence; low → the UI should hedge. */
+  confidence: number;
+  /** 'high' when a summarization reset is likely (point estimate unreliable). */
+  resetRisk: 'low' | 'high';
+  /** The biggest contributor to the next turn's cost ("what's hungry"). */
+  hungriest: 'carriedContext' | 'growth' | 'draft';
+
+  /** REAL input tokens metered on the last completed turn. */
+  realLastInputTokens?: number;
+  /** REAL credits metered on the last completed turn. */
+  realLastCredits?: number;
+
+  /** Self-measured accuracy score (0..100 = 100 − median % error). */
+  accuracyScore: number;
+  /** How many real turns the accuracy is based on. */
+  accuracySamples: number;
+  /** Fraction of real turns whose actual landed inside the predicted interval. */
+  intervalCoverage: number;
+
+  /** Current carried context (re-sent every turn) — the sustainability driver. */
+  contextTokens: number;
+  /** The model's input limit, when known. */
+  contextLimit?: number;
+  /** contextTokens / contextLimit, 0..1 (undefined if no limit known). */
+  loadFraction?: number;
+  /** Coarse sustainability band derived from load + reset risk. */
+  sustainability: 'light' | 'moderate' | 'heavy' | 'critical' | 'overloaded';
+
+  /** Short id of the session being tracked, so the user knows WHICH chat. */
+  sessionShortId?: string;
+  /** The last captured user prompt (truncated) — what the forecast is based on. */
+  lastPromptPreview?: string;
+  /** Number of real (metered) turns seen in this session. */
+  turnCount: number;
+  /** Real input tokens per turn, oldest→newest, for the context-growth bar graph. */
+  contextSeries: number[];
+}
+
 /** Full snapshot of pet state pushed to the webview. */
 export interface TamaState {
   world: PetWorldState;
@@ -149,6 +201,8 @@ export interface TamaState {
   outcomes?: OutcomeReport;
   /** Most recent finalized scored events (newest first) for the recent strip. */
   recentEvents?: ScoredEventView[];
+  /** Live next-turn cost forecast + accuracy (precognition). */
+  forecast?: ForecastView;
 }
 
 /** Messages sent host → webview. */

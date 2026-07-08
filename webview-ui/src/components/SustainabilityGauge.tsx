@@ -1,0 +1,95 @@
+import type { ForecastView } from '../../../src/webview/contract';
+import { fmtNum } from '../format';
+
+/** Visuals per sustainability band — light (healthy) → overloaded (blows up). */
+const BANDS: Record<
+  ForecastView['sustainability'],
+  { label: string; caption: string; color: string; emoji: string }
+> = {
+  light: {
+    label: 'Light',
+    caption: 'Plenty of headroom — turns are cheap to re-send.',
+    color: '#3fb950',
+    emoji: '🟢',
+  },
+  moderate: {
+    label: 'Moderate',
+    caption: 'Context is building up. Each turn re-sends a bit more.',
+    color: '#57ab5a',
+    emoji: '🟢',
+  },
+  heavy: {
+    label: 'Heavy',
+    caption: 'Every turn now re-sends a large context — costs are climbing.',
+    color: '#d29922',
+    emoji: '🟡',
+  },
+  critical: {
+    label: 'Critical',
+    caption: 'Context is very heavy. A fresh chat would cut per-turn cost sharply.',
+    color: '#f0883e',
+    emoji: '🟠',
+  },
+  overloaded: {
+    label: 'Overloaded',
+    caption: 'Near the limit — a summarization reset is imminent and the next turns spike.',
+    color: '#f85149',
+    emoji: '🔴',
+  },
+};
+
+/**
+ * Context-weight card (the repurposed "health"). Shows how heavy the session has
+ * become: a load bar that fills and reddens toward the model's limit, a per-turn
+ * bar graph of context growth (with summarization drops visible), and — at the top
+ * — an "overloaded" state signalling each new prompt is now unsustainable. Flat,
+ * business style. Always renders (skeleton before data) so the layout never shifts.
+ */
+export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {
+  const f = forecast;
+  const band = f ? BANDS[f.sustainability] : BANDS.light;
+  const fill = !f ? 0 : f.loadFraction != null ? Math.min(1, f.loadFraction) : Math.min(1, f.contextTokens / 400_000);
+  const blown = f?.sustainability === 'overloaded';
+  const series = f?.contextSeries ?? [];
+  const peak = series.length ? Math.max(...series) : 1;
+
+  return (
+    <section class={`card gauge${blown ? ' gauge-blown' : ''}`}>
+      <header class="gauge-head">
+        <span class="gauge-title">CONTEXT WEIGHT</span>
+        <span class="gauge-band" style={{ color: f ? band.color : undefined }}>
+          {f ? band.label.toUpperCase() : '—'}
+        </span>
+      </header>
+
+      <div class="gauge-loadrow">
+        <span class={`gauge-load${f ? '' : ' muted'}`}>{f ? fmtNum(f.contextTokens) : '—'}</span>
+        <span class="gauge-limit">{f?.contextLimit ? `of ${fmtNum(f.contextLimit)} limit` : 'carried each turn'}</span>
+      </div>
+
+      <div class="gauge-track">
+        <div class="gauge-fill" style={{ width: `${Math.round(fill * 100)}%`, background: f ? band.color : undefined }} />
+      </div>
+
+      {series.length > 1 && (
+        <div class="gauge-spark" title="Context (input tokens) per turn — drops are summarization resets">
+          {series.map((v, i) => (
+            <span
+              key={i}
+              class="gauge-bar"
+              style={{
+                height: `${Math.max(4, Math.round((v / peak) * 100))}%`,
+                background: i === series.length - 1 ? band.color : 'var(--vscode-descriptionForeground, #8b949e)',
+                opacity: i === series.length - 1 ? 1 : 0.5,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      <p class={`gauge-caption${f ? '' : ' muted'}`} style={{ color: f ? band.color : undefined }}>
+        {f ? band.caption : 'Waiting for your first Copilot turn…'}
+      </p>
+    </section>
+  );
+}

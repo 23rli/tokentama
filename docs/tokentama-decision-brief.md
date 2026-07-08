@@ -1,6 +1,15 @@
 # Tokentama — Decision Brief (for senior-SWE review)
 
-_Prepared 2026-07-06. Self-contained: readable without prior context. Candid by design._
+_Prepared 2026-07-06 · refreshed 2026-07-07 with a fresh run on real session data.
+Self-contained: readable without prior context. Candid by design._
+
+> **TL;DR for the 5-minute version:** I built a token-saving tool for AI coding and
+> measured it hard on my own real Copilot sessions. The uncomfortable result: **~82–87%
+> of the bill is re-sent context ("input"), not prompting behaviour.** The one honest,
+> capability-safe lever I can move as a *developer tool* is **retry-avoidance ≈ 5%**.
+> Everything bigger (right-sizing, tool-trim, compaction, caching) is either **structural
+> / harness-controlled**, **already shipped by GitHub**, or **~0 for a clean setup like
+> mine**. I think it's a dead end as a savings product. Questions in §8.
 
 ## 0. The ask (read this first)
 
@@ -74,27 +83,66 @@ complex tasks never touched, no context dropped):
 durable, defensible number is **~5–10%**, with **adoption as the dominant driver** (30%→90%
 adoption moved the mean only ~6 points — usability, not cleverness, gates savings).
 
-### 3.6 The cost is structural (cache/pricing evidence)
-From real `models.json` (claude-opus-4.6) — AIC per 1M tokens:
+### 3.6 The cost is structural (fresh cache/pricing evidence, 2026-07-07 run)
+From real `models.json` (claude-opus-4.x) — AIC per 1M tokens:
 
 | Fresh input | Cache **read** | Cache **write** | Output |
 | --- | --- | --- | --- |
 | 500 | 50 | **625** | 2500 |
 
-- **87% of the bill is input/context** (re-sent every turn).
-- Measured effective input rate ran **~800–1130** — *above* the 500 fresh rate. The explanation
-  is **cache-write churn**: when earlier context changes/reorders, it must be re-written to cache
-  at **625 (more than fresh input)** instead of cheaply re-read at 50. This is controlled by the
+Re-running `bench:cache` today across my real sessions (86,086 AIC billed):
+
+- **87% of the bill is input/context** (75,074 of 86,086 AIC) — re-sent every turn.
+- **Token-weighted cache-hit ≈ 22%** of input; the rest is paid at or above full price.
+- Measured **effective input rate ran 799–1115 AIC/1M** per session — *at or above* the 500
+  fresh rate. Explanation: **cache-write churn** — when earlier context changes/reorders it
+  must be re-*written* at **625 (more than fresh input)** instead of cheaply re-read at 50.
+- Inferred "cache-miss waste" looks like **70,499 AIC (82% of the bill)** — but it is
+  **confounded by premium-request multipliers**, so it is **NOT cleanly reclaimable**. Much of
+  it is simply what a premium model costs to carry context. All of it is controlled by the
   **agent/harness assembling context — not by the user.**
 
-### 3.7 The tool-config wedge — real in theory, absent for this user
-Tool *definitions* (JSON schemas for every callable tool, re-sent every turn) were **~⅓ of the
-bill**. Promising, because trimming *unused* tools is capability-safe and org-actionable. **But:**
-- I checked this user's config: **zero MCP servers** (`settings.json` has 4 lines; no `mcp.json`
-  anywhere). So the ~⅓ is **built-in Copilot agent tools** (read_file, edit_file, terminal,
-  grep…) — **core to agent mode, not trimmable.**
-- **Recoverable for this user ≈ 0.** The wedge only exists for **MCP-heavy** users who load tools
-  they don't call — **unvalidated**, needs other people's data.
+### 3.7 The tool-config wedge — real in theory, ≈0 for this user (with numbers)
+Tool *definitions* (the JSON schema for every callable tool, re-sent on **every** turn) are a
+meaningful slice of the fixed prefix. In today's `bench:history` run, the **tool-trim lever**
+(assuming ~30% of tool defs are unused/disable-able) came out at:
+
+| Session | Tool-trim AIC | % of that session's bill |
+| --- | --- | --- |
+| 76006030 | 2,536 | 9% |
+| b2df490a | 1,505 | 9% |
+| c60a8008 | 2,177 | 11% |
+| c6a06567 | 1,748 | 11% |
+| c3ed9e9c | 203 | 6% |
+
+So *in the abstract* tool definitions are worth **~6–11%** — and trimming **unused** ones is
+capability-safe and org-actionable. **But which tools were actually costing me this?**
+- I checked this user's config: **zero MCP servers** (`settings.json` is ~4 lines; no `mcp.json`
+  anywhere in the workspace or user profile).
+- Therefore every re-sent tool definition is a **built-in Copilot agent tool** — `read_file`,
+  `create_file`, `replace_string_in_file`, `run_in_terminal`, `grep_search`, `file_search`,
+  `list_dir`, `semantic_search`, etc. These are **core to agent mode**: disabling them breaks
+  the agent. **None are trimmable.**
+- **Recoverable tool loss for this user ≈ 0.** The 6–11% is real spend but not *waste* — it
+  buys the agent's capability. The wedge only becomes recoverable for **MCP-heavy** users who
+  load servers/tools they rarely call — **unvalidated; needs other people's data.**
+
+### 3.7a Plain-English: what "the wedge" is, and why it matters
+(You asked me to nail this down.) **The wedge = billed cost − the cost of the minimal necessary
+context at perfect caching.** It is created by three structural things, none behavioural:
+1. **Re-sent context that isn't cached** (cache-write churn): 87% of the bill is input, and only
+   ~22% of it is actually being read from cache. The rest is re-paid every turn.
+2. **Tool definitions re-sent every turn** (§3.7): the fixed prefix you carry on all 200+ turns.
+3. **Premium-request multipliers**: pinned premium models push the effective rate above base.
+
+**How the app tracks it** with on-disk data: `chatSessions` gives real `promptTokens` /
+`copilotCredits` / per-category `promptTokenDetails`; `models.json` gives the real rate card. We
+infer the wedge as *billed AIC vs. what the same tokens would cost at the cached rate*. **Why it
+matters:** the wedge is **82% of the bill** — huge — but the audit shows it's **mostly not
+user-recoverable**: churn is harness-controlled, the tools are built-in, and the premium rate is
+a deliberate user choice. So the wedge is a great *diagnostic* and a poor *product lever* for an
+individual dev. It only becomes actionable at **org scale** (fleet-wide MCP bloat, model
+defaults, harness config) — which is a platform/FinOps play, not a prompt-coach.
 
 ### 3.8 GitHub already owns the org story
 GitHub's Copilot **metrics API** gives enterprise/org/team/user usage + engagement + billing,
@@ -173,6 +221,14 @@ Key technical facts:
   (prompts + tool calls), `chatSessions` (real promptTokens/completionTokens/copilotCredits +
   per-category `promptTokenDetails`), `debug-logs/<id>/models.json` (real pricing) + `main.jsonl`.
 - Pricing (models.json, AIC/1M): input 500 · cache-read 50 · cache-write 625 · output 2500.
-- Measured on this machine: 5 longest sessions (47–62 turns), ~78–83k billed AIC, 87% input.
+- Fresh 2026-07-07 run — `bench:history`, 5 longest sessions (47–69 turns), **238 metered turns,
+  83,766 AIC billed**: retry-avoidance + compression saved **4,622 AIC (5%)**; capability-safe
+  recoverable (bundles retry + right-size + tool-trim) **32,065 AIC (38%)** — but strip the
+  levers that don't hold (right-size, tool-trim) and the **durable, honest number is retry ≈ 5%**.
+  Task mix: **0 trivial · 197 moderate · 82 complex (29% complex, untouched)**. Compaction upper
+  bound **71,780 AIC (86%, lossless, opt-in only)**.
+- Fresh 2026-07-07 run — `bench:cache`, 86,086 AIC billed: **87% input**, token-weighted
+  cache-hit **~22%**, effective input rate **799–1115 AIC/1M** (≥ base → churn/premium, not clean
+  cache miss).
 - Caveat throughout: **one developer, one machine** — not representative. Any org claim needs
   multi-user data.

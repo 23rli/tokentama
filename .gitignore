@@ -12,6 +12,8 @@ scripts/.bench.cjs
 scripts/.bench-history.cjs
 scripts/.bench-human.cjs
 scripts/.bench-cache.cjs
+scripts/.*.cjs
+.preview.html
 .vite/
 
 # Test / coverage

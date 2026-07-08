@@ -8,6 +8,7 @@ import type {
   ScorePoint,
   ScoredEventView,
   TipView,
+  ForecastView,
 } from '../webview/contract';
 import { computeMetrics, type Counters, type ScoredRecord } from '../metrics/metrics';
 
@@ -69,6 +70,7 @@ export class TamaStore {
   private data: PersistShape;
   private _captureEnabled: boolean;
   private outcomesProvider?: () => OutcomeReport;
+  private forecast?: ForecastView;
 
   constructor(private readonly context: vscode.ExtensionContext) {
     this.data = context.globalState.get<PersistShape>(STATE_KEY) ?? TamaStore.empty();
@@ -125,6 +127,12 @@ export class TamaStore {
   /** Provide a lazy outcomes computation (from the corpus), read on each getState. */
   setOutcomesProvider(fn: () => OutcomeReport): void {
     this.outcomesProvider = fn;
+  }
+
+  /** Update the live next-turn forecast (precognition) and refresh the UI. */
+  setForecast(forecast: ForecastView): void {
+    this.forecast = forecast;
+    this.emit();
   }
 
   recordScore(resp: ScorePromptResponse, opts: RecordScoreOptions): void {
@@ -274,6 +282,7 @@ export class TamaStore {
       preliminary: this.data.preliminary ?? false,
       outcomes: this.outcomesProvider?.(),
       recentEvents: this.data.recentEvents ?? [],
+      forecast: this.forecast,
     };
   }
 

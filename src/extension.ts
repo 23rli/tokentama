@@ -18,6 +18,11 @@ import { buildSessionSummary } from './analysis/sessionSummary';
 import { computeOutcomes } from './analysis/outcomes';
 import { buildPortfolio, renderPortfolio } from './analysis/userPortfolio';
 import { extractTargets, deriveInsights } from './analysis/corpusInsights';
+import { ForecastService, type ForecastAccuracy } from './analysis/forecastService';
+import type { Forecast } from './analysis/forecast';
+import type { ForecastView } from './webview/contract';
+import type { PromptEvent } from '@tokentama/shared-types';
+import { estimateCredits } from '@tokentama/scoring-engine';
 
 const SECRET_KEY = 'tokentama.llmApiKey';
 
@@ -76,6 +81,49 @@ export function activate(context: vscode.ExtensionContext): void {
   const scoreService = new ScoreService(store, getCoachConfig, log, telemetry, corpus, () =>
     corpus.all(),
   );
+
+  // Precognition core: rebuild the live forecast from the ACTIVE session on disk
+  // (which carries real metered tokens for every completed turn), so it appears
+  // immediately and never depends on lagging forward-only capture. Model-agnostic
+  // and free (pure arithmetic). Refreshed on each capture event + on a timer.
+  const refreshForecast = (): void => {
+    try {
+      // Pin to THIS workspace's active chat so the panel doesn't jump between
+      // sessions in other windows. Only fall back to the global-newest session
+      // when this window has no folder open (no workspace hash to scope by).
+      const session = workspaceHash
+        ? findActiveSession(undefined, workspaceHash) ?? undefined
+        : findActiveSession();
+      if (!session) return;
+      const real = readSessionEvents(session).filter(
+        (e) => e.tokens && e.tokens.estimated === false && (e.tokens.inputTokens ?? 0) > 0,
+      );
+      if (real.length === 0) return;
+      const fs = new ForecastService();
+      for (const e of real) {
+        fs.recordTurn(
+          {
+            promptTokens: e.tokens!.inputTokens,
+            completionTokens: e.tokens!.outputTokens,
+            promptText: e.promptText,
+            toolCalls: e.toolCalls?.length,
+          },
+          { maxInputTokens: e.model?.maxInputTokens, contextMaxTokens: e.model?.contextMaxTokens },
+        );
+      }
+      const last = real[real.length - 1];
+      store.setForecast(
+        buildForecastView(fs.forecastNext(), fs.accuracy(), last, {
+          sessionShortId: session.sessionId.slice(0, 8),
+          lastPromptPreview: last.promptText.replace(/\s+/g, ' ').trim().slice(0, 100),
+          turnCount: real.length,
+          contextSeries: real.map((e) => e.tokens!.inputTokens),
+        }),
+      );
+    } catch {
+      /* best-effort — the panel skeletons remain until data is available */
+    }
+  };
 
   const getRewriteConfig = async (): Promise<RewriteConfig> => {
     const cfg = vscode.workspace.getConfiguration('tokentama.rewriter');
@@ -157,11 +205,15 @@ export function activate(context: vscode.ExtensionContext): void {
             'Tokentama is now auto-grading your Copilot prompts.',
           );
         }
+        // Precognition: rebuild the next-turn forecast from the active session's
+        // real metered tokens and refresh the panel (skeletons fill in).
+        refreshForecast();
       }
       void scoreService.scoreEvent(event, 'copilot', { preliminary: meta?.preliminary });
     }, hashScope);
     watcher.start();
     context.subscriptions.push(watcher);
+    refreshForecast();
     log(
       watcher.isAvailable()
         ? 'Passive capture started — watching Copilot chat sessions on disk.'
@@ -291,6 +343,12 @@ export function activate(context: vscode.ExtensionContext): void {
   registerChatParticipant(context, scoreService, store, log);
 
   if (store.captureEnabled) startWatcher();
+
+  // Backstop: refresh the forecast shortly after activation and periodically, so
+  // the panel populates from any existing session even before a new turn fires.
+  setTimeout(refreshForecast, 1200);
+  const forecastTimer = setInterval(refreshForecast, 5000);
+  context.subscriptions.push({ dispose: () => clearInterval(forecastTimer) });
 }
 
 export function deactivate(): void {
@@ -327,6 +385,63 @@ function buildRecentContext(
   if (files.length) parts.push(`Files/targets recently worked on: ${files.slice(0, 5).join(', ')}`);
   if (recentAsks.length) parts.push(`Recent asks: ${recentAsks.map((a) => `“${a}”`).join(' | ')}`);
   return parts.length ? parts.join('\n') : undefined;
+}
+
+/**
+ * Assemble the webview forecast view-model: the PREDICTED next turn (+ interval,
+ * reset risk, hungriest part), the REAL last turn to compare against, the live
+ * self-measured accuracy, and the context-load / sustainability signal that drives
+ * the health gauge. Predicted credits price the fresh (growth+draft) portion at
+ * the input rate and treat carried context as cached — matching the impact model.
+ */
+function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEvent, extras: {
+  sessionShortId?: string;
+  lastPromptPreview?: string;
+  turnCount: number;
+  contextSeries: number[];
+}): ForecastView {
+  const contextTokens = f.breakdown.carriedContext;
+  const limit = event.model?.maxInputTokens ?? event.model?.contextMaxTokens;
+  const loadFraction = limit && limit > 0 ? contextTokens / limit : undefined;
+  const freshTokens = Math.max(0, f.predictedInputTokens - contextTokens);
+  const expectedOutput = event.tokens?.outputTokens ?? 0;
+  const predictedCredits = event.model
+    ? estimateCredits(f.predictedInputTokens, expectedOutput, event.model, contextTokens)
+    : undefined;
+
+  const sustainability: ForecastView['sustainability'] =
+    f.resetRisk === 'high' || (loadFraction ?? 0) >= 0.9
+      ? 'overloaded'
+      : (loadFraction ?? 0) >= 0.75
+        ? 'critical'
+        : (loadFraction ?? 0) >= 0.5
+          ? 'heavy'
+          : (loadFraction ?? 0) >= 0.3
+            ? 'moderate'
+            : 'light';
+
+  return {
+    predictedInputTokens: f.predictedInputTokens,
+    intervalLow: f.interval.low,
+    intervalHigh: f.interval.high,
+    predictedCredits,
+    confidence: f.confidence,
+    resetRisk: f.resetRisk,
+    hungriest: f.hungriest,
+    realLastInputTokens: event.tokens?.inputTokens,
+    realLastCredits: event.tokens?.copilotCredits ?? event.tokens?.estimatedCredits,
+    accuracyScore: acc.score,
+    accuracySamples: acc.samples,
+    intervalCoverage: acc.intervalCoverage,
+    contextTokens,
+    contextLimit: limit,
+    loadFraction,
+    sustainability,
+    sessionShortId: extras.sessionShortId,
+    lastPromptPreview: extras.lastPromptPreview,
+    turnCount: extras.turnCount,
+    contextSeries: extras.contextSeries,
+  };
 }
 
 /**

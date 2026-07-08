@@ -331,7 +331,15 @@
     "bench": "node scripts/run-bench.mjs",
     "bench:history": "node scripts/run-bench.mjs bench-history.ts",
     "bench:human": "node scripts/run-bench.mjs bench-human.ts",
-    "bench:cache": "node scripts/run-bench.mjs bench-cache.ts"
+    "bench:cache": "node scripts/run-bench.mjs bench-cache.ts",
+    "bench:forecast": "node scripts/run-bench.mjs bench-forecast.ts",
+    "bench:forecast:lab": "node scripts/run-bench.mjs bench-forecast-lab.ts",
+    "bench:forecast:prompt": "node scripts/run-bench.mjs bench-forecast-prompt.ts",
+    "bench:forecast:robust": "node scripts/run-bench.mjs bench-forecast-robust.ts",
+    "bench:forecast:improve": "node scripts/run-bench.mjs bench-forecast-improve.ts",
+    "bench:forecast:toolsize": "node scripts/run-bench.mjs bench-forecast-toolsize.ts",
+    "probe:context": "node scripts/run-bench.mjs probe-context.ts",
+    "probe:viability": "node scripts/run-bench.mjs probe-viability.ts"
   },
   "dependencies": {
     "preact": "^10.25.4"

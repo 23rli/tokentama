@@ -15,15 +15,6 @@ function fmtWater(ml: number): string {
 }
 
 /** Map a session token total to the per-token table's relatable equivalent. */
-function equivalent(tokens: number): string {
-  if (tokens >= 1_000_000_000) return 'one org, one quarter of AI use';
-  if (tokens >= 100_000_000) return 'a mid-size eng team for a month';
-  if (tokens >= 1_000_000) return 'one developer for a busy week';
-  if (tokens >= 100_000) return 'an afternoon of "chat with my repo"';
-  if (tokens >= 1000) return 'a short ChatGPT reply';
-  return 'a few keystrokes';
-}
-
 /**
  * The headline showcase, anchored on MEASURED units. Tokens and Copilot credits
  * (AICs) are what Copilot actually meters; dollars are a derived estimate shown
@@ -55,20 +46,19 @@ export function ImpactTrio({ metrics }: { metrics: SuccessMetrics }) {
   ];
 
   return (
-    <section class="impact">
+    <section class="card impact">
+      <header class="impact-head">
+        <span class="section-title">Session cost</span>
+        <span class="impact-equiv">{fmtGrams(metrics.co2eGramsTotal)} CO₂e · {fmtWater(metrics.waterMlTotal)} (est.)</span>
+      </header>
       <div class="impact-trio">
         {tiles.map((t) => (
           <div class="impact-tile" key={t.key}>
-            <div class="impact-icon">{t.icon}</div>
             <div class="impact-value">{t.value}</div>
             <div class="impact-label">{t.label}</div>
             {t.waste && <div class="impact-waste">{t.waste}</div>}
           </div>
         ))}
-      </div>
-      <div class="impact-equiv">
-        ≈ {equivalent(metrics.totalTokens)} · {fmtGrams(metrics.co2eGramsTotal)} CO₂e ·{' '}
-        {fmtWater(metrics.waterMlTotal)} (est.)
       </div>
     </section>
   );
