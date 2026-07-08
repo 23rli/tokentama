@@ -204,6 +204,8 @@ export interface ForecastView {
   chatCreditsEstimated?: boolean;
   /** Derived $ cost for the whole-chat token total (blended $/1M-token rate). */
   chatCostUsd?: number;
+  /** Every user turn (metered or still pending), oldest→newest, for the History list. */
+  allTurns?: { prompt: string; tokens: number; metered: boolean }[];
 }
 
 /** Full snapshot of pet state pushed to the webview. */

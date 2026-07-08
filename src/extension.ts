@@ -66,6 +66,15 @@ export function activate(context: vscode.ExtensionContext): void {
       );
       const current = events[events.length - 1];
       const lastReal = real.length ? real[real.length - 1] : undefined;
+      // Every user turn (metered or not) for the History list — so a just-sent turn
+      // shows up immediately as "pending" and fills in once Copilot meters it.
+      const allTurns = events
+        .filter((e) => e.promptText.trim())
+        .map((e) => ({
+          prompt: e.promptText.replace(/\s+/g, ' ').trim().slice(0, 70),
+          tokens: e.tokens?.inputTokens ?? 0,
+          metered: !!(e.tokens && e.tokens.estimated === false && (e.tokens.inputTokens ?? 0) > 0),
+        }));
 
       const fs = new ForecastService();
       for (const e of real) {
@@ -177,6 +186,7 @@ export function activate(context: vscode.ExtensionContext): void {
           chatCredits: chatAggCache.credits || undefined,
           chatCreditsEstimated: !chatAggCache.creditsReal,
           chatCostUsd,
+          allTurns,
         }),
       );
     } catch {
@@ -322,6 +332,7 @@ function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEven
   chatCredits?: number;
   chatCreditsEstimated?: boolean;
   chatCostUsd?: number;
+  allTurns?: { prompt: string; tokens: number; metered: boolean }[];
 }): ForecastView {
   const contextTokens = f.breakdown.carriedContext;
   // Use the FULL context window (contextMaxTokens, e.g. 1M) as the limit so the
@@ -378,6 +389,7 @@ function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEven
     chatCredits: extras.chatCredits,
     chatCreditsEstimated: extras.chatCreditsEstimated,
     chatCostUsd: extras.chatCostUsd,
+    allTurns: extras.allTurns,
   };
 }
 

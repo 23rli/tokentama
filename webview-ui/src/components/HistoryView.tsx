@@ -8,19 +8,31 @@ import { fmtNum } from '../format';
  * from the previous turn (a drop = a summarization reset).
  */
 export function HistoryView({ forecast }: { forecast?: ForecastView }) {
+  // Prefer the full turn list (includes just-sent "pending" turns); fall back to
+  // the metered-only series for older payloads.
+  const all = forecast?.allTurns;
   const series = forecast?.contextSeries ?? [];
   const prompts = forecast?.turnPrompts ?? [];
 
-  if (series.length === 0) {
+  const rows = all
+    ? all.map((t, i) => ({
+        turn: i + 1,
+        prompt: t.prompt || '—',
+        tokens: t.tokens,
+        metered: t.metered,
+        delta: i > 0 ? t.tokens - all[i - 1].tokens : t.tokens,
+      }))
+    : series.map((v, i) => ({
+        turn: i + 1,
+        prompt: prompts[i] || '—',
+        tokens: v,
+        metered: true,
+        delta: i > 0 ? v - series[i - 1] : v,
+      }));
+
+  if (rows.length === 0) {
     return <div class="card history-empty muted">No turns captured yet — start a Copilot chat.</div>;
   }
-
-  const rows = series.map((v, i) => ({
-    turn: i + 1,
-    prompt: prompts[i] || '—',
-    tokens: v,
-    delta: i > 0 ? v - series[i - 1] : v,
-  }));
 
   return (
     <section class="card history">
@@ -36,10 +48,19 @@ export function HistoryView({ forecast }: { forecast?: ForecastView }) {
             <div class="history-row" key={r.turn}>
               <span class="history-turn">{r.turn}</span>
               <span class="history-prompt" title={r.prompt}>{r.prompt}</span>
-              <span class="history-tokens">{fmtNum(r.tokens)}</span>
-              <span class={`history-delta${r.delta < 0 ? ' down' : ''}`}>
-                {r.delta < 0 ? `▼ ${fmtNum(-r.delta)}` : `▲ ${fmtNum(r.delta)}`}
-              </span>
+              {r.metered ? (
+                <>
+                  <span class="history-tokens">{fmtNum(r.tokens)}</span>
+                  <span class={`history-delta${r.delta < 0 ? ' down' : ''}`}>
+                    {r.delta < 0 ? `▼ ${fmtNum(-r.delta)}` : `▲ ${fmtNum(r.delta)}`}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span class="history-tokens muted">…</span>
+                  <span class="history-delta muted">pending</span>
+                </>
+              )}
             </div>
           ))}
       </div>
