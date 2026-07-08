@@ -266,15 +266,6 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.commands.executeCommand('tokentama.dashboard.focus'),
     ),
     vscode.commands.registerCommand('tokentama.toggleCapture', toggleCapture),
-    vscode.commands.registerCommand('tokentama.resetEcosystem', async () => {
-      const choice = await vscode.window.showWarningMessage(
-        'Reset Token Lens? This clears the tracked history for this workspace. Chats will be re-tracked as new turns arrive.',
-        { modal: true },
-        'Reset',
-      );
-      if (choice !== 'Reset') return;
-      store.reset();
-    }),
     vscode.commands.registerCommand('tokentama.diagnostics', () =>
       showCaptureDiagnostics(workspaceHash, output),
     ),

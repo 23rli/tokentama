@@ -80,9 +80,6 @@ export function App() {
         <button class="ghost" disabled={busy} onClick={() => post({ type: 'toggleCapture' })}>
           {state.captureEnabled ? '◉ Capture on' : '○ Capture off'}
         </button>
-        <button class="ghost" disabled={busy} onClick={() => post({ type: 'reset' })}>
-          Reset
-        </button>
       </div>
     </div>
   );
