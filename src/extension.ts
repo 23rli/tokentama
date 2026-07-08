@@ -443,7 +443,9 @@ function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEven
   sessionInputTokens?: number;
 }): ForecastView {
   const contextTokens = f.breakdown.carriedContext;
-  const limit = event.model?.maxInputTokens ?? event.model?.contextMaxTokens;
+  // Use the FULL context window (contextMaxTokens, e.g. 1M) as the limit so the
+  // percentage matches what GitHub Copilot shows, not the input-only cap.
+  const limit = event.model?.contextMaxTokens ?? event.model?.maxInputTokens;
   const loadFraction = limit && limit > 0 ? contextTokens / limit : undefined;
   const expectedOutput = event.tokens?.outputTokens ?? 0;
   const predictedCredits = event.model

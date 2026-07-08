@@ -99,7 +99,7 @@ const MIN_RATIOS_FOR_CALIBRATION = 5;
  * summarization trigger, (2) a fraction of the real model limit, else (3) we
  * don't flag (we won't guess a model we know nothing about).
  */
-const MODEL_LIMIT_RESET_FRACTION = 0.75; // summarization tends to fire ~¾ of the way to the cap
+const MODEL_LIMIT_RESET_FRACTION = 0.9; // only warn when genuinely near the context window
 const RESET_ZONE = 0.97; // within this fraction of the trigger → flag
 const DEFAULT_RESET_FRACTION = 0.06; // post-reset size as a fraction of the trigger (fallback)
 
@@ -220,7 +220,9 @@ function resetTrigger(history: TurnHistory[], model?: ForecastInput['model']): n
     }
   }
   if (observed > 0) candidates.push(observed);
-  const limit = model?.maxInputTokens ?? model?.contextMaxTokens;
+  // Prefer the FULL context window (contextMaxTokens) — that's what the model
+  // summarizes against and what Copilot shows — over the input-only cap.
+  const limit = model?.contextMaxTokens ?? model?.maxInputTokens;
   if (limit && limit > 0) candidates.push(limit * MODEL_LIMIT_RESET_FRACTION);
   return candidates.length ? Math.min(...candidates) : Infinity;
 }

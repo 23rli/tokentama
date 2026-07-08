@@ -41,10 +41,10 @@ describe('ForecastService', () => {
 
   it('uses the model limit for reset risk (model-agnostic)', () => {
     const svc = new ForecastService();
-    // Climb near a small model's limit → reset risk should light up.
+    // Climb near a small model's limit (~94% of 128k) → reset risk should light up.
     for (let i = 0; i < 10; i++) {
       svc.recordTurn(
-        { promptTokens: 88_000 + i * 800, completionTokens: 300, promptText: 'x'.repeat(40), toolCalls: 1 },
+        { promptTokens: 116_000 + i * 500, completionTokens: 300, promptText: 'x'.repeat(40), toolCalls: 1 },
         { maxInputTokens: 128_000 },
       );
     }

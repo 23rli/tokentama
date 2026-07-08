@@ -85,8 +85,8 @@ describe('model-agnostic adaptivity (not fragile across models)', () => {
     }));
 
   it('reset flag is RELATIVE to the model limit — fires near a small window', () => {
-    // A 128k-window model, context sitting near the limit → reset likely.
-    const history = steady(10, 90_000, 1_000); // ~99k, near 128k×0.75≈96k trigger
+    // A 128k-window model, context sitting near the limit (~94%) → reset likely.
+    const history = steady(10, 116_000, 500); // ~120k, near 128k×0.9≈115k trigger
     const f = forecastTurn({ history, draftPrompt: 'go', model: { maxInputTokens: 128_000 } });
     expect(f.resetRisk).toBe('high');
     expect(f.resetBaseline).toBeGreaterThan(0);
