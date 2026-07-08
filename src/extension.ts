@@ -243,6 +243,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const provider = new DashboardViewProvider(context.extensionUri, store, {
     toggleCapture,
+    refresh: refreshForecast,
   });
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(DashboardViewProvider.viewType, provider, {

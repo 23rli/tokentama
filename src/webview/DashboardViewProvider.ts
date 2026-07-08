@@ -5,6 +5,7 @@ import { buildDashboardHtml } from './html';
 
 export interface DashboardHandlers {
   toggleCapture: () => void;
+  refresh: () => void;
 }
 
 /** Sidebar webview that renders the Token Lens cost + forecast dashboard. */
@@ -32,16 +33,21 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
     };
     view.webview.html = buildDashboardHtml(view.webview, this.extensionUri);
     view.webview.onDidReceiveMessage((msg: WebviewMessage) => this.onMessage(msg));
-    // Re-send the latest state whenever the panel becomes visible again, so it
-    // never shows stale data after being hidden.
+    // Re-send the latest state whenever the panel becomes visible again, and pull
+    // a FRESH forecast from disk so it never shows a stale snapshot after being
+    // hidden or after turns completed while it wasn't focused.
     view.onDidChangeVisibility(() => {
-      if (view.visible) this.post({ type: 'state', state: this.store.getState() });
+      if (view.visible) {
+        this.handlers.refresh();
+        this.post({ type: 'state', state: this.store.getState() });
+      }
     });
   }
 
   private onMessage(msg: WebviewMessage): void {
     switch (msg.type) {
       case 'ready':
+        this.handlers.refresh();
         this.post({ type: 'state', state: this.store.getState() });
         break;
       case 'reset':
