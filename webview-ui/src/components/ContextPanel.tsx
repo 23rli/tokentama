@@ -1,6 +1,5 @@
 import type { ModelInfo, ContextSlice } from '../../../src/webview/contract';
-import { summarizeContext, toolAdvisory, historyAdvisory } from '../../../src/analysis/contextBreakdown';
-import { post } from '../vscodeApi';
+import { summarizeContext } from '../../../src/analysis/contextBreakdown';
 import { fmtNum } from '../format';
 
 /**
@@ -37,9 +36,6 @@ export function ContextPanel({
       </section>
     );
   }
-  const advisory = toolAdvisory(slices, totalIn, model?.inputPer1M);
-  const history = historyAdvisory(summary);
-  const unit = model?.inputPer1M != null ? 'AICs' : '';
 
   const palette = ['#539bf5', '#d29922', '#3fb950', '#a371f7', '#f85149', '#8b949e'];
 
@@ -75,35 +71,6 @@ export function ContextPanel({
           </li>
         ))}
       </ul>
-
-      <p class="context-note">
-        {summary.overheadPct}% is fixed system + tool overhead ({fmtNum(summary.overheadTokens)}{' '}
-        tokens) — a stable prefix that's cacheable. Trim unused tools and avoid re-pasting context
-        to keep that cache warm.
-      </p>
-
-      {advisory?.recommend && (
-        <div class="context-advisory">
-          Tool definitions are {advisory.toolPct}% of every prompt ({fmtNum(advisory.toolTokens)}{' '}
-          tokens, re-sent each turn). Disable unused tools / MCP servers to cut this on every turn
-          {advisory.costPerDay != null && (
-            <> — ≈{advisory.costPerDay.toFixed(1)} {unit}/day saved (est.)</>
-          )}
-          .
-        </div>
-      )}
-
-      {history?.recommend && (
-        <div class="context-advisory">
-          This chat carries {fmtNum(history.conversationTokens)} tokens of context/history — re-sent
-          every turn. Compact it into a lean recap and keep going.
-          <div class="advisory-actions">
-            <button class="primary" onClick={() => post({ type: 'compactSession' })}>
-              Compact — fresh chat + summary
-            </button>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

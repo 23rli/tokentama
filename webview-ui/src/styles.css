@@ -1816,7 +1816,8 @@ button.ghost:hover {
 .impact .impact-tile:first-child { padding-left: 0; border-left: none !important; }
 .impact .impact-value { font-size: 24px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
 .impact .impact-label { font-size: 11px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--vscode-descriptionForeground, #8b949e); margin-top: 4px; }
-.impact .impact-waste { font-size: 11px; color: var(--vscode-editorWarning-foreground, #d29922); margin-top: 3px; }
+.impact .impact-delta { font-size: 11px; color: var(--vscode-charts-green, #3fb950); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.impact-hint { font-size: 10px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--vscode-charts-green, #3fb950); }
 
 
 /* -- Context advisories: flatter, no rounded amber pills ------------------ */

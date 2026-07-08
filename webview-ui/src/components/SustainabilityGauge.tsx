@@ -6,36 +6,11 @@ const BANDS: Record<
   ForecastView['sustainability'],
   { label: string; caption: string; color: string; emoji: string }
 > = {
-  light: {
-    label: 'Light',
-    caption: 'Plenty of headroom — turns are cheap to re-send.',
-    color: '#3fb950',
-    emoji: '🟢',
-  },
-  moderate: {
-    label: 'Moderate',
-    caption: 'Context is building up. Each turn re-sends a bit more.',
-    color: '#57ab5a',
-    emoji: '🟢',
-  },
-  heavy: {
-    label: 'Heavy',
-    caption: 'Every turn now re-sends a large context — costs are climbing.',
-    color: '#d29922',
-    emoji: '🟡',
-  },
-  critical: {
-    label: 'Critical',
-    caption: 'Context is very heavy. A fresh chat would cut per-turn cost sharply.',
-    color: '#f0883e',
-    emoji: '🟠',
-  },
-  overloaded: {
-    label: 'Overloaded',
-    caption: 'Near the limit — a summarization reset is imminent and the next turns spike.',
-    color: '#f85149',
-    emoji: '🔴',
-  },
+  light: { label: 'Light', caption: 'Plenty of headroom.', color: '#3fb950', emoji: '🟢' },
+  moderate: { label: 'Moderate', caption: 'Building up.', color: '#57ab5a', emoji: '🟢' },
+  heavy: { label: 'Heavy', caption: 'Costs climbing.', color: '#d29922', emoji: '🟡' },
+  critical: { label: 'Critical', caption: 'Very heavy — consider a fresh chat.', color: '#f0883e', emoji: '🟠' },
+  overloaded: { label: 'Overloaded', caption: 'Reset imminent.', color: '#f85149', emoji: '🔴' },
 };
 
 /**
