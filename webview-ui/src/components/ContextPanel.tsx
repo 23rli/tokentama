@@ -83,9 +83,6 @@ export function ContextPanel({
           <li key={`${s.label}-${i}`}>
             <span class="context-dot" style={{ background: colorFor(s.label) }} />
             <span class="context-label">{s.label}</span>
-            <span class="context-val">
-              {fmtNum(s.tokens)} · {s.pct}%
-            </span>
           </li>
         ))}
       </ul>

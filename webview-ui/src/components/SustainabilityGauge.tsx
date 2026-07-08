@@ -41,7 +41,7 @@ export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {
 
       <div class="gauge-loadrow">
         <span class={`gauge-load${f ? '' : ' muted'}`}>{f ? fmtNum(f.contextTokens) : '—'}</span>
-        <span class="gauge-load-unit">tokens carried, re-sent every turn</span>
+        <span class="gauge-load-unit">tokens carried</span>
       </div>
 
       <div class="gauge-track">

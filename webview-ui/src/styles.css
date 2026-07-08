@@ -1735,13 +1735,10 @@ button.ghost:hover {
 .next-hedge { color: var(--vscode-editorWarning-foreground, #d29922); }
 .next-acc {
   display: flex; align-items: baseline; gap: 6px; margin-top: 10px; padding-top: 8px;
-  border-top: 1px solid var(--vscode-panel-border, #30363d); white-space: nowrap;
+  border-top: 1px solid var(--vscode-panel-border, #30363d); flex-wrap: wrap;
 }
 .next-acc-pct { font-size: 17px; font-weight: 800; color: var(--vscode-charts-green, #3fb950); }
-.next-acc-note {
-  font-size: 11px; color: var(--vscode-descriptionForeground, #8b949e);
-  overflow: hidden; text-overflow: ellipsis;
-}
+.next-acc-note { font-size: 11px; color: var(--vscode-descriptionForeground, #8b949e); }
 .next-warn {
   margin-top: 10px; font-size: 12px; color: var(--vscode-editorWarning-foreground, #f0883e);
   background: var(--vscode-inputValidation-warningBackground, rgba(240, 136, 62, 0.1));
@@ -1793,16 +1790,24 @@ button.ghost:hover {
 }
 
 /* -- Where tokens go ------------------------------------------------------ */
+.context { gap: 0 !important; }
+.context-head { margin-bottom: 0; }
 .context-sub { font-size: 11px; color: var(--vscode-descriptionForeground, #8b949e); font-variant-numeric: tabular-nums; }
 .context-barrow {
   display: flex; justify-content: space-between; align-items: baseline;
-  margin: 10px 0 4px; font-size: 11px; font-variant-numeric: tabular-nums;
+  margin: 12px 0 4px; font-size: 11px; font-variant-numeric: tabular-nums;
 }
 .context-barlabel {
   letter-spacing: 0.4px; text-transform: uppercase; color: var(--vscode-descriptionForeground, #8b949e);
 }
 .context-barval { font-weight: 700; color: var(--vscode-foreground); }
-.context-barrow:first-of-type { margin-top: 2px; }
+.context-barrow:first-of-type { margin-top: 8px; }
+.context .context-bar { border-radius: 3px; }
+.context .context-legend {
+  flex-flow: row wrap; gap: 4px 14px; margin-top: 12px;
+  padding-top: 10px; border-top: 1px solid var(--vscode-panel-border, #30363d);
+}
+.context .context-legend .context-label { flex: 0 0 auto; font-size: 11px; color: var(--vscode-descriptionForeground, #8b949e); }
 
 /* -- Compose fold (minimized, at the end) --------------------------------- */
 .compose-fold {
