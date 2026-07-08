@@ -31,6 +31,12 @@ export interface SustainabilityConfig {
   waterMlPer1kTokens: number;
   /** Dollars per Copilot credit (AIC). 0 = don't show a $ estimate. */
   usdPerCredit: number;
+  /**
+   * Dollars per 1,000,000 tokens — a blended, cache-inclusive effective rate.
+   * When > 0 this is the PREFERRED cost basis (it directly matches real observed
+   * spend, e.g. $290 / 0.5B tokens = $0.58/1M), taking precedence over usdPerCredit.
+   */
+  usdPerMillionTokens?: number;
 }
 
 function avg(nums: number[]): number {
@@ -83,7 +89,9 @@ export function computeMetrics(
   const billed = (r: ScoredRecord): number => (r.credits > 0 ? r.credits : r.estCredits);
   const totalCredits = records.reduce((a, r) => a + billed(r), 0);
   const totalCreditsEstimated = totalRealCredits === 0;
-  const hasUsdRate = sustain.usdPerCredit > 0;
+  const usdPerMillionTokens = sustain.usdPerMillionTokens ?? 0;
+  const usdPerToken = usdPerMillionTokens / 1_000_000;
+  const hasUsdRate = usdPerMillionTokens > 0 || sustain.usdPerCredit > 0;
 
   const factors: ImpactFactors = {
     co2GramsPer1kTokens: sustain.co2GramsPer1kTokens,
@@ -97,8 +105,11 @@ export function computeMetrics(
   );
   const wastedFootprint = footprint(wastedTokens, factors);
   const creditsWasted = records.reduce((a, r) => a + billed(r) * wasteFraction(r.wasteScore), 0);
-  const totalCostUsd = creditsToUsd(totalCredits, sustain.usdPerCredit);
-  const costUsdWasted = creditsToUsd(creditsWasted, sustain.usdPerCredit);
+  // Prefer the blended $/token rate (matches real observed spend); else credits.
+  const totalCostUsd =
+    usdPerToken > 0 ? totalTokens * usdPerToken : creditsToUsd(totalCredits, sustain.usdPerCredit);
+  const costUsdWasted =
+    usdPerToken > 0 ? wastedTokens * usdPerToken : creditsToUsd(creditsWasted, sustain.usdPerCredit);
 
   return {
     tokenReductionPct,

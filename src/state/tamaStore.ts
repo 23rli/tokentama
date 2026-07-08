@@ -264,9 +264,10 @@ export class TamaStore {
       gridGramsCo2PerKwh: cfg.get<number>('gridGramsCo2PerKwh', 400),
       co2GramsPer1kTokens: impactCfg.get<number>('co2GramsPer1kTokens', 0.11),
       waterMlPer1kTokens: impactCfg.get<number>('waterMlPer1kTokens', 2),
-      // Default AIC→$ estimate anchored to model list pricing (e.g. Opus 500 AIC/1M
-      // input ≈ $15/1M ⇒ $0.03/AIC). Shown as an estimate; org can override.
-      usdPerCredit: impactCfg.get<number>('usdPerCredit', 0.03),
+      usdPerCredit: impactCfg.get<number>('usdPerCredit', 0),
+      // Blended, cache-inclusive effective $/1M tokens — the preferred cost basis.
+      // Default 0.58 matches a real observed data point ($290 / 0.5B tokens).
+      usdPerMillionTokens: impactCfg.get<number>('usdPerMillionTokens', 0.58),
     });
 
     return {

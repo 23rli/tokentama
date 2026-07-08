@@ -2,7 +2,7 @@
   "name": "tokentama",
   "displayName": "Tokentama",
   "description": "Real-time cost visibility for GitHub Copilot: see what your session spends, where the tokens go, and what the next turn will cost — live, local, read-only.",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "publisher": "tokentama",
   "license": "MIT",
   "repository": {
@@ -209,8 +209,13 @@
         },
         "tokentama.impact.usdPerCredit": {
           "type": "number",
-          "default": 0.03,
-          "description": "US dollars per Copilot AI credit (AIC), used to derive a $ estimate. Default 0.03 is anchored to model list pricing (e.g. Opus 500 AIC/1M input ≈ $15/1M). Set this to your org's internal $/AIC rate for an exact figure; set 0 to hide $ and show tokens + AICs only."
+          "default": 0,
+          "description": "US dollars per Copilot AI credit (AIC). Only used when 'usdPerMillionTokens' is 0. Set to your org's internal $/AIC rate if you prefer a credit-based estimate."
+        },
+        "tokentama.impact.usdPerMillionTokens": {
+          "type": "number",
+          "default": 0.58,
+          "description": "Blended, cache-inclusive US dollars per 1,000,000 tokens — the preferred $ cost basis. Default 0.58 matches a real observed data point (~$290 for ~0.5B tokens on a premium model). Set this to YOUR effective rate for an accurate figure, or 0 to fall back to the credit-based estimate."
         },
         "tokentama.health.maxDamage": {
           "type": "number",
