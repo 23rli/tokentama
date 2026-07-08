@@ -190,6 +190,12 @@ export interface ForecastView {
   sessionBreakdown?: ContextSlice[];
   /** Total input tokens summed across the whole session. */
   sessionInputTokens?: number;
+  /** Whole-chat breakdown: category tokens summed across EVERY conversation in this workspace. */
+  chatBreakdown?: ContextSlice[];
+  /** Total input tokens summed across every conversation in this workspace. */
+  chatInputTokens?: number;
+  /** Number of distinct conversations aggregated into the whole-chat totals. */
+  chatSessionCount?: number;
 }
 
 /** Full snapshot of pet state pushed to the webview. */

@@ -15,14 +15,21 @@ export function ContextPanel({
   inputTokens,
   sessionBreakdown,
   sessionInputTokens,
+  chatBreakdown,
+  chatInputTokens,
+  chatSessionCount,
 }: {
   breakdown?: ContextSlice[];
   inputTokens?: number;
   sessionBreakdown?: ContextSlice[];
   sessionInputTokens?: number;
+  chatBreakdown?: ContextSlice[];
+  chatInputTokens?: number;
+  chatSessionCount?: number;
 }) {
   const latest = summarizeContext(breakdown, inputTokens ?? 0);
   const session = summarizeContext(sessionBreakdown, sessionInputTokens ?? 0);
+  const chat = summarizeContext(chatBreakdown, chatInputTokens ?? 0);
 
   if (!latest) {
     return (
@@ -86,6 +93,18 @@ export function ContextPanel({
             <span class="context-barval">{fmtNum(session.totalTokens)}</span>
           </div>
           {bar(session.slices)}
+        </>
+      )}
+
+      {chat && (
+        <>
+          <div class="context-barrow">
+            <span class="context-barlabel">
+              Whole chat{chatSessionCount && chatSessionCount > 1 ? ` · ${chatSessionCount} chats` : ''}
+            </span>
+            <span class="context-barval">{fmtNum(chat.totalTokens)}</span>
+          </div>
+          {bar(chat.slices)}
         </>
       )}
 

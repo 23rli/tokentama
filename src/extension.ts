@@ -86,6 +86,11 @@ export function activate(context: vscode.ExtensionContext): void {
   // (which carries real metered tokens for every completed turn), so it appears
   // immediately and never depends on lagging forward-only capture. Model-agnostic
   // and free (pure arithmetic). Refreshed on each capture event + on a timer.
+  // Cache the (expensive) whole-chat aggregate so the 5s timer only re-reads every
+  // conversation when something on disk actually changed.
+  let chatAggCache:
+    | { freshest: number; count: number; breakdown: ContextSlice[]; input: number }
+    | undefined;
   const refreshForecast = (): void => {
     try {
       // Pin to THIS workspace's active chat so the panel doesn't jump between
@@ -138,6 +143,42 @@ export function activate(context: vscode.ExtensionContext): void {
         tokens: s.tokens,
         pct: sessionInputTokens > 0 ? Math.round((s.tokens / sessionInputTokens) * 100) : 0,
       }));
+      // Whole-chat breakdown: aggregate EVERY conversation in this workspace so the
+      // split reflects total spend and doesn't reset when a new chat is started.
+      const allSessions = listCopilotSessions(undefined, workspaceHash || undefined);
+      const freshest = allSessions.reduce((m, s) => Math.max(m, s.modifiedMs), 0);
+      if (
+        !chatAggCache ||
+        chatAggCache.freshest !== freshest ||
+        chatAggCache.count !== allSessions.length
+      ) {
+        const chatAgg = new Map<string, { category: string; label: string; tokens: number }>();
+        let chatInput = 0;
+        for (const s of allSessions) {
+          const evs = s.sessionId === session.sessionId ? events : readSessionEvents(s);
+          for (const e of evs) {
+            const t = e.tokens;
+            if (!t || t.estimated !== false || (t.inputTokens ?? 0) <= 0) continue;
+            chatInput += t.inputTokens ?? 0;
+            for (const sl of t.contextBreakdown ?? []) {
+              const cur3 = chatAgg.get(sl.label) ?? { category: sl.category, label: sl.label, tokens: 0 };
+              cur3.tokens += sl.tokens;
+              chatAgg.set(sl.label, cur3);
+            }
+          }
+        }
+        chatAggCache = {
+          freshest,
+          count: allSessions.length,
+          input: chatInput,
+          breakdown: [...chatAgg.values()].map((s) => ({
+            category: s.category,
+            label: s.label,
+            tokens: s.tokens,
+            pct: chatInput > 0 ? Math.round((s.tokens / chatInput) * 100) : 0,
+          })),
+        };
+      }
       store.setForecast(
         buildForecastView(forecast, fs.accuracy(), modelEvent, {
           sessionShortId: session.sessionId.slice(0, 8),
@@ -152,6 +193,9 @@ export function activate(context: vscode.ExtensionContext): void {
           contextInputTokens: lastReal?.tokens?.inputTokens,
           sessionBreakdown: sessionBreakdown.length ? sessionBreakdown : undefined,
           sessionInputTokens: sessionInputTokens || undefined,
+          chatBreakdown: chatAggCache.breakdown.length ? chatAggCache.breakdown : undefined,
+          chatInputTokens: chatAggCache.input || undefined,
+          chatSessionCount: allSessions.length || undefined,
         }),
       );
     } catch {
@@ -441,6 +485,9 @@ function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEven
   contextInputTokens?: number;
   sessionBreakdown?: ContextSlice[];
   sessionInputTokens?: number;
+  chatBreakdown?: ContextSlice[];
+  chatInputTokens?: number;
+  chatSessionCount?: number;
 }): ForecastView {
   const contextTokens = f.breakdown.carriedContext;
   // Use the FULL context window (contextMaxTokens, e.g. 1M) as the limit so the
@@ -490,6 +537,9 @@ function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEven
     contextInputTokens: extras.contextInputTokens,
     sessionBreakdown: extras.sessionBreakdown,
     sessionInputTokens: extras.sessionInputTokens,
+    chatBreakdown: extras.chatBreakdown,
+    chatInputTokens: extras.chatInputTokens,
+    chatSessionCount: extras.chatSessionCount,
   };
 }
 

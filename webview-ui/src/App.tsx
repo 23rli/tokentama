@@ -48,6 +48,9 @@ export function App() {
             inputTokens={state.forecast?.contextInputTokens ?? state.lastEvent?.inputTokens}
             sessionBreakdown={state.forecast?.sessionBreakdown}
             sessionInputTokens={state.forecast?.sessionInputTokens}
+            chatBreakdown={state.forecast?.chatBreakdown}
+            chatInputTokens={state.forecast?.chatInputTokens}
+            chatSessionCount={state.forecast?.chatSessionCount}
           />
           <ImpactTrio metrics={state.metrics} forecast={state.forecast} />
           <LiveData state={state} />
