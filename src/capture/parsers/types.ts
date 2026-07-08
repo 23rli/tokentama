@@ -43,6 +43,8 @@ export interface ParsedChatRequest {
 
 export interface ParsedChatSession {
   sessionId: string;
+  /** The chat's custom title, when the user/agent named it. */
+  title?: string;
   model?: ModelInfo;
   requests: ParsedChatRequest[];
   /** Total number of requests in the session (incl. ones with no extractable prompt). */

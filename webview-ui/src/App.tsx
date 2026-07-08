@@ -35,7 +35,8 @@ export function App() {
         <ContextPanel
           breakdown={state.forecast?.contextBreakdown ?? state.lastEvent?.contextBreakdown}
           inputTokens={state.forecast?.contextInputTokens ?? state.lastEvent?.inputTokens}
-          model={state.model}
+          sessionBreakdown={state.forecast?.sessionBreakdown}
+          sessionInputTokens={state.forecast?.sessionInputTokens}
         />
         <ImpactTrio metrics={state.metrics} forecast={state.forecast} />
         <LiveData state={state} />

@@ -2,53 +2,55 @@ import type { ForecastView } from '../../../src/webview/contract';
 import { fmtNum } from '../format';
 
 /**
- * Two light boxes instead of one heavy "tracking" card:
- *   NOW  — which session + turn, live accuracy, and the current prompt.
- *   NEXT — the single predicted number + range.
- * The last-turn REAL figure is not repeated here — it lives once, as the delta in
- * Session cost. Both always render (skeleton before data) so layout never shifts.
+ * A small session header + the two headline numbers side by side: LAST USED (the
+ * real tokens the previous turn cost) vs PREDICTED NEXT, with a one-line forecast
+ * accuracy (percentage first). Always renders (skeleton before data).
  */
 export function ForecastPanel({ forecast }: { forecast?: ForecastView }) {
   const f = forecast;
+  const name = f?.sessionTitle || (f?.sessionShortId ? `Session ${f.sessionShortId}` : 'No active session');
 
   return (
     <>
       <section class="card now">
-        <span class="section-title">Now</span>
-        <div class="now-meta">
-          <span class="now-sid">
-            {f?.sessionShortId ? `Session ${f.sessionShortId}` : 'No active session'}
-          </span>
-          {f && f.turnCount > 0 && <span class="now-turn">· turn {f.turnCount}</span>}
+        <span class="now-label">Session</span>
+        <div class="now-row">
+          <span class="now-name">{name}</span>
+          {f && f.turnCount > 0 && <span class="now-turn">turn {f.turnCount}</span>}
         </div>
-        <span class="now-label">Latest prompt</span>
-        <p class={`now-prompt${f?.lastPromptPreview ? '' : ' muted'}`}>
-          {f?.lastPromptPreview ?? 'Waiting for your first Copilot turn…'}
-        </p>
       </section>
 
       <section class="card next">
-        <span class="section-title">Predicted next turn</span>
-        <div class="next-num-row">
-          <span class={`next-number${f ? '' : ' muted'}`}>{f ? fmtNum(f.predictedInputTokens) : '—'}</span>
-          <span class="next-unit">tokens in</span>
+        <div class="next-cols">
+          <div class="next-col">
+            <span class="next-kicker">Last used</span>
+            <span class={`next-number${f?.realLastInputTokens != null ? '' : ' muted'}`}>
+              {f?.realLastInputTokens != null ? fmtNum(f.realLastInputTokens) : '—'}
+            </span>
+          </div>
+          <div class="next-arrow">→</div>
+          <div class="next-col">
+            <span class="next-kicker">Predicted next</span>
+            <span class={`next-number next-pred${f ? '' : ' muted'}`}>
+              {f ? fmtNum(f.predictedInputTokens) : '—'}
+            </span>
+          </div>
         </div>
+
         <div class="next-detail">
-          {f ? (
-            <>
-              {f.predictedCredits != null && <>≈ {Math.round(f.predictedCredits).toLocaleString()} credits · </>}
-              likely {fmtNum(f.intervalLow)}–{fmtNum(f.intervalHigh)}
-              {f.confidence < 0.4 && <span class="next-hedge"> · low confidence</span>}
-            </>
-          ) : (
-            'likely —'
-          )}
+          tokens in
+          {f?.predictedCredits != null && <> · ≈ {Math.round(f.predictedCredits).toLocaleString()} credits next</>}
+          {f && <> · likely {fmtNum(f.intervalLow)}–{fmtNum(f.intervalHigh)}</>}
+          {f && f.confidence < 0.4 && <span class="next-hedge"> · low confidence</span>}
         </div>
+
         {f && f.accuracySamples > 0 && (
-          <div class="next-acc" title={`Median error on ${f.accuracySamples} of your past turns`}>
-            Forecast accuracy <b>{Math.round(f.accuracyScore)}/100</b> — how close past predictions landed
+          <div class="next-acc" title={`How close past predictions landed — median error on ${f.accuracySamples} of your turns`}>
+            <b class="next-acc-pct">{Math.round(f.accuracyScore)}%</b>
+            <span class="next-acc-note">forecast accuracy</span>
           </div>
         )}
+
         {f?.resetRisk === 'high' && (
           <div class="next-warn">Summarization likely next — a reset may drop cost sharply.</div>
         )}

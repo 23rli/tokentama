@@ -99,3 +99,8 @@ export function readSessionEvents(paths: CopilotSessionPaths, userId = 'local-us
   }
   return events;
 }
+
+/** The chat's display name (custom title), if the session was named. */
+export function readSessionTitle(paths: CopilotSessionPaths): string | undefined {
+  return parseChatSession(safeRead(paths.chatSessionPath)).title;
+}

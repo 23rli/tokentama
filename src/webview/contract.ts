@@ -172,6 +172,8 @@ export interface ForecastView {
 
   /** Short id of the session being tracked, so the user knows WHICH chat. */
   sessionShortId?: string;
+  /** The chat's display name (custom title), when set. */
+  sessionTitle?: string;
   /** The last captured user prompt (truncated) — what the forecast is based on. */
   lastPromptPreview?: string;
   /** Number of real (metered) turns seen in this session. */
@@ -182,6 +184,10 @@ export interface ForecastView {
   contextBreakdown?: ContextSlice[];
   /** Total input tokens of the last real turn (denominator for the breakdown). */
   contextInputTokens?: number;
+  /** Session-wide breakdown: category tokens summed across every turn. */
+  sessionBreakdown?: ContextSlice[];
+  /** Total input tokens summed across the whole session. */
+  sessionInputTokens?: number;
 }
 
 /** Full snapshot of pet state pushed to the webview. */

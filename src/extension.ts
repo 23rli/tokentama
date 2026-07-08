@@ -5,7 +5,7 @@ import { TamaStore } from './state/tamaStore';
 import { ScoreService } from './core/scoreService';
 import { CopilotWatcher } from './capture/CopilotWatcher';
 import { findActiveSession, listCopilotSessions } from './capture/copilotPaths';
-import { readSessionEvents } from './capture/copilotReader';
+import { readSessionEvents, readSessionTitle } from './capture/copilotReader';
 import { StatusBar } from './status/statusBar';
 import { DashboardViewProvider } from './webview/DashboardViewProvider';
 import { TelemetryService } from './telemetry/telemetryService';
@@ -122,9 +122,26 @@ export function activate(context: vscode.ExtensionContext): void {
       // Predict the CURRENT turn, conditioned on the prompt actually written.
       const forecast = fs.forecastNext(current.promptText);
       const modelEvent = lastReal ?? current;
+      // Session-wide breakdown: sum each category's tokens across every real turn.
+      const sessionAgg = new Map<string, { category: string; label: string; tokens: number }>();
+      for (const e of real) {
+        for (const s of e.tokens?.contextBreakdown ?? []) {
+          const cur2 = sessionAgg.get(s.label) ?? { category: s.category, label: s.label, tokens: 0 };
+          cur2.tokens += s.tokens;
+          sessionAgg.set(s.label, cur2);
+        }
+      }
+      const sessionInputTokens = real.reduce((sum, e) => sum + (e.tokens?.inputTokens ?? 0), 0);
+      const sessionBreakdown = [...sessionAgg.values()].map((s) => ({
+        category: s.category,
+        label: s.label,
+        tokens: s.tokens,
+        pct: sessionInputTokens > 0 ? Math.round((s.tokens / sessionInputTokens) * 100) : 0,
+      }));
       store.setForecast(
         buildForecastView(forecast, fs.accuracy(), modelEvent, {
           sessionShortId: session.sessionId.slice(0, 8),
+          sessionTitle: readSessionTitle(session),
           lastPromptPreview: current.promptText.replace(/\s+/g, ' ').trim().slice(0, 140),
           turnCount: real.length,
           contextSeries: real.map((e) => e.tokens!.inputTokens),
@@ -132,6 +149,8 @@ export function activate(context: vscode.ExtensionContext): void {
           realLastCredits: lastReal?.tokens?.copilotCredits ?? lastReal?.tokens?.estimatedCredits,
           contextBreakdown: lastReal?.tokens?.contextBreakdown,
           contextInputTokens: lastReal?.tokens?.inputTokens,
+          sessionBreakdown: sessionBreakdown.length ? sessionBreakdown : undefined,
+          sessionInputTokens: sessionInputTokens || undefined,
         }),
       );
     } catch {
@@ -410,6 +429,7 @@ function buildRecentContext(
  */
 function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEvent, extras: {
   sessionShortId?: string;
+  sessionTitle?: string;
   lastPromptPreview?: string;
   turnCount: number;
   contextSeries: number[];
@@ -417,6 +437,8 @@ function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEven
   realLastCredits?: number;
   contextBreakdown?: ContextSlice[];
   contextInputTokens?: number;
+  sessionBreakdown?: ContextSlice[];
+  sessionInputTokens?: number;
 }): ForecastView {
   const contextTokens = f.breakdown.carriedContext;
   const limit = event.model?.maxInputTokens ?? event.model?.contextMaxTokens;
@@ -455,11 +477,14 @@ function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEven
     loadFraction,
     sustainability,
     sessionShortId: extras.sessionShortId,
+    sessionTitle: extras.sessionTitle,
     lastPromptPreview: extras.lastPromptPreview,
     turnCount: extras.turnCount,
     contextSeries: extras.contextSeries,
     contextBreakdown: extras.contextBreakdown,
     contextInputTokens: extras.contextInputTokens,
+    sessionBreakdown: extras.sessionBreakdown,
+    sessionInputTokens: extras.sessionInputTokens,
   };
 }
 

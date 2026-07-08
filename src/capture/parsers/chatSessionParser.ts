@@ -106,7 +106,13 @@ export function parseChatSession(content: string): ParsedChatSession {
     });
   });
 
-  return { sessionId: state?.sessionId ?? '', model, requests, requestCount: reqArr.length };
+  return {
+    sessionId: state?.sessionId ?? '',
+    title: typeof state?.customTitle === 'string' ? state.customTitle : undefined,
+    model,
+    requests,
+    requestCount: reqArr.length,
+  };
 }
 
 /**

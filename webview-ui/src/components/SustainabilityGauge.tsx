@@ -83,7 +83,9 @@ export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {
           </div>
           <div class="gauge-sparkaxis">
             <span>turn 1</span>
-            <span>{resets > 0 ? `${resets} reset${resets > 1 ? 's' : ''}` : ''}</span>
+            <span title="A reset is when Copilot auto-summarizes the chat near the limit, collapsing the carried context.">
+              {resets > 0 ? `${resets} reset${resets > 1 ? 's' : ''} ⓘ` : ''}
+            </span>
             <span>now (turn {series.length})</span>
           </div>
         </div>
