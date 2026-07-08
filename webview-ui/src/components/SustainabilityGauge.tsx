@@ -51,6 +51,7 @@ export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {
           {f ? band.label : '—'}
         </span>
       </header>
+      <p class="card-scope">Context loaded in this chat right now — resets when Copilot summarizes.</p>
 
       <div class="gauge-loadrow">
         <span class={`gauge-load${f ? '' : ' muted'}`}>{f ? fmtNum(f.contextTokens) : '—'}</span>

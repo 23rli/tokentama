@@ -2,7 +2,7 @@
   "name": "tokentama",
   "displayName": "Tokentama",
   "description": "Real-time cost visibility for GitHub Copilot: see what your session spends, where the tokens go, and what the next turn will cost — live, local, read-only.",
-  "version": "0.2.9",
+  "version": "0.3.0",
   "publisher": "tokentama",
   "license": "MIT",
   "repository": {

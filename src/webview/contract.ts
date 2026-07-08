@@ -196,6 +196,14 @@ export interface ForecastView {
   chatInputTokens?: number;
   /** Number of distinct conversations aggregated into the whole-chat totals. */
   chatSessionCount?: number;
+  /** Total tokens (input + output) across every conversation in this workspace. */
+  chatTotalTokens?: number;
+  /** Total Copilot credits (AICs) across every conversation in this workspace. */
+  chatCredits?: number;
+  /** True when the whole-chat credit total is estimated rather than metered. */
+  chatCreditsEstimated?: boolean;
+  /** Derived $ cost for the whole-chat token total (blended $/1M-token rate). */
+  chatCostUsd?: number;
 }
 
 /** Full snapshot of pet state pushed to the webview. */

@@ -1858,6 +1858,15 @@ button.ghost:hover {
 .section-title { font-weight: 600; }
 .gauge-band { font-weight: 700; }
 
+/* -- Plain-language scope caption under a card header --------------------- */
+.card-scope {
+  margin: 0 0 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--vscode-descriptionForeground);
+  text-transform: none;
+}
+
 /* -- Percent labels on the where-tokens-go bars --------------------------- */
 .context .context-bar { height: 18px; border-radius: 3px; }
 .context-seg { display: flex; align-items: center; justify-content: center; overflow: hidden; }

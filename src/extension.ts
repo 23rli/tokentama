@@ -89,7 +89,15 @@ export function activate(context: vscode.ExtensionContext): void {
   // Cache the (expensive) whole-chat aggregate so the 5s timer only re-reads every
   // conversation when something on disk actually changed.
   let chatAggCache:
-    | { freshest: number; count: number; breakdown: ContextSlice[]; input: number }
+    | {
+        freshest: number;
+        count: number;
+        breakdown: ContextSlice[];
+        input: number;
+        output: number;
+        credits: number;
+        creditsReal: boolean;
+      }
     | undefined;
   const refreshForecast = (): void => {
     try {
@@ -154,12 +162,22 @@ export function activate(context: vscode.ExtensionContext): void {
       ) {
         const chatAgg = new Map<string, { category: string; label: string; tokens: number }>();
         let chatInput = 0;
+        let chatOutput = 0;
+        let chatCredits = 0;
+        let chatCreditsReal = false;
         for (const s of allSessions) {
           const evs = s.sessionId === session.sessionId ? events : readSessionEvents(s);
           for (const e of evs) {
             const t = e.tokens;
             if (!t || t.estimated !== false || (t.inputTokens ?? 0) <= 0) continue;
             chatInput += t.inputTokens ?? 0;
+            chatOutput += t.outputTokens ?? 0;
+            if (t.copilotCredits != null) {
+              chatCredits += t.copilotCredits;
+              chatCreditsReal = true;
+            } else {
+              chatCredits += t.estimatedCredits ?? 0;
+            }
             for (const sl of t.contextBreakdown ?? []) {
               const cur3 = chatAgg.get(sl.label) ?? { category: sl.category, label: sl.label, tokens: 0 };
               cur3.tokens += sl.tokens;
@@ -171,6 +189,9 @@ export function activate(context: vscode.ExtensionContext): void {
           freshest,
           count: allSessions.length,
           input: chatInput,
+          output: chatOutput,
+          credits: chatCredits,
+          creditsReal: chatCreditsReal,
           breakdown: [...chatAgg.values()].map((s) => ({
             category: s.category,
             label: s.label,
@@ -179,6 +200,15 @@ export function activate(context: vscode.ExtensionContext): void {
           })),
         };
       }
+      // Cost is derived from the (config) blended $/1M-token rate applied to the
+      // whole-chat token total — computed fresh each tick so a rate change shows up
+      // without waiting for a file to change.
+      const usdPerMillionTokens = vscode.workspace
+        .getConfiguration('tokentama.impact')
+        .get<number>('usdPerMillionTokens', 0.58);
+      const chatTotalTokens = chatAggCache.input + chatAggCache.output;
+      const chatCostUsd =
+        usdPerMillionTokens > 0 ? (chatTotalTokens * usdPerMillionTokens) / 1_000_000 : undefined;
       store.setForecast(
         buildForecastView(forecast, fs.accuracy(), modelEvent, {
           sessionShortId: session.sessionId.slice(0, 8),
@@ -196,6 +226,10 @@ export function activate(context: vscode.ExtensionContext): void {
           chatBreakdown: chatAggCache.breakdown.length ? chatAggCache.breakdown : undefined,
           chatInputTokens: chatAggCache.input || undefined,
           chatSessionCount: allSessions.length || undefined,
+          chatTotalTokens: chatTotalTokens || undefined,
+          chatCredits: chatAggCache.credits || undefined,
+          chatCreditsEstimated: !chatAggCache.creditsReal,
+          chatCostUsd,
         }),
       );
     } catch {
@@ -488,6 +522,10 @@ function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEven
   chatBreakdown?: ContextSlice[];
   chatInputTokens?: number;
   chatSessionCount?: number;
+  chatTotalTokens?: number;
+  chatCredits?: number;
+  chatCreditsEstimated?: boolean;
+  chatCostUsd?: number;
 }): ForecastView {
   const contextTokens = f.breakdown.carriedContext;
   // Use the FULL context window (contextMaxTokens, e.g. 1M) as the limit so the
@@ -540,6 +578,10 @@ function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEven
     chatBreakdown: extras.chatBreakdown,
     chatInputTokens: extras.chatInputTokens,
     chatSessionCount: extras.chatSessionCount,
+    chatTotalTokens: extras.chatTotalTokens,
+    chatCredits: extras.chatCredits,
+    chatCreditsEstimated: extras.chatCreditsEstimated,
+    chatCostUsd: extras.chatCostUsd,
   };
 }
 

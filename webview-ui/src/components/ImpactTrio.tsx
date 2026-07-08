@@ -8,29 +8,39 @@ import { fmtNum, fmtUsd } from '../format';
  * visible instead of a "wasted" figure. Three clearly-separated numbers.
  */
 export function ImpactTrio({ metrics, forecast }: { metrics: SuccessMetrics; forecast?: ForecastView }) {
-  const perCreditUsd = metrics.totalCredits > 0 ? metrics.totalCostUsd / metrics.totalCredits : 0;
+  // Prefer the whole-chat totals read straight from disk (every chat in this
+  // workspace) so the figure is stable across reloads and matches the "All chats"
+  // bar. Fall back to live-captured metrics only until the disk aggregate loads.
+  const hasChat = forecast?.chatTotalTokens != null;
+  const totalTokens = hasChat ? forecast!.chatTotalTokens! : metrics.totalTokens;
+  const totalCredits = hasChat ? forecast!.chatCredits ?? 0 : metrics.totalCredits;
+  const creditsEstimated = hasChat ? !!forecast!.chatCreditsEstimated : metrics.totalCreditsEstimated;
+  const totalCostUsd = hasChat ? forecast!.chatCostUsd : metrics.totalCostUsd;
+  const hasUsdRate = hasChat ? forecast!.chatCostUsd != null : metrics.hasUsdRate;
+
+  const perCreditUsd = totalCredits > 0 && totalCostUsd != null ? totalCostUsd / totalCredits : 0;
   const dTokens = forecast?.realLastInputTokens;
   const dCredits = forecast?.realLastCredits;
-  const dCost = dCredits != null ? dCredits * perCreditUsd : undefined;
+  const dCost = dCredits != null && perCreditUsd > 0 ? dCredits * perCreditUsd : undefined;
 
   const tiles = [
     {
       key: 'tokens',
       label: 'Tokens',
-      value: fmtNum(metrics.totalTokens),
+      value: fmtNum(totalTokens),
       delta: dTokens != null ? `▲ ${fmtNum(dTokens)}` : '',
     },
     {
       key: 'credits',
-      label: metrics.totalCreditsEstimated ? 'AICs (est.)' : 'AICs',
-      value: fmtNum(metrics.totalCredits),
+      label: creditsEstimated ? 'AICs (est.)' : 'AICs',
+      value: fmtNum(totalCredits),
       delta: dCredits != null ? `▲ ${fmtNum(dCredits)}` : '',
     },
     {
       key: 'cost',
-      label: metrics.hasUsdRate ? 'Cost (est.)' : 'Cost',
-      value: metrics.hasUsdRate ? fmtUsd(metrics.totalCostUsd) : '—',
-      delta: metrics.hasUsdRate && dCost != null ? `▲ ${fmtUsd(dCost)}` : '',
+      label: hasUsdRate ? 'Cost (est.)' : 'Cost',
+      value: hasUsdRate && totalCostUsd != null ? fmtUsd(totalCostUsd) : '—',
+      delta: hasUsdRate && dCost != null ? `▲ ${fmtUsd(dCost)}` : '',
     },
   ];
 
@@ -40,6 +50,7 @@ export function ImpactTrio({ metrics, forecast }: { metrics: SuccessMetrics; for
         <span class="section-title">Total cost</span>
         <span class="impact-hint">▲ last turn</span>
       </header>
+      <p class="card-scope">Everything metered across all chats in this workspace.</p>
       <div class="impact-trio">
         {tiles.map((t) => (
           <div class="impact-tile" key={t.key}>
