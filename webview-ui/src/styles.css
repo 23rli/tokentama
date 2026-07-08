@@ -1876,6 +1876,15 @@ button.ghost:hover {
 .live-dot.on { background: #3fb950; }
 .live-dot.stale { background: #d29922; }
 
+/* -- Forecast: in-flight turn note --------------------------------------- */
+.next-pending {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  border-left: 2px solid #d29922;
+  padding-left: 7px;
+}
+
 /* -- Reliable hover tooltip (fixed-position bubble, never clipped) -------- */
 .tip { position: relative; display: inline-flex; outline: none; }
 .tip > .section-title,
