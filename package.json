@@ -2,7 +2,7 @@
   "name": "tokentama",
   "displayName": "Token Lens",
   "description": "Real-time cost visibility and forecasting for GitHub Copilot: see what each chat spends, where the tokens go, and what your next turn will cost — live, local, read-only.",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "publisher": "tokentama",
   "license": "MIT",
   "repository": {
@@ -92,14 +92,9 @@
     "menus": {
       "view/title": [
         {
-          "command": "tokentama.compactSession",
-          "when": "view == tokentama.dashboard",
-          "group": "navigation@1"
-        },
-        {
           "command": "tokentama.resetEcosystem",
           "when": "view == tokentama.dashboard",
-          "group": "navigation@2"
+          "group": "navigation@1"
         }
       ]
     },
