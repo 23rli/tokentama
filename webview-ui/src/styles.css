@@ -1858,6 +1858,24 @@ button.ghost:hover {
 .section-title { font-weight: 600; }
 .gauge-band { font-weight: 700; }
 
+/* -- Live-refresh indicator ---------------------------------------------- */
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: auto;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--vscode-descriptionForeground);
+}
+.live-dot.on { background: #3fb950; }
+.live-dot.stale { background: #d29922; }
+
 /* -- Reliable hover tooltip (fixed-position bubble, never clipped) -------- */
 .tip { position: relative; display: inline-flex; outline: none; }
 .tip > .section-title,

@@ -12,21 +12,32 @@ export function App() {
   const [state, setState] = useState<TamaState | null>(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<'dashboard' | 'history'>('dashboard');
+  const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
+  const [, tick] = useState(0);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<HostMessage>): void => {
       const message = event.data;
-      if (message.type === 'state') setState(message.state);
-      else if (message.type === 'busy') setBusy(message.busy);
+      if (message.type === 'state') {
+        setState(message.state);
+        setLastUpdate(Date.now());
+      } else if (message.type === 'busy') setBusy(message.busy);
     };
     window.addEventListener('message', onMessage);
     post({ type: 'ready' });
-    return () => window.removeEventListener('message', onMessage);
+    // Tick once a second so the "updated Ns ago" indicator stays current.
+    const id = setInterval(() => tick((n) => n + 1), 1000);
+    return () => {
+      window.removeEventListener('message', onMessage);
+      clearInterval(id);
+    };
   }, []);
 
   if (!state) {
     return <div class="loading">Summoning Tokentama…</div>;
   }
+
+  const agoSec = Math.max(0, Math.round((Date.now() - lastUpdate) / 1000));
 
   return (
     <div class="app">
@@ -62,6 +73,10 @@ export function App() {
       )}
 
       <div class="actions">
+        <span class="live" title={`Auto-refreshes from disk. Last update ${agoSec}s ago.`}>
+          <span class={`live-dot${agoSec <= 4 ? ' on' : ' stale'}`} />
+          {agoSec <= 4 ? 'live' : `updated ${agoSec}s ago`}
+        </span>
         <button class="ghost" disabled={busy} onClick={() => post({ type: 'toggleCapture' })}>
           {state.captureEnabled ? '◉ Capture on' : '○ Capture off'}
         </button>
