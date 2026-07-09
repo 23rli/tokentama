@@ -26,11 +26,10 @@ export function buildDashboardHtml(webview: vscode.Webview, extensionUri: vscode
     <meta http-equiv="Content-Security-Policy" content="${csp}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="${styleUri}" rel="stylesheet" />
-    <title>Tokentama</title>
+    <title>Token Lens</title>
   </head>
   <body>
     <div id="root"></div>
-    <script nonce="${nonce}">window.__TOKENTAMA_MEDIA__ = "${mediaUri}";</script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
   </body>
 </html>`;

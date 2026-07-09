@@ -7,20 +7,19 @@ import { readSessionEvents, readSessionTitle } from './capture/copilotReader';
 import { StatusBar } from './status/statusBar';
 import { DashboardViewProvider } from './webview/DashboardViewProvider';
 import { buildSessionSummary } from './analysis/sessionSummary';
-import { ForecastService, type ForecastAccuracy } from './analysis/forecastService';
-import type { Forecast } from './analysis/forecast';
+import { ForecastService } from './analysis/forecastService';
+import { buildForecastView } from './analysis/forecastView';
 import type { ForecastView } from './webview/contract';
 import type { PromptEvent, ContextSlice } from '@tokentama/shared-types';
-import { estimateCredits } from '@tokentama/scoring-engine';
 
 export function activate(context: vscode.ExtensionContext): void {
   const store = new TamaStore();
 
-  const output = vscode.window.createOutputChannel('Tokentama');
+  const output = vscode.window.createOutputChannel('Token Lens');
   context.subscriptions.push(output);
   const log = (message: string): void =>
     output.appendLine(`[${new Date().toLocaleTimeString()}] ${message}`);
-  log('Tokentama activated.');
+  log('Token Lens activated.');
 
   const workspaceHash = deriveWorkspaceHash(context);
   log(
@@ -48,12 +47,17 @@ export function activate(context: vscode.ExtensionContext): void {
     | undefined;
   const refreshForecast = (): void => {
     try {
-      // Pin to THIS workspace's active chat so the panel doesn't jump between
-      // sessions in other windows. Only fall back to the global-newest session
-      // when this window has no folder open (no workspace hash to scope by).
-      const session = workspaceHash
-        ? findActiveSession(undefined, workspaceHash) ?? undefined
-        : findActiveSession();
+      // Scope the dashboard to THIS window's workspace so it never inherits or
+      // steals another window's chat. Only follow the global-newest session when
+      // the user explicitly opts in via capture.scope = 'all'.
+      const globalScope =
+        vscode.workspace.getConfiguration('tokenlens.capture').get<string>('scope', 'window') ===
+        'all';
+      const session = globalScope
+        ? findActiveSession()
+        : workspaceHash
+          ? findActiveSession(undefined, workspaceHash) ?? undefined
+          : undefined;
       if (!session) return;
       const events = readSessionEvents(session);
       if (events.length === 0) return;
@@ -109,7 +113,7 @@ export function activate(context: vscode.ExtensionContext): void {
       }));
       // Whole-chat breakdown: aggregate EVERY conversation in this workspace so the
       // split reflects total spend and doesn't reset when a new chat is started.
-      const allSessions = listCopilotSessions(undefined, workspaceHash || undefined);
+      const allSessions = listCopilotSessions(undefined, globalScope ? undefined : workspaceHash);
       const freshest = allSessions.reduce((m, s) => Math.max(m, s.modifiedMs), 0);
       if (
         !chatAggCache ||
@@ -160,7 +164,7 @@ export function activate(context: vscode.ExtensionContext): void {
       // whole-chat token total — computed fresh each tick so a rate change shows up
       // without waiting for a file to change.
       const usdPerMillionTokens = vscode.workspace
-        .getConfiguration('tokentama.impact')
+        .getConfiguration('tokenlens.impact')
         .get<number>('usdPerMillionTokens', 0.58);
       const chatTotalTokens = chatAggCache.input + chatAggCache.output;
       const chatCostUsd =
@@ -204,7 +208,7 @@ export function activate(context: vscode.ExtensionContext): void {
   let watcher: CopilotWatcher | undefined;
   const startWatcher = (): void => {
     if (watcher) return;
-    const captureCfg = vscode.workspace.getConfiguration('tokentama.capture');
+    const captureCfg = vscode.workspace.getConfiguration('tokenlens.capture');
     const mode = captureCfg.get<string>('mode', 'hybrid');
     if (mode === 'event') {
       log('Capture mode = event: on-disk watcher disabled. Enable hybrid/disk mode to reconcile real tokens.');
@@ -212,10 +216,10 @@ export function activate(context: vscode.ExtensionContext): void {
     }
     // Capture scope: 'window' pins to THIS window's sessions; 'all' follows the
     // globally-newest Copilot session across every window.
-    const scope = captureCfg.get<string>('scope', 'all');
+    const scope = captureCfg.get<string>('scope', 'window');
     const hashScope = scope === 'all' ? undefined : workspaceHash;
     if (scope !== 'all' && !workspaceHash) {
-      log('Ambient capture paused: this window has no folder open. Open a folder or set "tokentama.capture.scope" to "all".');
+      log('Ambient capture paused: this window has no folder open. Open a folder or set "tokenlens.capture.scope" to "all".');
       return;
     }
     watcher = new CopilotWatcher((event, meta) => {
@@ -263,17 +267,17 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('tokentama.openDashboard', () =>
-      vscode.commands.executeCommand('tokentama.dashboard.focus'),
+    vscode.commands.registerCommand('tokenlens.openDashboard', () =>
+      vscode.commands.executeCommand('tokenlens.dashboard.focus'),
     ),
-    vscode.commands.registerCommand('tokentama.toggleCapture', toggleCapture),
-    vscode.commands.registerCommand('tokentama.diagnostics', () =>
+    vscode.commands.registerCommand('tokenlens.toggleCapture', toggleCapture),
+    vscode.commands.registerCommand('tokenlens.diagnostics', () =>
       showCaptureDiagnostics(workspaceHash, output),
     ),
-    vscode.commands.registerCommand('tokentama.captureSelfTest', () =>
+    vscode.commands.registerCommand('tokenlens.captureSelfTest', () =>
       captureSelfTest(workspaceHash, () => watcher, store, output),
     ),
-    vscode.commands.registerCommand('tokentama.compactSession', () =>
+    vscode.commands.registerCommand('tokenlens.compactSession', () =>
       compactSession(workspaceHash, log),
     ),
   );
@@ -295,94 +299,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {
   /* disposables are cleaned up via context.subscriptions */
-}
-
-/**
- * Assemble the webview forecast view-model: the PREDICTED next turn (+ interval,
- * reset risk, hungriest part), the REAL last turn to compare against, the live
- * self-measured accuracy, and the context-load / sustainability signal that drives
- * the health gauge. Predicted credits price the fresh (growth+draft) portion at
- * the input rate and treat carried context as cached — matching the impact model.
- */
-function buildForecastView(f: Forecast, acc: ForecastAccuracy, event: PromptEvent, extras: {
-  sessionShortId?: string;
-  sessionTitle?: string;
-  lastPromptPreview?: string;
-  turnCount: number;
-  contextSeries: number[];
-  turnPrompts?: string[];
-  realLastInputTokens?: number;
-  realLastCredits?: number;
-  contextBreakdown?: ContextSlice[];
-  contextInputTokens?: number;
-  sessionBreakdown?: ContextSlice[];
-  sessionInputTokens?: number;
-  chatBreakdown?: ContextSlice[];
-  chatInputTokens?: number;
-  chatSessionCount?: number;
-  chatTotalTokens?: number;
-  chatCredits?: number;
-  chatCreditsEstimated?: boolean;
-  chatCostUsd?: number;
-  allTurns?: { prompt: string; tokens: number; metered: boolean }[];
-}): ForecastView {
-  const contextTokens = f.breakdown.carriedContext;
-  // Use the FULL context window (contextMaxTokens, e.g. 1M) as the limit so the
-  // percentage matches what GitHub Copilot shows, not the input-only cap.
-  const limit = event.model?.contextMaxTokens ?? event.model?.maxInputTokens;
-  const loadFraction = limit && limit > 0 ? contextTokens / limit : undefined;
-  const expectedOutput = event.tokens?.outputTokens ?? 0;
-  const predictedCredits = event.model
-    ? estimateCredits(f.predictedInputTokens, expectedOutput, event.model, contextTokens)
-    : undefined;
-
-  const sustainability: ForecastView['sustainability'] =
-    f.resetRisk === 'high' || (loadFraction ?? 0) >= 0.9
-      ? 'overloaded'
-      : (loadFraction ?? 0) >= 0.75
-        ? 'critical'
-        : (loadFraction ?? 0) >= 0.5
-          ? 'heavy'
-          : (loadFraction ?? 0) >= 0.3
-            ? 'moderate'
-            : 'light';
-
-  return {
-    predictedInputTokens: f.predictedInputTokens,
-    intervalLow: f.interval.low,
-    intervalHigh: f.interval.high,
-    predictedCredits,
-    confidence: f.confidence,
-    resetRisk: f.resetRisk,
-    hungriest: f.hungriest,
-    realLastInputTokens: extras.realLastInputTokens,
-    realLastCredits: extras.realLastCredits,
-    accuracyScore: acc.score,
-    accuracySamples: acc.samples,
-    intervalCoverage: acc.intervalCoverage,
-    contextTokens,
-    contextLimit: limit,
-    loadFraction,
-    sustainability,
-    sessionShortId: extras.sessionShortId,
-    sessionTitle: extras.sessionTitle,
-    lastPromptPreview: extras.lastPromptPreview,
-    turnCount: extras.turnCount,
-    contextSeries: extras.contextSeries,
-    turnPrompts: extras.turnPrompts,
-    contextBreakdown: extras.contextBreakdown,
-    contextInputTokens: extras.contextInputTokens,
-    sessionBreakdown: extras.sessionBreakdown,
-    sessionInputTokens: extras.sessionInputTokens,
-    chatBreakdown: extras.chatBreakdown,
-    chatInputTokens: extras.chatInputTokens,
-    chatSessionCount: extras.chatSessionCount,
-    chatTotalTokens: extras.chatTotalTokens,
-    chatCredits: extras.chatCredits,
-    chatCreditsEstimated: extras.chatCreditsEstimated,
-    chatCostUsd: extras.chatCostUsd,
-    allTurns: extras.allTurns,
-  };
 }
 
 function deriveWorkspaceHash(context: vscode.ExtensionContext): string | undefined {
@@ -451,9 +367,9 @@ function captureSelfTest(
   store: TamaStore,
   output: vscode.OutputChannel,
 ): void {
-  const cfg = vscode.workspace.getConfiguration('tokentama.capture');
+  const cfg = vscode.workspace.getConfiguration('tokenlens.capture');
   const mode = cfg.get<string>('mode', 'hybrid');
-  const scope = cfg.get<string>('scope', 'all');
+  const scope = cfg.get<string>('scope', 'window');
   const hashScope = scope === 'all' ? undefined : workspaceHash;
 
   const lines: string[] = ['', '=== Tokentama capture self-test ==='];

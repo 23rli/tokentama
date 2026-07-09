@@ -10,7 +10,7 @@ export interface DashboardHandlers {
 
 /** Sidebar webview that renders the Token Lens cost + forecast dashboard. */
 export class DashboardViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'tokentama.dashboard';
+  public static readonly viewType = 'tokenlens.dashboard';
 
   private view?: vscode.WebviewView;
 

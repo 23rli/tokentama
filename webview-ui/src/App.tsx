@@ -34,7 +34,7 @@ export function App() {
   }, []);
 
   if (!state) {
-    return <div class="loading">Summoning Tokentama…</div>;
+    return <div class="loading">Loading Token Lens…</div>;
   }
 
   const agoSec = Math.max(0, Math.round((Date.now() - lastUpdate) / 1000));

@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import type { ModelInfo } from '@tokentama/shared-types';
-import type { TamaState, ForecastView } from '../webview/contract';
-import { computeMetrics } from '../metrics/metrics';
+import type { TamaState, ForecastView, SuccessMetrics } from '../webview/contract';
 
 /**
  * Minimal state carrier for Token Lens. Holds the capture toggle, the active
@@ -19,7 +18,7 @@ export class TamaStore {
 
   constructor() {
     this._captureEnabled = vscode.workspace
-      .getConfiguration('tokentama.passiveCapture')
+      .getConfiguration('tokenlens.passiveCapture')
       .get<boolean>('enabled', true);
   }
 
@@ -30,7 +29,7 @@ export class TamaStore {
   async setCaptureEnabled(enabled: boolean): Promise<void> {
     this._captureEnabled = enabled;
     await vscode.workspace
-      .getConfiguration('tokentama.passiveCapture')
+      .getConfiguration('tokenlens.passiveCapture')
       .update('enabled', enabled, vscode.ConfigurationTarget.Global);
     this.emit();
   }
@@ -43,21 +42,18 @@ export class TamaStore {
   }
 
   getState(): TamaState {
-    const impactCfg = vscode.workspace.getConfiguration('tokentama.impact');
-    // Zero-state fallback metrics (ImpactTrio prefers the whole-chat forecast
-    // totals when present). Kept so the cost tiles render before a forecast lands.
-    const metrics = computeMetrics(
-      [],
-      { tipsShown: 0, tipsApplied: 0 },
-      {
-        whPerThousandTokens: 0,
-        gridGramsCo2PerKwh: 0,
-        co2GramsPer1kTokens: 0,
-        waterMlPer1kTokens: 0,
-        usdPerCredit: impactCfg.get<number>('usdPerCredit', 0),
-        usdPerMillionTokens: impactCfg.get<number>('usdPerMillionTokens', 0.58),
-      },
-    );
+    const rate = vscode.workspace
+      .getConfiguration('tokenlens.impact')
+      .get<number>('usdPerMillionTokens', 0.58);
+    // Zero-state fallback metrics; ImpactTrio prefers the whole-chat forecast
+    // totals when present, so these only show before a forecast lands.
+    const metrics: SuccessMetrics = {
+      totalTokens: 0,
+      totalCostUsd: 0,
+      totalCredits: 0,
+      totalCreditsEstimated: true,
+      hasUsdRate: rate > 0,
+    };
     return {
       metrics,
       model: this.model,

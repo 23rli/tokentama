@@ -2,7 +2,7 @@
   "name": "tokentama",
   "displayName": "Token Lens",
   "description": "Real-time cost visibility and forecasting for GitHub Copilot: see what each chat spends, where the tokens go, and what your next turn will cost — live, local, read-only.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "tokentama",
   "license": "MIT",
   "repository": {
@@ -38,46 +38,46 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "tokentama",
+          "id": "tokenlens",
           "title": "Token Lens",
           "icon": "media/tokentama-icon.svg"
         }
       ]
     },
     "views": {
-      "tokentama": [
+      "tokenlens": [
         {
           "type": "webview",
-          "id": "tokentama.dashboard",
+          "id": "tokenlens.dashboard",
           "name": "Token Lens"
         }
       ]
     },
     "commands": [
       {
-        "command": "tokentama.openDashboard",
+        "command": "tokenlens.openDashboard",
         "title": "Open dashboard",
         "category": "Token Lens"
       },
       {
-        "command": "tokentama.toggleCapture",
+        "command": "tokenlens.toggleCapture",
         "title": "Toggle passive capture",
         "category": "Token Lens"
       },
       {
-        "command": "tokentama.compactSession",
+        "command": "tokenlens.compactSession",
         "title": "Compact chat (fresh chat + summary)",
         "category": "Token Lens",
         "icon": "$(combine)"
       },
       {
-        "command": "tokentama.diagnostics",
+        "command": "tokenlens.diagnostics",
         "title": "Show capture diagnostics",
         "category": "Token Lens",
         "icon": "$(info)"
       },
       {
-        "command": "tokentama.captureSelfTest",
+        "command": "tokenlens.captureSelfTest",
         "title": "Capture self-test (what is it reading?)",
         "category": "Token Lens",
         "icon": "$(checklist)"
@@ -89,22 +89,22 @@
     "configuration": {
       "title": "Token Lens",
       "properties": {
-        "tokentama.passiveCapture.enabled": {
+        "tokenlens.passiveCapture.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Passively read VS Code Copilot chat sessions to track token usage. Read-only."
         },
-        "tokentama.impact.usdPerMillionTokens": {
+        "tokenlens.impact.usdPerMillionTokens": {
           "type": "number",
           "default": 0.58,
           "description": "Blended, cache-inclusive US dollars per 1,000,000 tokens — the preferred $ cost basis. Set this to YOUR effective rate for an accurate figure, or 0 to fall back to the credit-based estimate."
         },
-        "tokentama.impact.usdPerCredit": {
+        "tokenlens.impact.usdPerCredit": {
           "type": "number",
           "default": 0,
           "description": "US dollars per Copilot AI credit (AIC). Only used when 'usdPerMillionTokens' is 0."
         },
-        "tokentama.capture.mode": {
+        "tokenlens.capture.mode": {
           "type": "string",
           "enum": [
             "hybrid",
@@ -119,18 +119,18 @@
           "default": "hybrid",
           "description": "How Token Lens captures Copilot token usage."
         },
-        "tokentama.capture.scope": {
+        "tokenlens.capture.scope": {
           "type": "string",
           "enum": [
             "window",
             "all"
           ],
           "enumDescriptions": [
-            "Capture only THIS window's Copilot sessions.",
-            "Track every Copilot chat across all windows."
+            "Only THIS window's workspace (recommended — each window stays isolated).",
+            "Follow the newest Copilot chat across ALL windows (can inherit another window's chat)."
           ],
-          "default": "all",
-          "description": "Which Copilot sessions live capture watches."
+          "default": "window",
+          "description": "Which Copilot sessions Token Lens tracks. 'window' keeps each window isolated; 'all' follows the newest chat anywhere."
         }
       }
     }

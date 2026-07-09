@@ -11,7 +11,7 @@ export class StatusBar implements vscode.Disposable {
   constructor() {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     this.item.name = 'Token Lens';
-    this.item.command = 'tokentama.openDashboard';
+    this.item.command = 'tokenlens.openDashboard';
     this.item.text = '$(graph) Token Lens';
     this.item.tooltip = 'Open Token Lens';
     this.item.show();

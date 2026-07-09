@@ -6,46 +6,16 @@ import type { ModelInfo, ContextSlice } from '@tokentama/shared-types';
 
 export type { ModelInfo, ContextSlice } from '@tokentama/shared-types';
 
-/** The headline cost metrics (zero-state fallback for the cost tiles). */
+/** The headline cost tiles' zero-state fallback (the forecast's whole-chat totals are preferred). */
 export interface SuccessMetrics {
-  /** % reduction in estimated tokens across the session (baseline → latest). */
-  tokenReductionPct: number;
-  /** % reduction in waste score across the session. */
-  wasteReductionPct: number;
-  /** % improvement in prompt-quality subscore across the session. */
-  promptQualityImprovementPct: number;
-  /** Mean positive change in overall score per scored prompt. */
-  averageScoreIncrease: number;
-  /** Coaching engagement: tips applied / tips shown (0..1). */
-  coachingEngagement: number;
-  /** Estimated sustainability impact of tokens saved, in watt-hours. */
-  sustainabilityWhSaved: number;
-  /** Estimated grams CO2e avoided. */
-  sustainabilityCo2eGrams: number;
-  /** Raw counters backing the rates above. */
-  promptsScored: number;
-  tipsShown: number;
-  tipsApplied: number;
   totalTokens: number;
   totalCostUsd: number;
-  /** Sum of real Copilot credits across the session (0 if none were real). */
+  /** Sum of Copilot credits (AICs). */
   totalCredits: number;
-  /** Credits (AICs) attributable to wasteful prompting. */
-  creditsWasted: number;
   /** True when totalCredits is estimated (no real metered credits yet). */
   totalCreditsEstimated: boolean;
-  /** True when a USD-per-credit rate is configured (so $ figures are meaningful). */
+  /** True when a $ rate is configured (so $ figures are meaningful). */
   hasUsdRate: boolean;
-  /** Absolute CO2e footprint of all tokens this session (grams). */
-  co2eGramsTotal: number;
-  /** Absolute water footprint of all tokens this session (millilitres). */
-  waterMlTotal: number;
-  /** CO2e (grams) attributable to wasteful prompting (waste-weighted). */
-  co2eGramsWasted: number;
-  /** Water (millilitres) attributable to wasteful prompting. */
-  waterMlWasted: number;
-  /** Estimated dollars attributable to wasteful prompting. */
-  costUsdWasted: number;
 }
 
 /**
