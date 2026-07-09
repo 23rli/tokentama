@@ -47,18 +47,20 @@ export function activate(context: vscode.ExtensionContext): void {
     | undefined;
   const refreshForecast = (): void => {
     try {
-      // Scope the dashboard to THIS window's workspace so it never inherits or
-      // steals another window's chat. Only follow the global-newest session when
-      // the user explicitly opts in via capture.scope = 'all'.
-      const globalScope =
-        vscode.workspace.getConfiguration('tokenlens.capture').get<string>('scope', 'window') ===
-        'all';
-      const session = globalScope
-        ? findActiveSession()
-        : workspaceHash
-          ? findActiveSession(undefined, workspaceHash) ?? undefined
-          : undefined;
-      if (!session) return;
+      // Scope to THIS window's workspace when it has one, so folder windows never
+      // inherit or steal each other's chats. Empty windows (no workspace hash) and
+      // scope='all' follow the globally-active chat so they still track something.
+      const scope = vscode.workspace
+        .getConfiguration('tokenlens.capture')
+        .get<string>('scope', 'window');
+      const useHash = scope !== 'all' && !!workspaceHash;
+      const session = useHash
+        ? findActiveSession(undefined, workspaceHash) ?? undefined
+        : findActiveSession();
+      if (!session) {
+        store.ping();
+        return;
+      }
       const events = readSessionEvents(session);
       if (events.length === 0) return;
       // Metered turns drive the forecast HISTORY; the newest turn overall is the
@@ -113,7 +115,7 @@ export function activate(context: vscode.ExtensionContext): void {
       }));
       // Whole-chat breakdown: aggregate EVERY conversation in this workspace so the
       // split reflects total spend and doesn't reset when a new chat is started.
-      const allSessions = listCopilotSessions(undefined, globalScope ? undefined : workspaceHash);
+      const allSessions = listCopilotSessions(undefined, useHash ? workspaceHash : undefined);
       const freshest = allSessions.reduce((m, s) => Math.max(m, s.modifiedMs), 0);
       if (
         !chatAggCache ||
@@ -214,14 +216,10 @@ export function activate(context: vscode.ExtensionContext): void {
       log('Capture mode = event: on-disk watcher disabled. Enable hybrid/disk mode to reconcile real tokens.');
       return;
     }
-    // Capture scope: 'window' pins to THIS window's sessions; 'all' follows the
-    // globally-newest Copilot session across every window.
+    // Scope to this window's workspace when it has one; empty windows watch globally
+    // (there's no window to scope to) so they still track the active chat.
     const scope = captureCfg.get<string>('scope', 'window');
-    const hashScope = scope === 'all' ? undefined : workspaceHash;
-    if (scope !== 'all' && !workspaceHash) {
-      log('Ambient capture paused: this window has no folder open. Open a folder or set "tokenlens.capture.scope" to "all".');
-      return;
-    }
+    const hashScope = scope !== 'all' && workspaceHash ? workspaceHash : undefined;
     watcher = new CopilotWatcher((event, meta) => {
       if (!meta?.preliminary) {
         log(

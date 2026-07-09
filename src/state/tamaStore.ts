@@ -41,6 +41,11 @@ export class TamaStore {
     this.emit();
   }
 
+  /** Re-emit the current state so the webview's live indicator stays fresh when idle. */
+  ping(): void {
+    this.emit();
+  }
+
   getState(): TamaState {
     const rate = vscode.workspace
       .getConfiguration('tokenlens.impact')
