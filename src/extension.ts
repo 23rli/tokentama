@@ -14,6 +14,10 @@ import type { PromptEvent, ContextSlice } from '@tokentama/shared-types';
 
 export function activate(context: vscode.ExtensionContext): void {
   const store = new TamaStore();
+  // When this window's extension started — used to scope EMPTY windows (which have
+  // no workspace hash) to chats touched since the window opened, so they don't
+  // inherit the previous window's chat.
+  const activatedAt = Date.now();
 
   const output = vscode.window.createOutputChannel('Token Lens');
   context.subscriptions.push(output);
@@ -47,16 +51,22 @@ export function activate(context: vscode.ExtensionContext): void {
     | undefined;
   const refreshForecast = (): void => {
     try {
-      // Scope to THIS window's workspace when it has one, so folder windows never
-      // inherit or steal each other's chats. Empty windows (no workspace hash) and
-      // scope='all' follow the globally-active chat so they still track something.
       const scope = vscode.workspace
         .getConfiguration('tokenlens.capture')
         .get<string>('scope', 'window');
-      const useHash = scope !== 'all' && !!workspaceHash;
-      const session = useHash
-        ? findActiveSession(undefined, workspaceHash) ?? undefined
-        : findActiveSession();
+      // Sessions in scope for THIS window:
+      //  - folder window: only this workspace's sessions (fully isolated).
+      //  - scope='all': every session in every window (explicit opt-in).
+      //  - empty window: only sessions touched since this window opened, so it
+      //    tracks the chat you start here instead of inheriting another window's.
+      const allSessions =
+        scope !== 'all' && workspaceHash
+          ? listCopilotSessions(undefined, workspaceHash)
+          : scope === 'all'
+            ? listCopilotSessions(undefined, undefined)
+            : listCopilotSessions(undefined, undefined).filter((s) => s.modifiedMs >= activatedAt);
+      // listCopilotSessions sorts newest-first, so [0] is the active session.
+      const session = allSessions[0];
       if (!session) {
         store.ping();
         return;
@@ -113,9 +123,8 @@ export function activate(context: vscode.ExtensionContext): void {
         tokens: s.tokens,
         pct: sessionInputTokens > 0 ? Math.round((s.tokens / sessionInputTokens) * 100) : 0,
       }));
-      // Whole-chat breakdown: aggregate EVERY conversation in this workspace so the
-      // split reflects total spend and doesn't reset when a new chat is started.
-      const allSessions = listCopilotSessions(undefined, useHash ? workspaceHash : undefined);
+      // Whole-chat breakdown: aggregate every conversation in scope (this window)
+      // so the split reflects total spend and doesn't reset when a new chat starts.
       const freshest = allSessions.reduce((m, s) => Math.max(m, s.modifiedMs), 0);
       if (
         !chatAggCache ||

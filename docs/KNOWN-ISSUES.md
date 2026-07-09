@@ -8,11 +8,11 @@ workaround. Status legend: **Fixed** · **Mitigated** (handled but has a residua
 
 ## Data source & scoping
 
-### 1. A new *empty* window shows another window's chat
-- **Symptom:** Opening a blank window (no folder) briefly shows the last-active chat's stats.
-- **Cause:** An empty window has no workspace hash to scope to, so it follows the *globally-active* Copilot chat.
-- **Status:** **Mitigated.** Folder windows are fully isolated (scoped to their own workspace). Empty windows intentionally follow the active chat so they still track something. Once you start typing in the empty window, it follows *your* chat.
-- **Workaround:** Open a folder in the window for full isolation.
+### 1. A new *empty* window (no folder)
+- **Symptom (old):** A blank window used to show the previous window's chat and aggregate every workspace's sessions ("weird chats").
+- **Cause:** An empty window has no workspace hash to scope by, so it fell back to the globally-newest session and a global "All chats" total.
+- **Status:** **Mitigated.** Empty windows now only track sessions **modified since the window opened** — i.e. the chat you actually start there. It shows an empty state until you send a prompt, then follows *your* chat; it never inherits the previous window's, and "All chats" only counts this window's chats.
+- **Residual:** If you *reopen* an old chat in the empty window and send a message, it (correctly) starts tracking from then. Full isolation still comes from opening a folder.
 
 ### 2. Two windows on the *same folder* track the same chat
 - **Symptom:** Both windows show the same session; one can "steal" the other.
