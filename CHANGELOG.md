@@ -8,6 +8,7 @@ All notable changes to the Token Lens extension are documented here.
 
 - Finalized the QA-approved early user-testing package and raised the bundled
   Preact version to 10.29.4.
+- Replaced the deprecated creature artwork with a neutral meter icon.
 
 ## [0.6.9] - 2026-07-10
 

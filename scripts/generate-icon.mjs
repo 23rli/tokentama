@@ -1,5 +1,5 @@
-// Generates media/icon.png — a 128x128 placeholder guardian icon.
-// Pure Node (zlib) PNG encoder; no dependencies. Replace with real art later.
+// Generates the 128x128 Token Lens meter icon.
+// Pure Node (zlib) PNG encoder; no dependencies.
 import zlib from 'node:zlib';
 import { writeFileSync, mkdirSync } from 'node:fs';
 
@@ -15,16 +15,12 @@ const setPx = (x, y, r, g, b, a = 255) => {
   px[i + 3] = a;
 };
 
-const disc = (cx, cy, rad, r, g, b) => {
-  for (let y = 0; y < S; y++)
-    for (let x = 0; x < S; x++) {
-      const dx = x - cx;
-      const dy = y - cy;
-      if (dx * dx + dy * dy <= rad * rad) setPx(x, y, r, g, b);
-    }
+const rect = (x0, y0, width, height, r, g, b) => {
+  for (let y = y0; y < y0 + height; y++)
+    for (let x = x0; x < x0 + width; x++) setPx(x, y, r, g, b);
 };
 
-// Rounded-square background with a vertical green gradient.
+// Rounded-square VS Code-style background.
 const corner = 22;
 for (let y = 0; y < S; y++) {
   for (let x = 0; x < S; x++) {
@@ -36,36 +32,15 @@ for (let y = 0; y < S; y++) {
       setPx(x, y, 0, 0, 0, 0);
       continue;
     }
-    const t = y / S;
-    setPx(
-      x,
-      y,
-      Math.round(31 + (18 - 31) * t),
-      Math.round(86 + (52 - 86) * t),
-      Math.round(60 + (38 - 60) * t),
-    );
+    setPx(x, y, 24, 24, 24);
   }
 }
 
-// Leaf antenna.
-for (let y = 28; y < 48; y++) {
-  setPx(64, y, 47, 93, 58);
-  setPx(65, y, 47, 93, 58);
-}
-disc(71, 30, 8, 91, 208, 138);
-
-// Guardian body + belly + eyes.
-disc(64, 72, 34, 126, 226, 168);
-for (let y = 0; y < S; y++)
-  for (let x = 0; x < S; x++) {
-    const dx = (x - 64) / 22;
-    const dy = (y - 80) / 18;
-    if (dx * dx + dy * dy <= 1) setPx(x, y, 182, 240, 208);
-  }
-disc(52, 64, 7, 255, 255, 255);
-disc(77, 64, 7, 255, 255, 255);
-disc(53, 65, 3, 35, 48, 58);
-disc(78, 65, 3, 35, 48, 58);
+// Meter bars and baseline, matching the activity-bar icon.
+rect(26, 88, 76, 8, 204, 204, 204);
+rect(32, 59, 16, 29, 88, 166, 255);
+rect(56, 34, 16, 54, 63, 185, 80);
+rect(80, 47, 16, 41, 163, 113, 247);
 
 // PNG encode.
 const crcTable = (() => {
