@@ -1,6 +1,6 @@
 # Token Lens — App Journey & Direction
 
-_Last updated: 2026-07-10 · package version 0.6.9_
+_Last updated: 2026-07-10 · package version 0.6.10_
 
 > **Current direction: see §10 (2026-07-07 decision — build for real-time visibility + precognition,
 > no savings claim).** §9 is the pivot exploration that led here; §§1–8 are the journey and evidence.
@@ -586,4 +586,3 @@ tool output remains structurally unpredictable, even with the URIs.
 That's enough — the model adapts to MCP-heavy usage by learning the per-tool rate, and flags the
 extra uncertainty; it does not need to measure MCP output to stay honest. Real MCP-user data is the
 outstanding validation.
-

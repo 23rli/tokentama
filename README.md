@@ -32,7 +32,9 @@ It makes no savings claims. Agentic AI coding costs tokens the way a factory cos
 
 ## What it does *not* do
 
-- It does **not** claim to save you tokens. Extensive measurement on real sessions showed prompt rewriting, right-sizing, and prompt phrasing move the bill by ~0–modest amounts that don't survive real usage. See [`docs/app-journey-and-direction.md`](docs/app-journey-and-direction.md) and [`docs/tokentama-decision-brief.md`](docs/tokentama-decision-brief.md) for the full evidence trail.
+- It does **not** claim to save you tokens. Measurement on real sessions showed
+  prompt rewriting, right-sizing, and prompt phrasing produce little durable
+  savings in normal use.
 - It does **not** change your prompts, model, or context. It observes and forecasts.
 
 ## Privacy

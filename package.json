@@ -7,11 +7,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/23rli/tokentama.git"
+    "url": "https://github.com/t-richarli_microsoft/tokentama.git"
   },
-  "homepage": "https://github.com/23rli/tokentama#readme",
+  "homepage": "https://github.com/t-richarli_microsoft/tokentama#readme",
   "bugs": {
-    "url": "https://github.com/23rli/tokentama/issues"
+    "url": "https://github.com/t-richarli_microsoft/tokentama/issues"
   },
   "engines": {
     "vscode": "^1.90.0"
