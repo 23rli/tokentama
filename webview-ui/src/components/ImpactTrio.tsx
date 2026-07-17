@@ -38,22 +38,28 @@ export function ImpactTrio({ metrics, forecast }: { metrics: SuccessMetrics; for
     scope === 'chat'
       ? {
           tokens: f?.sessionTotalTokens ?? 0,
+          tokensPartial: !!f?.sessionTokensPartial,
           credits: f?.sessionCredits ?? 0,
           creditsEstimated: !!f?.sessionCreditsEstimated,
           cost: f?.sessionCostUsd,
+          costPartial: !!f?.sessionCostPartial,
         }
       : scope === 'today'
         ? {
             tokens: f?.todayTotalTokens ?? 0,
+            tokensPartial: !!f?.todayTokensPartial,
             credits: f?.todayCredits ?? 0,
             creditsEstimated: !!f?.todayCreditsEstimated,
             cost: f?.todayCostUsd,
+            costPartial: !!f?.todayCostPartial,
           }
         : {
             tokens: hasChat ? f!.chatTotalTokens! : metrics.totalTokens,
+            tokensPartial: hasChat ? !!f!.chatTokensPartial : false,
             credits: hasChat ? f!.chatCredits ?? 0 : metrics.totalCredits,
             creditsEstimated: hasChat ? !!f!.chatCreditsEstimated : metrics.totalCreditsEstimated,
             cost: hasChat ? f!.chatCostUsd : metrics.totalCostUsd,
+            costPartial: hasChat ? !!f!.chatCostPartial : false,
           };
 
   const hasUsdRate =
@@ -69,10 +75,12 @@ export function ImpactTrio({ metrics, forecast }: { metrics: SuccessMetrics; for
   const tiles = [
     {
       key: 'tokens',
-      label: 'Tokens',
+      label: picked.tokensPartial ? 'Measured tokens' : 'Tokens',
       value: fmtNum(picked.tokens),
       delta: dTokens != null ? `▲ ${fmtNum(dTokens)}` : '',
-      tip: 'Total input + output tokens Copilot metered for this scope. Input includes the whole re-sent context (system, tools, history, your message).',
+      tip: picked.tokensPartial
+        ? 'Known metered token minimum for this scope. Copilot omitted input or output metering on at least one completed request; the available direction is still included.'
+        : 'Total input + output tokens Copilot metered for this scope. Input includes the whole re-sent context (system, tools, history, your message).',
     },
     {
       key: 'credits',
@@ -83,10 +91,12 @@ export function ImpactTrio({ metrics, forecast }: { metrics: SuccessMetrics; for
     },
     {
       key: 'cost',
-      label: hasUsdRate ? 'Cost (est.)' : 'Cost',
+      label: hasUsdRate ? picked.costPartial ? 'Known cost' : 'Cost (est.)' : 'Cost',
       value: hasUsdRate && picked.cost != null ? fmtUsd(picked.cost) : '—',
       delta: hasUsdRate && dCost != null ? `▲ ${fmtUsd(dCost)}` : '',
-      tip: 'Estimated $ uses your blended $/million-token rate, not per-model pricing. The default is illustrative and will not match every plan, model, or cache mix. Set tokenlens.impact.usdPerMillionTokens to your effective rate, or set it to 0 to use tokenlens.impact.usdPerCredit.',
+      tip: picked.costPartial
+        ? 'Known cost from available measured token or credit inputs. Missing source meters are excluded and shown in Overview coverage.'
+        : 'Estimated $ uses your blended $/million-token rate, not per-model pricing. The default is illustrative and will not match every plan, model, or cache mix. Set tokenlens.impact.usdPerMillionTokens to your effective rate, or set it to 0 to use tokenlens.impact.usdPerCredit.',
     },
   ];
 

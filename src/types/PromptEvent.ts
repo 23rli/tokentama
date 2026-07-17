@@ -7,6 +7,10 @@ export interface ToolCallInfo {
   toolCallId?: string;
   durationMs?: number;
   success?: boolean;
+  /** Broad execution surface inferred from the transcript tool identifier. */
+  toolKind?: 'mcp' | 'local';
+  /** Skills whose SKILL.md files were loaded by this call. Raw arguments are never retained. */
+  loadedSkills?: string[];
 }
 
 /** Model identity + limits, sourced from VS Code chat session metadata / models.json. */
@@ -41,12 +45,17 @@ export interface ModelInfo {
 export interface TokenEstimate {
   inputTokens: number;
   outputTokens: number;
+  /** True when inputTokens came from local text estimation rather than Copilot. */
+  inputEstimated?: boolean;
+  /** True when outputTokens came from local text estimation rather than Copilot. */
+  outputEstimated?: boolean;
   cachedTokens?: number;
   estimatedCostUsd: number;
   /** Estimated Copilot credits (AICs) for the turn — the objective cost unit. */
   estimatedCredits?: number;
   /** Real Copilot credits metered for the turn, when available from disk. */
   copilotCredits?: number;
+  /** Legacy shorthand: true when the input side is estimated. */
   estimated: boolean;
   /** Where the input (prompt) tokens went, from Copilot's promptTokenDetails. */
   contextBreakdown?: ContextSlice[];
@@ -69,6 +78,8 @@ export interface ContextSlice {
 export interface PromptEvent {
   eventId: string;
   sessionId: string;
+  /** Source-native request identity for adapter deduplication; never exported raw. */
+  sourceRequestId?: string;
   userId: string;
   turnIndex: number;
   source: IngestionSource;
@@ -79,6 +90,8 @@ export interface PromptEvent {
   toolCalls: ToolCallInfo[];
   model?: ModelInfo;
   tokens?: TokenEstimate;
+  /** Source lifecycle/coverage, distinct from local token estimates. */
+  meteringStatus?: 'metered' | 'input-only' | 'output-only' | 'pending' | 'unavailable';
   /** Number of near-duplicate retries detected earlier in this session. */
   retryCountInSession?: number;
   /** Whether the user adopted the previous coaching suggestion (behavioral hint). */

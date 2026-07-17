@@ -11,14 +11,14 @@ const BANDS: Record<
   moderate: { label: 'Moderate', caption: 'Building up.', color: '#57ab5a', emoji: '🟢' },
   heavy: { label: 'Heavy', caption: 'Costs climbing.', color: '#d29922', emoji: '🟡' },
   critical: { label: 'Critical', caption: 'Very heavy — consider a fresh chat.', color: '#f0883e', emoji: '🟠' },
-  overloaded: { label: 'Overloaded', caption: 'Reset imminent.', color: '#f85149', emoji: '🔴' },
+  overloaded: { label: 'Overloaded', caption: 'Near a possible reset zone.', color: '#f85149', emoji: '🔴' },
 };
 
 /**
  * Context-weight card (the repurposed "health"). Shows how heavy the session has
  * become: a load bar that fills and reddens toward the model's limit, a per-turn
  * bar graph of context growth (with summarization drops visible), and — at the top
- * — an "overloaded" state signalling each new prompt is now unsustainable. Flat,
+ * — an "overloaded" state signalling very high carried context. Flat,
  * business style. Always renders (skeleton before data) so the layout never shifts.
  */
 export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {

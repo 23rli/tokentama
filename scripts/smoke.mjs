@@ -2,11 +2,16 @@
 // verify its public commands/status entry point, then dispose every resource.
 import Module from 'node:module';
 import path from 'node:path';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const commands = new Map();
 let statusItem;
+let quickPickResult;
+let saveDialogResult;
+const writtenFiles = [];
 
 const makeConfig = (section) => ({
   get: (key, def) => {
@@ -62,6 +67,8 @@ const vscodeMock = {
     showInformationMessage: async () => undefined,
     showWarningMessage: async () => undefined,
     showErrorMessage: async () => undefined,
+    showQuickPick: async () => quickPickResult,
+    showSaveDialog: async () => saveDialogResult,
     onDidChangeWindowState: () => ({ dispose() {} }),
   },
   commands: {
@@ -76,6 +83,11 @@ const vscodeMock = {
   },
   workspace: {
     getConfiguration: makeConfig,
+    fs: {
+      writeFile: async (uri, content) => {
+        writtenFiles.push({ uri, content: Buffer.from(content).toString('utf8') });
+      },
+    },
     onDidChangeConfiguration: () => ({ dispose() {} }),
     createFileSystemWatcher: () => ({
       onDidCreate: () => ({ dispose() {} }),
@@ -112,6 +124,7 @@ const context = {
   workspaceState: memState(),
   secrets: { get: async () => undefined, store: async () => {}, delete: async () => {} },
   extensionUri: { fsPath: process.cwd() },
+  globalStorageUri: { fsPath: mkdtempSync(path.join(tmpdir(), 'tokenlens-smoke-')) },
 };
 
 ext.activate(context);
@@ -125,6 +138,10 @@ const expectedCommands = [
   'tokenlens.unpinChat',
   'tokenlens.diagnostics',
   'tokenlens.captureSelfTest',
+  'tokenlens.exportLedger',
+  'tokenlens.clearLedger',
+  'tokenlens.rebuildLedger',
+  'tokenlens.ledgerDiagnostics',
 ];
 for (const id of expectedCommands) {
   if (!commands.has(id)) {
@@ -138,6 +155,30 @@ if (statusItem.text !== '$(debug-pause) Token Lens') {
 }
 
 await commands.get('tokenlens.openDashboard')();
+// Let the async empty-ledger initialization settle before lifecycle cleanup.
+await new Promise((resolve) => setTimeout(resolve, 50));
+
+quickPickResult = { label: 'JSON' };
+saveDialogResult = vscodeMock.Uri.file(path.join(context.globalStorageUri.fsPath, 'usage.json'));
+await commands.get('tokenlens.exportLedger')();
+const jsonExport = JSON.parse(writtenFiles.at(-1)?.content ?? 'null');
+if (
+  jsonExport?.kind !== 'token-lens-local-usage-ledger' ||
+  jsonExport?.privacy?.metadataOnly !== true ||
+  !Array.isArray(jsonExport?.records)
+) {
+  console.error('SMOKE FAIL: JSON export contract or privacy marker is invalid.');
+  process.exitCode = 1;
+}
+
+quickPickResult = { label: 'CSV' };
+saveDialogResult = vscodeMock.Uri.file(path.join(context.globalStorageUri.fsPath, 'usage.csv'));
+await commands.get('tokenlens.exportLedger')();
+const csvExport = writtenFiles.at(-1)?.content ?? '';
+if (!csvExport.includes('metering_status') || csvExport.includes('prompt_text')) {
+  console.error('SMOKE FAIL: CSV export is missing status or contains a content column.');
+  process.exitCode = 1;
+}
 
 // ExtensionContext owns lifecycle cleanup in VS Code; mimic that here so leaked
 // intervals/listeners make the smoke test fail by hanging instead of being hidden.
@@ -146,6 +187,7 @@ for (const disposable of context.subscriptions.slice().reverse()) {
 }
 
 Module._load = origLoad;
+rmSync(context.globalStorageUri.fsPath, { recursive: true, force: true });
 
 if (process.exitCode) {
   process.exit(process.exitCode);

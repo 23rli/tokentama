@@ -106,10 +106,10 @@ export class CopilotWatcher implements vscode.Disposable {
         const key = `${ev.sessionId}:${ev.turnIndex}`;
         if (this.seen.has(key)) continue;
 
-        // Prefer REAL metered tokens, but don't wait forever — emit with estimates
-        // after a short grace so the prompt always appears promptly.
-        const hasRealTokens = !(ev.tokens && ev.tokens.estimated);
-        if (!hasRealTokens) {
+        // Wait only for a genuinely in-flight source request. A completed
+        // output-only/input-only/unavailable record is final source evidence,
+        // not a request that will necessarily gain another meter later.
+        if (ev.meteringStatus === 'pending') {
           const since = this.pendingSince.get(key);
           if (since === undefined) {
             // First sight without final tokens: show a preliminary score immediately,

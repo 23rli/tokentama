@@ -20,6 +20,8 @@ export function HistoryView({ forecast }: { forecast?: ForecastView }) {
         prompt: t.prompt || '—',
         tokens: t.tokens,
         metered: t.metered,
+        partial: !!t.partial,
+        status: t.status,
         delta: i > 0 ? t.tokens - all[i - 1].tokens : undefined,
       }))
     : series.map((v, i) => ({
@@ -27,6 +29,8 @@ export function HistoryView({ forecast }: { forecast?: ForecastView }) {
         prompt: prompts[i] || '—',
         tokens: v,
         metered: true,
+        partial: false,
+        status: 'metered' as const,
         delta: i > 0 ? v - series[i - 1] : undefined,
       }));
 
@@ -48,7 +52,7 @@ export function HistoryView({ forecast }: { forecast?: ForecastView }) {
             <div class="history-row" key={r.turn} role="listitem">
               <span class="history-turn">{r.turn}</span>
               <span class="history-prompt" title={r.prompt}>{r.prompt}</span>
-              {r.metered ? (
+              {r.status === 'metered' ? (
                 <>
                   <span class="history-tokens">{fmtNum(r.tokens)}</span>
                   {r.delta != null && (
@@ -57,10 +61,22 @@ export function HistoryView({ forecast }: { forecast?: ForecastView }) {
                     </span>
                   )}
                 </>
-              ) : (
+              ) : r.status === 'input-only' || r.status === 'output-only' ? (
+                <>
+                  <span class="history-tokens">{fmtNum(r.tokens)}</span>
+                  <span class="history-delta muted">
+                    {r.status === 'input-only' ? 'input measured' : 'output measured'}
+                  </span>
+                </>
+              ) : r.status === 'pending' ? (
                 <>
                   <span class="history-tokens muted">…</span>
-                  <span class="history-delta muted">pending</span>
+                  <span class="history-delta muted">in flight</span>
+                </>
+              ) : (
+                <>
+                  <span class="history-tokens muted">—</span>
+                  <span class="history-delta muted">usage unavailable</span>
                 </>
               )}
             </div>

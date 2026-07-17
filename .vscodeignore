@@ -27,5 +27,7 @@ eslint.config.mjs
 !LICENSE
 .preview.html
 dist/diag.cjs
-docs/app-journey-and-direction.md
 docs/tokentama-decision-brief.md
+docs/LEADERSHIP-READOUT-2026-07-17.md
+docs/PITCH-FEATURE-AUDIT.md
+docs/RELEASE-QA-0.8.3.md

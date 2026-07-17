@@ -157,14 +157,14 @@ console.log(
   `  resets caught by flag: ${resetsFlagged.length}/${resets.length}   ·   turns flagged total: ${flagged.length}   ·   false alarms (flagged, not a reset): ${flaggedNonReset.length}`,
 );
 console.log(
-  `  → flagged turns are shown as "summarization likely", NOT as a confident number, so their point error never misleads the user.\n`,
+  `  → flagged turns receive a possible-reset warning. Recall and false alarms above determine whether that signal is reliable.\n`,
 );
 
 // Point accuracy EXCLUDING flagged turns (what the user actually sees as a number).
 const shown = rows.filter((x) => x.resetRisk === 'low');
 const shownMd = median(shown.map((x) => x.ape)) * 100;
 const shownW20 = Math.round((shown.filter((x) => x.ape <= 0.2).length / Math.max(1, shown.length)) * 100);
-console.log('--- 1c) Point accuracy on the turns we DO show a number (reset turns flagged, not counted) ---');
+console.log('--- 1c) Point accuracy with flagged turns excluded (not all resets are caught) ---');
 console.log(
   `  shown turns: ${shown.length}/${rows.length}   MdAPE ${shownMd.toFixed(1)}%   within \u00b120% ${shownW20}%\n`,
 );
@@ -192,9 +192,10 @@ console.log(`  model calls: 0   ·   tokens spent: 0   ·   PURE LOCAL ARITHMETI
 console.log(`  compute: ${perPredUs.toFixed(1)} µs/prediction (${(timeNs / 1e6).toFixed(1)} ms for all ${rows.length}).`);
 console.log(`  token-to-result ratio: 0 tokens → ${(100 - shownMd).toFixed(1)}/100 accuracy on shown turns. Free.\n`);
 
-// Worst misses AMONG SHOWN turns (flagged resets excluded — those are handled).
+// Worst misses among unflagged turns. Some resets may remain because the risk
+// detector is an experimental proximity signal, not a reliable classifier.
 const worst = [...shown].sort((a, b) => b.ape - a.ape).slice(0, 6);
-console.log('--- Worst 6 misses among SHOWN turns (flagged resets excluded) ---');
+console.log('--- Worst 6 misses among UNFLAGGED turns ---');
 for (const w of worst) {
   console.log(
     `  ${w.seg.padEnd(6)} prev ${w.prev.toLocaleString().padStart(9)} → actual ${w.actual
@@ -203,8 +204,8 @@ for (const w of worst) {
   );
 }
 console.log(
-  '\nHow to read this: resets are now CAUGHT by the reset-risk flag and shown as "summarization\n' +
-    'likely" rather than a false number, so the number we actually display is accurate. The\n' +
-    'interval gives calibrated coverage for the rest. Cost is zero. Widen the corpus before any\n' +
-    'published accuracy claim.\n',
+  `\nHow to read this: steady-turn accuracy is strong, but resets remain an unpredictable failure\n` +
+    `mode. The current risk flag caught ${resetsFlagged.length}/${resets.length} resets and produced ${flaggedNonReset.length} false alarms, so do NOT sell it as reliable prediction. ` +
+    'Use the interval/confidence as the primary uncertainty signal. Cost is zero. Widen the\n' +
+    'corpus before any published accuracy claim.\n',
 );

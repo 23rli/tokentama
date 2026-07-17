@@ -68,13 +68,18 @@ export function listCopilotSessions(
       const sessionId = file.replace(/\.jsonl$/, '');
       const transcriptPath = join(transcriptsDir, file);
       const chatSessionPath = join(chatSessionsDir, file);
+      const modelsJsonPath = findModelsJson(root, hash, sessionId);
       sessions.push({
         sessionId,
         workspaceHash: hash,
         transcriptPath,
         chatSessionPath: existsSync(chatSessionPath) ? chatSessionPath : undefined,
-        modelsJsonPath: findModelsJson(root, hash, sessionId),
-        modifiedMs: Math.max(safeMtime(transcriptPath), safeMtime(chatSessionPath)),
+        modelsJsonPath,
+        modifiedMs: Math.max(
+          safeMtime(transcriptPath),
+          safeMtime(chatSessionPath),
+          modelsJsonPath ? safeMtime(modelsJsonPath) : 0,
+        ),
       });
     }
   }

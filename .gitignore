@@ -24,6 +24,7 @@ coverage/
 .env.local
 .env.*.local
 local.settings.json
+.vscode/settings.json
 
 # Logs
 *.log

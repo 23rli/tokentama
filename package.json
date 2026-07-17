@@ -1,8 +1,8 @@
 {
   "name": "tokentama",
   "displayName": "Token Lens",
-  "description": "Real-time cost visibility and forecasting for GitHub Copilot: see what each chat spends, where the tokens go, and what your next turn will cost — live, local, read-only.",
-  "version": "0.6.10",
+  "description": "A private, local ledger for your personal AI usage: measured tokens, native charges, costs, models, projects, data coverage, and live GitHub Copilot forecasting.",
+  "version": "0.8.3",
   "publisher": "tokentama",
   "license": "MIT",
   "repository": {
@@ -27,7 +27,9 @@
     "tokens",
     "cost",
     "forecast",
-    "context"
+    "context",
+    "ledger",
+    "finops"
   ],
   "icon": "media/icon.png",
   "galleryBanner": {
@@ -88,6 +90,26 @@
         "command": "tokenlens.captureSelfTest",
         "title": "Capture self-test",
         "category": "Token Lens"
+      },
+      {
+        "command": "tokenlens.exportLedger",
+        "title": "Export local usage ledger",
+        "category": "Token Lens"
+      },
+      {
+        "command": "tokenlens.clearLedger",
+        "title": "Clear local usage ledger",
+        "category": "Token Lens"
+      },
+      {
+        "command": "tokenlens.rebuildLedger",
+        "title": "Rebuild local usage ledger from all Copilot history",
+        "category": "Token Lens"
+      },
+      {
+        "command": "tokenlens.ledgerDiagnostics",
+        "title": "Show local ledger diagnostics",
+        "category": "Token Lens"
       }
     ],
     "configuration": {
@@ -122,6 +144,102 @@
           ],
           "default": "window",
           "description": "Which Copilot sessions Token Lens tracks. 'window' keeps each window isolated; 'all' follows the newest chat anywhere."
+        },
+        "tokenlens.businessTools.enabled": {
+          "type": "boolean",
+          "scope": "window",
+          "default": false,
+          "markdownDescription": "Enable local business-tool and workflow attribution. This is independent of core Copilot token capture and is off by default."
+        },
+        "tokenlens.businessTools.enabledGroups": {
+          "type": "array",
+          "scope": "window",
+          "default": [],
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          },
+          "markdownDescription": "Business-tool groups to track. Built-ins: `fde-hq` for FD&E HQ's known services and workflows, and `all-mcp` as a catch-all. Custom group IDs from `tokenlens.businessTools.customGroups` can also be used."
+        },
+        "tokenlens.businessTools.customGroups": {
+          "type": "object",
+          "scope": "window",
+          "default": {},
+          "markdownDescription": "Optional reusable tool groups. Each group can define service match substrings and workflow-name substrings; enable it through `tokenlens.businessTools.enabledGroups`. User-supplied regular expressions are not executed.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "mcpOnly": {
+                "type": "boolean",
+                "default": false
+              },
+              "workflows": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "services": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "required": [
+                    "match"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "match": {
+                      "type": "array",
+                      "minItems": 1,
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "tokenlens.businessTools.rates": {
+          "type": "object",
+          "scope": "window",
+          "default": {},
+          "markdownDescription": "Optional local marginal-cost assumptions for MCP-backed business tools. Key by Token Lens service ID (for example `azure-devops`, `workiq`, `kusto`, `fabric`) or by an exact transcript tool name. A number means USD per call; an object can set `usdPerCall` and/or `usdPerMinute`. Use `0` to mark an included/licensed service as priced at zero. Unknown calls remain visibly unpriced; no rate is inferred or uploaded.",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "usdPerCall": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "usdPerMinute": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
         }
       }
     }
@@ -146,7 +264,8 @@
     "bench:forecast:improve": "node scripts/run-bench.mjs bench-forecast-improve.ts",
     "bench:forecast:toolsize": "node scripts/run-bench.mjs bench-forecast-toolsize.ts",
     "probe:context": "node scripts/run-bench.mjs probe-context.ts",
-    "probe:viability": "node scripts/run-bench.mjs probe-viability.ts"
+    "probe:viability": "node scripts/run-bench.mjs probe-viability.ts",
+    "bench:ledger": "node scripts/run-bench.mjs bench-ledger.ts"
   },
   "dependencies": {
     "preact": "^10.29.4"

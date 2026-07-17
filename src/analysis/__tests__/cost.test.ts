@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { configuredCostUsd, creditAmount } from '../cost';
+import { configuredCostUsd, creditAmount, creditAmountForMeteredUsage } from '../cost';
 import type { TokenEstimate } from '@tokentama/shared-types';
 
 function tokens(overrides: Partial<TokenEstimate>): TokenEstimate {
@@ -48,5 +48,25 @@ describe('configuredCostUsd', () => {
   it('returns undefined when no valid rate is configured', () => {
     expect(configuredCostUsd(100, 10, 0, 0)).toBeUndefined();
     expect(configuredCostUsd(100, 10, -1, Number.NaN)).toBeUndefined();
+  });
+});
+
+describe('creditAmountForMeteredUsage', () => {
+  it('does not use a visible-prompt credit estimate when real input is missing', () => {
+    expect(creditAmountForMeteredUsage(tokens({
+      inputEstimated: true,
+      outputEstimated: false,
+      estimated: true,
+      estimatedCredits: 99,
+    }))).toEqual({ value: 0, estimated: true });
+  });
+
+  it('still preserves real credits on a partially metered request', () => {
+    expect(creditAmountForMeteredUsage(tokens({
+      inputEstimated: true,
+      outputEstimated: false,
+      estimated: true,
+      copilotCredits: 4,
+    }))).toEqual({ value: 4, estimated: false });
   });
 });

@@ -7,6 +7,25 @@ interface ChatLine {
   v?: any;
 }
 
+function applyChatLine(state: any, parsed: ChatLine): any {
+  if (parsed.kind === 0) return parsed.v ?? {};
+  if ((parsed.kind !== 1 && parsed.kind !== 2) || !parsed.k) return state;
+  // New requests are emitted as kind:2 appends at ["requests"]. Assignment
+  // silently loses all prior requests and corrupts prompt/token alignment.
+  if (
+    parsed.kind === 2 &&
+    parsed.k.length === 1 &&
+    parsed.k[0] === 'requests' &&
+    Array.isArray(parsed.v)
+  ) {
+    if (!Array.isArray(state.requests)) state.requests = [];
+    state.requests.push(...parsed.v);
+    return state;
+  }
+  applyPatch(state, parsed.k, parsed.v);
+  return state;
+}
+
 /** Apply a kind:1/kind:2 patch by walking the key path and setting the final key. */
 function applyPatch(state: any, k: (string | number)[], v: any): void {
   if (!Array.isArray(k) || k.length === 0 || state == null) return;
@@ -65,14 +84,10 @@ export function parseChatSession(content: string): ParsedChatSession {
     } catch {
       continue;
     }
-    if (parsed.kind === 0) {
-      state = parsed.v ?? {};
-    } else if ((parsed.kind === 1 || parsed.kind === 2) && parsed.k) {
-      try {
-        applyPatch(state, parsed.k, parsed.v);
-      } catch {
-        /* ignore malformed patch */
-      }
+    try {
+      state = applyChatLine(state, parsed);
+    } catch {
+      /* ignore malformed patch */
     }
   }
 
@@ -104,8 +119,25 @@ export function parseChatSession(content: string): ParsedChatSession {
     requests.push({
       turnIndex: idx,
       promptText,
+      requestId: typeof req?.requestId === 'string' ? req.requestId : undefined,
+      timestamp: normalizeRequestTimestamp(req?.timestamp),
+      promptTokens: typeof req?.promptTokens === 'number' ? req.promptTokens : undefined,
       completionTokens:
         typeof req?.completionTokens === 'number' ? req.completionTokens : undefined,
+      copilotCredits:
+        typeof req?.copilotCredits === 'number' ? req.copilotCredits : undefined,
+      promptTokenDetails: Array.isArray(req?.promptTokenDetails)
+        ? req.promptTokenDetails.filter((detail: any) =>
+            detail != null &&
+            typeof detail.category === 'string' &&
+            typeof detail.label === 'string' &&
+            typeof detail.percentageOfPrompt === 'number',
+          )
+        : undefined,
+      completed:
+        typeof req?.completionTokens === 'number' ||
+        req?.result != null ||
+        req?.response != null,
       elapsedMs: typeof req?.elapsedMs === 'number' ? req.elapsedMs : undefined,
     });
   });
@@ -117,6 +149,16 @@ export function parseChatSession(content: string): ParsedChatSession {
     requests,
     requestCount: reqArr.length,
   };
+}
+
+function normalizeRequestTimestamp(value: unknown): string | undefined {
+  const milliseconds =
+    typeof value === 'number'
+      ? value < 1_000_000_000_000 ? value * 1000 : value
+      : typeof value === 'string'
+        ? Date.parse(value)
+        : Number.NaN;
+  return Number.isFinite(milliseconds) ? new Date(milliseconds).toISOString() : undefined;
 }
 
 /**
@@ -143,6 +185,71 @@ export function parseEarlyPrompts(content: string): Map<number, string> {
       const text = promptFromRequest(req);
       if (text) byIndex.set(idx, text);
     });
+  }
+  return byIndex;
+}
+
+/** Stable source-native request IDs keyed by request index (last write wins). */
+export function parseChatSessionRequestIds(content: string): Map<number, string> {
+  const byIndex = new Map<number, string>();
+  let requestCount = 0;
+  const lines = content.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  for (const line of lines) {
+    let parsed: ChatLine;
+    try {
+      parsed = JSON.parse(line) as ChatLine;
+    } catch {
+      continue;
+    }
+    if (parsed.kind === 0) {
+      const requests = (parsed.v as { requests?: unknown })?.requests;
+      if (!Array.isArray(requests)) continue;
+      requestCount = requests.length;
+      requests.forEach((request: any, index: number) => {
+        if (typeof request?.requestId === 'string' && request.requestId) {
+          byIndex.set(index, request.requestId);
+        }
+      });
+      continue;
+    }
+    if (
+      (parsed.kind === 1 || parsed.kind === 2) &&
+      Array.isArray(parsed.k) &&
+      parsed.k.length === 1 &&
+      parsed.k[0] === 'requests' &&
+      Array.isArray(parsed.v)
+    ) {
+      parsed.v.forEach((request: any, offset: number) => {
+        if (typeof request?.requestId === 'string' && request.requestId) {
+          byIndex.set(requestCount + offset, request.requestId);
+        }
+      });
+      requestCount += parsed.v.length;
+      continue;
+    }
+    if (
+      (parsed.kind === 1 || parsed.kind === 2) &&
+      Array.isArray(parsed.k) &&
+      parsed.k.length === 2 &&
+      parsed.k[0] === 'requests' &&
+      typeof parsed.k[1] === 'number' &&
+      typeof parsed.v?.requestId === 'string' &&
+      parsed.v.requestId
+    ) {
+      byIndex.set(parsed.k[1], parsed.v.requestId);
+      continue;
+    }
+    if (
+      (parsed.kind === 1 || parsed.kind === 2) &&
+      Array.isArray(parsed.k) &&
+      parsed.k[0] === 'requests' &&
+      typeof parsed.k[1] === 'number' &&
+      parsed.k[2] === 'requestId' &&
+      typeof parsed.v === 'string' &&
+      parsed.v
+    ) {
+      byIndex.set(parsed.k[1], parsed.v);
+    }
   }
   return byIndex;
 }

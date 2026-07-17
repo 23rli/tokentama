@@ -11,6 +11,7 @@ import { estimateTokens, estimateCostUsd, estimateCredits } from '@tokentama/sco
 export interface BuildPromptEventInput {
   source: IngestionSource;
   sessionId: string;
+  sourceRequestId?: string;
   userId: string;
   turnIndex: number;
   promptText: string;
@@ -26,6 +27,8 @@ export interface BuildPromptEventInput {
   outputTokensOverride?: number;
   /** Real Copilot credits metered for the turn, when available from disk. */
   copilotCredits?: number;
+  /** Whether the source request has completed even if it omitted usage fields. */
+  sourceCompleted?: boolean;
   /** Per-category input-token breakdown from Copilot's promptTokenDetails. */
   contextBreakdown?: ContextSlice[];
 }
@@ -47,6 +50,18 @@ function cachedInputEstimate(turnIndex: number, breakdown?: ContextSlice[]): num
 export function buildPromptEvent(input: BuildPromptEventInput): PromptEvent {
   const inputTokens = input.inputTokensOverride ?? estimateTokens(input.promptText);
   const outputTokens = input.outputTokensOverride ?? estimateTokens(input.responseText);
+  const inputEstimated = input.inputTokensOverride == null;
+  const outputEstimated = input.outputTokensOverride == null;
+  const meteringStatus: PromptEvent['meteringStatus'] =
+    !inputEstimated && !outputEstimated
+      ? 'metered'
+      : !inputEstimated
+        ? 'input-only'
+        : !outputEstimated
+          ? 'output-only'
+          : input.sourceCompleted
+            ? 'unavailable'
+            : 'pending';
   const family = input.model?.family ?? input.modelFamily;
   const estimatedCostUsd = estimateCostUsd(inputTokens, outputTokens, family);
 
@@ -56,6 +71,7 @@ export function buildPromptEvent(input: BuildPromptEventInput): PromptEvent {
   return {
     eventId: randomUUID(),
     sessionId: input.sessionId,
+    sourceRequestId: input.sourceRequestId,
     userId: input.userId,
     turnIndex: input.turnIndex,
     source: input.source,
@@ -67,12 +83,15 @@ export function buildPromptEvent(input: BuildPromptEventInput): PromptEvent {
     tokens: {
       inputTokens,
       outputTokens,
+      inputEstimated,
+      outputEstimated,
       estimatedCostUsd,
       estimatedCredits: estimateCredits(inputTokens, outputTokens, model, cachedInput),
       copilotCredits: input.copilotCredits,
-      estimated: input.inputTokensOverride == null,
+      estimated: inputEstimated,
       contextBreakdown: input.contextBreakdown,
     },
+    meteringStatus,
     retryCountInSession: input.retryCountInSession,
     adoptedPreviousTip: input.adoptedPreviousTip,
   };

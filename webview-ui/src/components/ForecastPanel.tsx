@@ -12,7 +12,7 @@ export function ForecastPanel({ forecast }: { forecast?: ForecastView }) {
   const name = f?.sessionTitle || (f?.sessionShortId ? `Chat ${f.sessionShortId}` : 'No active chat');
   const turns = f?.allTurns ?? [];
   const liveTurn = turns.length || f?.turnCount || 0;
-  const pending = turns.filter((t) => !t.metered).length;
+  const pending = countInFlightTurns(turns);
   const estimatingPending = f?.forecastTarget === 'pending';
 
   return (
@@ -80,9 +80,13 @@ export function ForecastPanel({ forecast }: { forecast?: ForecastView }) {
         )}
 
         {f?.resetRisk === 'high' && (
-          <div class="next-warn">Summarization likely next — a reset may drop cost sharply.</div>
+          <div class="next-warn">Context is near a possible reset zone — summarization may drop the next turn sharply.</div>
         )}
       </section>
     </>
   );
+}
+
+export function countInFlightTurns(turns: NonNullable<ForecastView['allTurns']>): number {
+  return turns.filter((turn) => turn.status === 'pending').length;
 }

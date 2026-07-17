@@ -1,93 +1,88 @@
-/**
- * The Info tab — a plain-language guide that holds more than the hover tooltips can.
- * Explains what each dashboard card shows and the handful of real levers that move
- * a Copilot bill, so testers can self-serve instead of guessing.
- */
+/** Compact in-product manual. The full reference ships in docs/USER-MANUAL.md. */
 export function InfoPanel() {
   return (
-    <div class="info">
-      <section class="card info-card">
-        <span class="section-title" role="heading" aria-level={2}>What Token Lens shows</span>
+    <div class="info info-manual">
+      <section class="card info-card info-start">
+        <span class="section-title" role="heading" aria-level={2}>Token Lens manual</span>
         <p class="info-lead">
-          A live meter for your GitHub Copilot token usage — read-only and fully local.
-          It reads the real metered tokens Copilot writes to disk, shows where they go,
-          and forecasts what your next turn will cost before you send it.
+          Token Lens is a private local ledger plus a live GitHub Copilot meter. Start on
+          <b> Live</b> for the current chat, then use <b>Overview</b> for durable personal history.
         </p>
+        <ol class="info-steps">
+          <li>Send a Copilot Chat request and let it finish.</li>
+          <li>Open <b>Live</b> to see the last measured turn, next-turn forecast, and context load.</li>
+          <li>Open <b>Overview</b> to compare usage over Today, 7 days, 30 days, or All.</li>
+        </ol>
       </section>
 
-      <section class="card info-card">
-        <span class="section-title" role="heading" aria-level={2}>Why agentic coding costs tokens</span>
-        <p>
-          Every turn re-sends the whole conversation — your messages, the model's replies,
-          tool definitions, and any attached files — so the cost is <b>structural</b>, not a
-          matter of "prompting better." The bill grows with the size of the context you carry,
-          the number of tool round-trips, and the model tier you pick.
-        </p>
-      </section>
-
-      <section class="card info-card">
-        <span class="section-title" role="heading" aria-level={2}>Reading each card</span>
+      <details class="card info-card info-fold" open>
+        <summary>What each tab is for</summary>
         <ul class="info-list">
-          <li>
-            <b>Next</b> — the real tokens your last metered turn cost vs. the predicted cost of
-            your next one. Driven by re-sent history and tool calls, not your message length.
-          </li>
-          <li>
-            <b>Context weight</b> — how much context this chat carries right now. Each turn
-            re-sends all of it, so cost climbs as the bar fills; it drops when Copilot
-            auto-summarizes near the model's limit.
-          </li>
-          <li>
-            <b>Where tokens go</b> — the input split into <b>system · tools · history · message</b>{' '}
-            for this prompt, this chat, and all chats. History usually dominates in long chats.
-          </li>
-          <li>
-            <b>Total cost</b> — tokens and Copilot credits (AICs) for the workspace, this chat,
-            or today. Dollars are a derived estimate from your configured rate.
-          </li>
-          <li>
-            <b>Live Copilot data</b> — the model and reasoning effort in use. Premium models and
-            higher reasoning effort can increase the overall turn cost.
-          </li>
+          <li><b>Live</b>: current Copilot chat, forecast, context weight, token categories, totals, and model.</li>
+          <li><b>Overview</b>: persistent metadata-only history by time, application, provider/model, and project, plus a collapsed cross-chat activity timeline and export.</li>
+          <li><b>Turns</b>: transient prompt excerpts and context deltas for only the active chat. Excerpts are not persisted or exported.</li>
+          <li><b>Profiles</b>: optional advanced attribution for selected workflows and toolsets. Not required for core tracking.</li>
+          <li><b>Info</b>: this manual and the product's measurement boundaries.</li>
         </ul>
-      </section>
+      </details>
 
-      <section class="card info-card">
-        <span class="section-title" role="heading" aria-level={2}>Levers that actually move the bill</span>
-        <ul class="info-list">
-          <li>
-            <b>Start a fresh chat for a new task.</b> The single biggest lever — it drops the
-            re-sent history back to near zero.
-          </li>
-          <li>
-            <b>Match the model to the task.</b> A lighter model for routine edits costs far less
-            per token than a premium one.
-          </li>
-          <li>
-            <b>Trim what you carry.</b> Turn off tools you don't need and avoid attaching large
-            files you won't reference — both inflate every turn.
-          </li>
-          <li>
-            <b>Keep chats focused.</b> Shorter, on-topic chats stay cheaper than one long
-            sprawling thread.
-          </li>
-        </ul>
-      </section>
+      <details class="card info-card info-fold" open>
+        <summary>How to read the numbers</summary>
+        <div class="info-definitions">
+          <div><b>Metered</b><span>Written by the source application.</span></div>
+          <div><b>Predicted</b><span>Local next-turn forecast, always shown as estimated.</span></div>
+          <div><b>Cost (est.)</b><span>Known tokens or credits multiplied by your configured local rate.</span></div>
+          <div><b>Input measured</b><span>The request completed with only its input direction metered.</span></div>
+          <div><b>Output measured</b><span>The request completed with only its output direction metered.</span></div>
+          <div><b>In flight</b><span>One genuinely current unmatched request may appear while Copilot finishes writing it.</span></div>
+          <div><b>Usage unavailable</b><span>The request completed, but Copilot did not persist a usable token meter.</span></div>
+          <div><b>Unpriced</b><span>Activity was observed, but no defensible external rate is configured.</span></div>
+        </div>
+      </details>
 
-      <section class="card info-card">
-        <span class="section-title" role="heading" aria-level={2}>Tips &amp; scoping</span>
+      <details class="card info-card info-fold">
+        <summary>Live cards</summary>
         <ul class="info-list">
-          <li>Hover or keyboard-focus any dotted card title for a one-line reminder.</li>
-          <li>
-            Token Lens tracks the chat in <b>this window's workspace</b>. If two windows share a
-            folder, run <b>Token Lens: Pin to this chat</b> to lock onto the one you're watching.
-          </li>
-          <li>
-            Everything is read-only — no prompt text ever leaves your machine. Capture off stops
-            automatic reads; diagnostics/self-test still read only when you run them.
-          </li>
+          <li><b>Next-turn forecast</b>: last real input versus the next expected input, range, and measured accuracy.</li>
+          <li><b>Context weight</b>: context currently re-sent on every turn, relative to the model limit. Drops indicate Copilot summarization.</li>
+          <li><b>Where tokens go</b>: source-reported input categories such as system instructions, tool definitions/results, history, messages, and files.</li>
+          <li><b>Total cost</b>: known tokens, Copilot AICs, and configured dollar estimate for workspace, current chat, or today.</li>
+          <li><b>Live Copilot data</b>: model and reasoning effort only when the source records them.</li>
         </ul>
-      </section>
+      </details>
+
+      <details class="card info-card info-fold">
+        <summary>Controls and commands</summary>
+        <ul class="info-list">
+          <li><b>Capture on/off</b>: controls new source reads. Existing ledger history remains available when paused.</li>
+          <li><b>Pin to this chat / Unpin</b>: resolves two-window or same-folder ambiguity for the Live view.</li>
+          <li><b>Rebuild local usage ledger</b>: explicitly rescan all available local Copilot history.</li>
+          <li><b>Export all</b>: from Overview, choose metadata-only JSON or CSV and a local destination. It exports all retained records, not only the selected time range.</li>
+          <li><b>Clear local usage ledger</b>: confirmed deletion of Token Lens metadata only; Copilot source files are untouched.</li>
+          <li><b>Diagnostics / self-test</b>: support tools in the Command Palette, not normal workflow steps.</li>
+        </ul>
+      </details>
+
+      <details class="card info-card info-fold">
+        <summary>Core, advanced, and deferred</summary>
+        <div class="info-status-list">
+          <div><span class="info-status core">Core</span><p>Live forecast, context weight, token breakdown, measured totals, personal Overview, source health, Turns, and capture privacy control.</p></div>
+          <div><span class="info-status useful">Useful</span><p>Pin/unpin, manual export, configurable rates, forecast accuracy, and the experimental reset-zone indicator.</p></div>
+          <div><span class="info-status advanced">Advanced</span><p>Profiles, external allocations, custom tool groups, clear/rebuild, and diagnostics. Keep these out of the main pitch unless asked.</p></div>
+          <div><span class="info-status defer">Deferred</span><p>Cloud sync, team dashboards, exact per-MCP token splits, Agency CLI/Scout metering, and invoice-grade external billing.</p></div>
+        </div>
+      </details>
+
+      <details class="card info-card info-fold">
+        <summary>Privacy and known limits</summary>
+        <ul class="info-list">
+          <li>Durable records exclude prompts, responses, code/documents, tool arguments, raw paths/session IDs, user IDs, and machine IDs.</li>
+          <li>GitHub Copilot Chat is the only source adapter in 0.8.3.</li>
+          <li>MCP calls are visible, but Copilot does not expose exact tokens per individual MCP call.</li>
+          <li>Dollars are local projections unless a provider-native charge is available; they are not an invoice.</li>
+          <li>Profiles correlate whole requests with evidence. They do not prove causal per-tool spend.</li>
+        </ul>
+      </details>
     </div>
   );
 }

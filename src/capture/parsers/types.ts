@@ -38,8 +38,18 @@ export interface ParsedTranscript {
 export interface ParsedChatRequest {
   turnIndex: number;
   promptText: string;
+  requestId?: string;
+  timestamp?: string;
+  promptTokens?: number;
   /** Real output token count from `requests[i].completionTokens`, when present. */
   completionTokens?: number;
+  copilotCredits?: number;
+  promptTokenDetails?: Array<{
+    category: string;
+    label: string;
+    percentageOfPrompt: number;
+  }>;
+  completed: boolean;
   elapsedMs?: number;
 }
 

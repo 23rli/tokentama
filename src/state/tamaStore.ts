@@ -1,6 +1,12 @@
 import * as vscode from 'vscode';
-import type { ModelInfo } from '@tokentama/shared-types';
-import type { TamaState, ForecastView, SuccessMetrics } from '../webview/contract';
+import type { ModelInfo, PersonalLedgerOverview } from '@tokentama/shared-types';
+import type {
+  TamaState,
+  ForecastView,
+  SuccessMetrics,
+  BusinessActivityScopes,
+} from '../webview/contract';
+import { createBusinessToolRegistry } from '../analysis/businessToolGroups';
 
 /**
  * Minimal state carrier for Token Lens. Holds the capture toggle, the active
@@ -15,6 +21,8 @@ export class TamaStore implements vscode.Disposable {
   private _captureEnabled: boolean;
   private model?: ModelInfo;
   private forecast?: ForecastView;
+  private businessActivity?: BusinessActivityScopes;
+  private personalLedger?: PersonalLedgerOverview;
 
   constructor() {
     this._captureEnabled = vscode.workspace
@@ -41,10 +49,15 @@ export class TamaStore implements vscode.Disposable {
   }
 
   /** Update the live next-turn forecast (precognition) + active model; refresh UI. */
-  setForecast(forecast: ForecastView, model?: ModelInfo): void {
+  setForecast(
+    forecast: ForecastView,
+    model?: ModelInfo,
+    businessActivity?: BusinessActivityScopes,
+  ): void {
     this.forecast = forecast;
     // Clear the previous chat's model when the new chat has no model metadata.
     this.model = model;
+    this.businessActivity = businessActivity;
     this.emit();
   }
 
@@ -52,6 +65,19 @@ export class TamaStore implements vscode.Disposable {
   clearForecast(): void {
     this.forecast = undefined;
     this.model = undefined;
+    this.businessActivity = undefined;
+    this.emit();
+  }
+
+  /** Drop stale attribution immediately when group configuration changes. */
+  clearBusinessActivity(): void {
+    this.businessActivity = undefined;
+    this.emit();
+  }
+
+  /** Replace the durable local-ledger query snapshot. */
+  setPersonalLedger(overview: PersonalLedgerOverview): void {
+    this.personalLedger = overview;
     this.emit();
   }
 
@@ -76,10 +102,22 @@ export class TamaStore implements vscode.Disposable {
       totalCreditsEstimated: true,
       hasUsdRate: tokenRate > 0 || creditRate > 0,
     };
+    const businessConfig = vscode.workspace.getConfiguration('tokenlens.businessTools');
+    const businessRegistry = createBusinessToolRegistry(
+      businessConfig.get('enabled', false),
+      businessConfig.get('enabledGroups', []),
+      businessConfig.get('customGroups', {}),
+    );
     return {
       metrics,
       model: this.model,
       captureEnabled: this._captureEnabled,
+      personalLedger: this.personalLedger,
+      businessTools: {
+        trackingEnabled: businessRegistry.enabled,
+        groups: businessRegistry.groups,
+        activity: this.businessActivity,
+      },
       forecast: this.forecast,
     };
   }

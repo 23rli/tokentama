@@ -2,9 +2,33 @@
  * Shared message + state contract between the extension host and the webview.
  * Types only — safe to import from both the Node host and the browser webview.
  */
-import type { ModelInfo, ContextSlice } from '@tokentama/shared-types';
+import type {
+  ModelInfo,
+  ContextSlice,
+  BusinessToolsState,
+  PersonalLedgerOverview,
+  UsageMeteringStatus,
+} from '@tokentama/shared-types';
 
-export type { ModelInfo, ContextSlice } from '@tokentama/shared-types';
+export type {
+  ModelInfo,
+  ContextSlice,
+  BusinessActivityScopes,
+  BusinessToolsState,
+  BusinessToolGroupInfo,
+  BusinessActivitySummary,
+  BusinessAttributionUsage,
+  BusinessServiceUsage,
+  BusinessWorkflowUsage,
+  PersonalLedgerOverview,
+  PersonalLedgerScopeSummary,
+  LedgerTimeRange,
+  LedgerBreakdownRow,
+  LedgerActivityRow,
+  MeteringCoverageCounts,
+  UsageSourceHealth,
+  UsageMeteringStatus,
+} from '@tokentama/shared-types';
 
 /** The headline cost tiles' zero-state fallback (the forecast's whole-chat totals are preferred). */
 export interface SuccessMetrics {
@@ -98,30 +122,45 @@ export interface ForecastView {
   aggregateScope?: 'workspace' | 'allWindows' | 'emptyWindow';
   /** Total tokens (input + output) across every conversation in this workspace. */
   chatTotalTokens?: number;
+  /** True when chatTotalTokens includes known token directions but some were unavailable. */
+  chatTokensPartial?: boolean;
   /** Total Copilot credits (AICs) across every conversation in this workspace. */
   chatCredits?: number;
   /** True when the whole-chat credit total is estimated rather than metered. */
   chatCreditsEstimated?: boolean;
   /** Derived $ cost for the whole-chat token total (blended $/1M-token rate). */
   chatCostUsd?: number;
+  chatCostPartial?: boolean;
   /** Total tokens (input + output) for the ACTIVE chat only. */
   sessionTotalTokens?: number;
+  /** True when sessionTotalTokens is a known minimum due to incomplete metering. */
+  sessionTokensPartial?: boolean;
   /** Total Copilot credits (AICs) for the active chat only. */
   sessionCredits?: number;
   /** True when the active-chat credit total is estimated rather than metered. */
   sessionCreditsEstimated?: boolean;
   /** Derived $ cost for the active chat's token total. */
   sessionCostUsd?: number;
+  sessionCostPartial?: boolean;
   /** Total tokens (input + output) across turns dated today (all chats in scope). */
   todayTotalTokens?: number;
+  /** True when todayTotalTokens is a known minimum due to incomplete metering. */
+  todayTokensPartial?: boolean;
   /** Total Copilot credits (AICs) across today's turns. */
   todayCredits?: number;
   /** True when today's credit total is estimated rather than metered. */
   todayCreditsEstimated?: boolean;
   /** Derived $ cost for today's token total. */
   todayCostUsd?: number;
+  todayCostPartial?: boolean;
   /** Every user turn (metered or still pending), oldest→newest, for the History list. */
-  allTurns?: { prompt: string; tokens: number; metered: boolean }[];
+  allTurns?: {
+    prompt: string;
+    tokens: number;
+    metered: boolean;
+    partial?: boolean;
+    status: UsageMeteringStatus;
+  }[];
 }
 
 /** Snapshot pushed to the webview + status bar. */
@@ -131,6 +170,10 @@ export interface TamaState {
   /** The active session's model + pricing/capabilities, when known. */
   model?: ModelInfo;
   captureEnabled: boolean;
+  /** Durable, metadata-only usage history across local AI application adapters. */
+  personalLedger?: PersonalLedgerOverview;
+  /** Independently configurable business-tool groups and their local activity. */
+  businessTools: BusinessToolsState;
   /** Live next-turn cost forecast + accuracy (precognition). */
   forecast?: ForecastView;
 }
@@ -143,4 +186,8 @@ export type HostMessage =
 /** Messages sent webview → host. */
 export type WebviewMessage =
   | { type: 'ready' }
-  | { type: 'toggleCapture' };
+  | { type: 'toggleCapture' }
+  | { type: 'exportLedger' }
+  | { type: 'openBusinessToolSettings' }
+  | { type: 'setBusinessToolTracking'; enabled: boolean }
+  | { type: 'setBusinessToolGroup'; groupId: string; enabled: boolean };

@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 import type { PromptEvent } from '@tokentama/shared-types';
 import { parseTranscript } from './parsers/transcriptParser';
 import { parseChatSessionTokens } from './parsers/chatSessionTokens';
-import { parseChatSession, parseEarlyPrompts } from './parsers/chatSessionParser';
+import { parseChatSession } from './parsers/chatSessionParser';
 import { parseModelCatalog, resolveModel } from './parsers/modelCatalog';
 import { buildPromptEvent } from './parsers/promptEventFactory';
+import { reconcileSessionRequests } from './parsers/requestReconciler';
 import type { CopilotSessionPaths } from './copilotPaths';
 
 function safeRead(path: string | undefined): string {
@@ -20,12 +21,11 @@ function safeRead(path: string | undefined): string {
  * Read one Copilot session into one PromptEvent per user turn.
  *
  * The transcript is append-only and reliable for the user's prompts EXCEPT the
- * very first one of a session, which Copilot does NOT write as a `user.message`
- * (the transcript opens with the assistant's response to it). That first prompt
- * lives only in `chatSessions`. So we reconcile by count: the transcript's
- * user-message turns map to the most-recent requests, and any earlier requests
- * missing from the transcript are backfilled from the chatSession. Tokens +
- * model pricing come from `chatSessions` / `models.json`, aligned by request index.
+ * very first/older compacted turns. chatSessions is authoritative for logical
+ * user requests, stable request IDs, completion state, and metering. Transcript
+ * turns are matched by prompt text then timestamp to attach response/tool data.
+ * Old transcript-only continuation artifacts are ignored; at most the newest
+ * recent transcript-only request is exposed as genuinely pending.
  */
 export function readSessionEvents(paths: CopilotSessionPaths, userId = 'local-user'): PromptEvent[] {
   const chatContent = safeRead(paths.chatSessionPath);
@@ -36,18 +36,9 @@ export function readSessionEvents(paths: CopilotSessionPaths, userId = 'local-us
   const model = resolveModel(chatSession.model, catalog);
   const sessionId = parsed.sessionId || paths.sessionId;
 
-  // Prompt text the chatSession recorded per request (reliable for the first /
-  // recent requests; the transcript covers the rest).
-  const promptByRequest = new Map<number, string>();
-  for (const r of chatSession.requests) {
-    const text = r.promptText.trim();
-    if (text) promptByRequest.set(r.turnIndex, text);
-  }
-  // The kind:0 snapshot reliably holds the session's FIRST prompt(s), which the
-  // transcript omits and the patched reconstruction overwrites.
-  const earlyPrompts = parseEarlyPrompts(chatContent);
-
-  // Transcript turns that carry a real user prompt (a `user.message`), in order.
+  // Transcript turns that carry a real user prompt, in order. One user request
+  // can contain hundreds of assistant/tool subturns; the transcript parser has
+  // already aggregated those under this user turn.
   const transcriptTurns = parsed.turns.filter((t) => (t.promptText ?? '').trim().length > 0);
   const firstPromptTurn = parsed.turns.findIndex(
     (t) => (t.promptText ?? '').trim().length > 0,
@@ -58,55 +49,68 @@ export function readSessionEvents(paths: CopilotSessionPaths, userId = 'local-us
     0,
     firstPromptTurn < 0 ? parsed.turns.length : firstPromptTurn,
   );
-  const u = transcriptTurns.length;
-
-  const maxTokenKey = tokensByTurn.size > 0 ? Math.max(...tokensByTurn.keys()) : -1;
-  const maxPromptKey = promptByRequest.size > 0 ? Math.max(...promptByRequest.keys()) : -1;
-  const maxEarlyKey = earlyPrompts.size > 0 ? Math.max(...earlyPrompts.keys()) : -1;
-  const total = Math.max(
-    u,
-    chatSession.requestCount ?? 0,
-    maxTokenKey + 1,
-    maxPromptKey + 1,
-    maxEarlyKey + 1,
-  );
-  const offset = Math.max(0, total - u); // leading prompts missing from the transcript
+  const reconciled = reconcileSessionRequests(chatSession.requests, transcriptTurns, {
+    sourceModifiedMs: paths.modifiedMs,
+  });
+  // Copilot's response to the omitted first prompt appears as a leading turn.
+  // Attach it to the earliest source request that did not match a user.message.
+  const firstUnmatched = reconciled.requests.find((entry) => !entry.turn);
+  if (firstUnmatched && leadingTurns[0]) firstUnmatched.turn = leadingTurns[0];
 
   const events: PromptEvent[] = [];
-  for (let n = 0; n < total; n++) {
-    const turn = n >= offset ? transcriptTurns[n - offset] : leadingTurns[n];
-    let promptText = (turn?.promptText ?? '').trim();
-    if (!promptText) promptText = earlyPrompts.get(n) ?? promptByRequest.get(n) ?? '';
-    if (!promptText) continue;
-    const real = tokensByTurn.get(n);
+  for (const { request, turn } of reconciled.requests) {
+    const real = tokensByTurn.get(request.turnIndex);
+    const promptTokens = request.promptTokens ?? real?.promptTokens;
+    const completionTokens = request.completionTokens ?? real?.completionTokens;
+    const copilotCredits = request.copilotCredits ?? real?.copilotCredits;
+    const tokenDetails = request.promptTokenDetails ?? real?.promptTokenDetails;
     const contextBreakdown =
-      real?.promptTokenDetails && real.promptTokens
-        ? real.promptTokenDetails.map((d) => ({
+      tokenDetails && promptTokens
+        ? tokenDetails.map((d) => ({
             category: d.category,
             label: d.label,
             pct: d.percentageOfPrompt,
-            tokens: Math.round((real.promptTokens! * d.percentageOfPrompt) / 100),
+            tokens: Math.round((promptTokens * d.percentageOfPrompt) / 100),
           }))
         : undefined;
     events.push(
       buildPromptEvent({
         source: 'transcript',
         sessionId,
+        sourceRequestId: request.requestId,
         userId,
-        turnIndex: n,
-        promptText,
+        turnIndex: request.turnIndex,
+        promptText: request.promptText,
         responseText: turn?.responseText || undefined,
         toolCalls: turn?.toolCalls ?? [],
-        // Copilot omits the first user.message, but session.start is stable and
-        // dates that first request correctly. Never use mutable file mtime here:
-        // touching an old chat would otherwise make its early turns look "today".
         timestamp:
-          (turn?.promptText ? turn.startTime : parsed.startTime) ?? new Date(0).toISOString(),
+          request.timestamp ??
+          (turn?.promptText ? turn.startTime : parsed.startTime) ??
+          new Date(0).toISOString(),
         model,
-        inputTokensOverride: real?.promptTokens,
-        outputTokensOverride: real?.completionTokens,
-        copilotCredits: real?.copilotCredits,
+        inputTokensOverride: promptTokens,
+        outputTokensOverride: completionTokens,
+        copilotCredits,
+        sourceCompleted: request.completed,
         contextBreakdown,
+      }),
+    );
+  }
+
+  if (reconciled.pendingTurn?.promptText) {
+    const turnIndex = Math.max(-1, ...chatSession.requests.map((request) => request.turnIndex)) + 1;
+    events.push(
+      buildPromptEvent({
+        source: 'transcript',
+        sessionId,
+        userId,
+        turnIndex,
+        promptText: reconciled.pendingTurn.promptText,
+        responseText: reconciled.pendingTurn.responseText || undefined,
+        toolCalls: reconciled.pendingTurn.toolCalls,
+        timestamp: reconciled.pendingTurn.startTime ?? new Date().toISOString(),
+        model,
+        sourceCompleted: false,
       }),
     );
   }

@@ -1,4 +1,5 @@
 import type { ParsedTranscript, ParsedTurn } from './types';
+import { attributeToolCall } from './toolAttribution';
 
 interface Envelope {
   type?: string;
@@ -19,7 +20,10 @@ export function parseTranscript(content: string): ParsedTranscript {
   let sessionId = '';
   let startTime: string | undefined;
   const turns: ParsedTurn[] = [];
-  const toolStart = new Map<string, { name: string; ts?: string }>();
+  const toolStart = new Map<
+    string,
+    { name: string; ts?: string } & ReturnType<typeof attributeToolCall>
+  >();
   let current: ParsedTurn | undefined;
 
   const ensureTurn = (ts?: string): ParsedTurn => {
@@ -71,7 +75,16 @@ export function parseTranscript(content: string): ParsedTranscript {
         }
         if (Array.isArray(d.toolRequests)) {
           for (const tr of d.toolRequests) {
-            if (tr?.toolCallId && tr?.name) toolStart.set(tr.toolCallId, { name: tr.name });
+            if (tr?.toolCallId && tr?.name) {
+              toolStart.set(tr.toolCallId, {
+                ...toolStart.get(tr.toolCallId),
+                name: tr.name,
+                ...mergeAttribution(
+                  toolStart.get(tr.toolCallId),
+                  attributeToolCall(tr.name, tr.arguments),
+                ),
+              });
+            }
           }
         }
         break;
@@ -79,7 +92,13 @@ export function parseTranscript(content: string): ParsedTranscript {
       case 'tool.execution_start': {
         if (d.toolCallId) {
           const name = d.toolName ?? toolStart.get(d.toolCallId)?.name ?? 'unknown';
-          toolStart.set(d.toolCallId, { name, ts: ev.timestamp });
+          const previous = toolStart.get(d.toolCallId);
+          toolStart.set(d.toolCallId, {
+            ...previous,
+            name,
+            ts: ev.timestamp,
+            ...mergeAttribution(previous, attributeToolCall(name, d.arguments)),
+          });
         }
         break;
       }
@@ -95,6 +114,8 @@ export function parseTranscript(content: string): ParsedTranscript {
           toolCallId: d.toolCallId,
           success: typeof d.success === 'boolean' ? d.success : undefined,
           durationMs,
+          toolKind: started?.toolKind,
+          loadedSkills: started?.loadedSkills,
         });
         break;
       }
@@ -104,4 +125,15 @@ export function parseTranscript(content: string): ParsedTranscript {
   }
 
   return { sessionId, startTime, turns };
+}
+
+function mergeAttribution(
+  previous: ReturnType<typeof attributeToolCall> | undefined,
+  next: ReturnType<typeof attributeToolCall>,
+): ReturnType<typeof attributeToolCall> {
+  const loadedSkills = [...new Set([...(previous?.loadedSkills ?? []), ...(next.loadedSkills ?? [])])];
+  return {
+    toolKind: next.toolKind ?? previous?.toolKind,
+    loadedSkills: loadedSkills.length > 0 ? loadedSkills : undefined,
+  };
 }

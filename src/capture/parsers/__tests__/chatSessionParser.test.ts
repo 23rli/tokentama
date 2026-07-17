@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { parseChatSession, extractUserText } from '../chatSessionParser';
+import {
+  parseChatSession,
+  parseChatSessionRequestIds,
+  extractUserText,
+} from '../chatSessionParser';
 
 describe('extractUserText', () => {
   it('extracts content within userRequest tags', () => {
@@ -11,6 +15,47 @@ describe('extractUserText', () => {
   it('returns raw text when no tags are present', () => {
     expect(extractUserText('plain prompt')).toBe('plain prompt');
     expect(extractUserText(undefined)).toBe('');
+  });
+});
+
+describe('parseChatSessionRequestIds', () => {
+  it('uses source-native request IDs and applies later patches', () => {
+    const content = [
+      JSON.stringify({
+        kind: 0,
+        v: { requests: [{ requestId: 'snapshot-0' }, { requestId: 'snapshot-1' }] },
+      }),
+      JSON.stringify({ kind: 1, k: ['requests', 1, 'requestId'], v: 'patched-1' }),
+    ].join('\n');
+    expect([...parseChatSessionRequestIds(content)]).toEqual([
+      [0, 'snapshot-0'],
+      [1, 'patched-1'],
+    ]);
+  });
+
+  it('reads IDs from full-array and per-request replacement patches', () => {
+    const content = [
+      JSON.stringify({ kind: 0, v: { requests: [] } }),
+      JSON.stringify({ kind: 2, k: ['requests'], v: [{ requestId: 'array-0' }] }),
+      JSON.stringify({ kind: 1, k: ['requests', 1], v: { requestId: 'object-1' } }),
+    ].join('\n');
+    expect([...parseChatSessionRequestIds(content)]).toEqual([
+      [0, 'array-0'],
+      [1, 'object-1'],
+    ]);
+  });
+
+  it('assigns repeated kind:2 appends to increasing request indices', () => {
+    const content = [
+      JSON.stringify({ kind: 0, v: { requests: [{ requestId: 'r0' }] } }),
+      JSON.stringify({ kind: 2, k: ['requests'], v: [{ requestId: 'r1' }] }),
+      JSON.stringify({ kind: 2, k: ['requests'], v: [{ requestId: 'r2' }] }),
+    ].join('\n');
+    expect([...parseChatSessionRequestIds(content)]).toEqual([
+      [0, 'r0'],
+      [1, 'r1'],
+      [2, 'r2'],
+    ]);
   });
 });
 
@@ -88,5 +133,34 @@ describe('parseChatSession', () => {
     const parsed = parseChatSession(content);
     expect(parsed.requests[0]!.completionTokens).toBe(999);
     expect(parsed.requests[0]!.promptText).toBe('first');
+  });
+
+  it('appends repeated kind:2 request arrays instead of replacing history', () => {
+    const content = [
+      JSON.stringify({
+        kind: 0,
+        v: {
+          sessionId: 'append-session',
+          requests: [{ requestId: 'r0', message: { text: 'first' } }],
+        },
+      }),
+      JSON.stringify({
+        kind: 2,
+        k: ['requests'],
+        v: [{ requestId: 'r1', message: { text: 'second' } }],
+      }),
+      JSON.stringify({
+        kind: 2,
+        k: ['requests'],
+        v: [{ requestId: 'r2', message: { text: 'third' } }],
+      }),
+    ].join('\n');
+    const parsed = parseChatSession(content);
+    expect(parsed.requestCount).toBe(3);
+    expect(parsed.requests.map((request) => request.promptText)).toEqual([
+      'first',
+      'second',
+      'third',
+    ]);
   });
 });

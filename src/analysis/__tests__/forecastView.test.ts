@@ -92,9 +92,15 @@ describe('buildForecastView', () => {
       forecastTarget: 'pending',
       aggregateScope: 'allWindows',
       chatTotalTokens: 6_100_000,
+      chatTokensPartial: true,
       chatCredits: 5500,
       chatCostUsd: 3.54,
-      allTurns: [{ prompt: 'hi', tokens: 100, metered: true }],
+      chatCostPartial: true,
+      sessionTokensPartial: true,
+      sessionCostPartial: true,
+      todayTokensPartial: true,
+      todayCostPartial: true,
+      allTurns: [{ prompt: 'hi', tokens: 100, metered: true, status: 'metered' }],
     });
     expect(v.realLastInputTokens).toBe(121_000);
     expect(v.realLastTotalTokens).toBe(125_000);
@@ -107,6 +113,12 @@ describe('buildForecastView', () => {
     expect(v.accuracySamples).toBe(5);
     expect(v.intervalCoverage).toBe(0.9);
     expect(v.chatTotalTokens).toBe(6_100_000);
+    expect(v.chatTokensPartial).toBe(true);
+    expect(v.sessionTokensPartial).toBe(true);
+    expect(v.todayTokensPartial).toBe(true);
+    expect(v.chatCostPartial).toBe(true);
+    expect(v.sessionCostPartial).toBe(true);
+    expect(v.todayCostPartial).toBe(true);
     expect(v.chatCostUsd).toBeCloseTo(3.54, 5);
     expect(v.allTurns).toHaveLength(1);
     expect(v.predictedInputTokens).toBe(100_000);

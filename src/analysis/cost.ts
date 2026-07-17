@@ -24,6 +24,21 @@ export function creditAmount(tokens: TokenEstimate | undefined): CreditAmount {
 }
 
 /**
+ * Credit value suitable for a measured scope. If Copilot omitted input metering
+ * and real credits, do not invent credits from the tiny visible-prompt fallback.
+ */
+export function creditAmountForMeteredUsage(
+  tokens: TokenEstimate | undefined,
+): CreditAmount {
+  const amount = creditAmount(tokens);
+  if (!amount.estimated) return amount;
+  const inputMetered = tokens?.inputEstimated != null
+    ? !tokens.inputEstimated
+    : tokens?.estimated === false;
+  return inputMetered ? amount : { value: 0, estimated: true };
+}
+
+/**
  * Convert a scope's metered totals to USD using the configured precedence:
  * tokens first, then AICs. Returns undefined when neither rate is configured.
  */

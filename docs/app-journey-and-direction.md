@@ -1,9 +1,10 @@
-# Token Lens — App Journey & Direction
+# Token Lens — Product Journey, Complete Feature Map & Direction
 
-_Last updated: 2026-07-10 · package version 0.6.10_
+_Last updated: 2026-07-16 · package version 0.8.3_
 
-> **Current direction: see §10 (2026-07-07 decision — build for real-time visibility + precognition,
-> no savings claim).** §9 is the pivot exploration that led here; §§1–8 are the journey and evidence.
+> **Start with §§11–17 for the shipped product, complete feature inventory,
+> architecture, achievements, boundaries, and future potential.** §§1–10 preserve
+> the experiments and evidence that led to the current direction.
 
 This document records what Tokentama set out to do, what we actually built, what the
 data told us (including the uncomfortable parts), and where the honest, defensible
@@ -424,23 +425,23 @@ to show. Two honest caveats to keep on the record:
 
 ### 10.6 Pushing for "accurate every time" — where the error lives, and can an AI model / the prompt help? (2026-07-07)
 
-Deeper diagnostics (`npm run bench:forecast:lab`, 9 sessions, 270 predictions) segmented the error:
+The July 16 rerun (`npm run bench:forecast:lab`, 12 sessions, 394 predictions) segmented the error:
 
 | Turn type | Share | Median error | within ±20% |
 | --- | --- | --- | --- |
-| **steady** | 77% | **2.6%** | 94% |
-| **surge** (context jumps up) | 21% | 12.1% | 71% |
-| **reset** (summarization collapses it) | 3% | **1221%** | 0% |
+| **steady** | 76% | **2.7%** | 94% |
+| **surge** (context jumps up) | 22% | 13.0% | 68% |
+| **reset** (summarization collapses it) | 3% | **1185.6%** | 0% |
 
 So "accurate every time" as a single number is **impossible** — resets are a ~20× collapse and
-surges are big jumps. The honest form of the goal is a **calibrated interval + a reset flag**:
+surges are big jumps. The honest form of the goal is a **calibrated interval + confidence**, with
+reset proximity retained only as an experimental secondary signal:
 - The forecaster now emits an **interval [low, high]** (calibrated to the observed actual/predicted
-  spread, p05≈0.77 / p95≈1.21). Measured coverage: **~93% of turns land inside it.**
-- It emits **`resetRisk: 'high'`** near the context ceiling (where native summarization fires) and,
-  instead of a false number, the UI shows "summarization likely." *Tuning note:* the current zone
-  still over-flags (catches 6/7 resets but flags ~160 turns); needs tightening so it flags only the
-  true edge. Open item.
-- Cost is **0 tokens, ~12 µs/prediction — pure local arithmetic, free.**
+  spread, p05≈0.78 / p95≈1.33). Current measured coverage: **88% of turns.**
+- The current **`resetRisk: 'high'`** zone caught only **1/10 resets** while flagging
+  **25 turns total (24 false alarms)**. The UI now describes it as a possible reset
+  zone, and it must not be sold as reliable prediction.
+- Cost is **0 tokens, ~32 µs/prediction — pure local arithmetic, free.**
 
 **Can an AI model or the prompt improve it?** We tested this head-on (`npm run bench:forecast:prompt`,
 254 non-reset turns) — does the prompt text predict the growth a turn generates?
@@ -462,13 +463,14 @@ carries almost no signal for how hungry a turn will be** (~1% explanatory ceilin
   can trigger a huge exploration; a detailed ask can hit cache and be cheap.)
 
 **What actually gets us closer to "always right," and stays free:**
-1. Keep the **calibrated interval** as the headline (it's the honest "every time" — ~93% coverage).
-2. **Tighten the reset flag** so it fingers only the true near-ceiling edge (open item above).
+1. Keep the **calibrated interval and confidence** as the headline. The July 16
+  expanded-corpus rerun measured 88% interval coverage, not the earlier ~93%.
+2. Treat the reset-zone indicator as experimental until recall and precision improve.
 3. Optionally fold the **post-run tool-call count** (r=0.20, free) into the *next* input forecast —
    small win, no tokens. Not worth an AI call; possibly worth the plumbing.
 
 Bottom line for the product: **the forecast is already near its achievable ceiling for free.** Push
-precision via the interval + reset flag, not via an AI model. Spend model calls (if ever) on the
+precision via the interval and confidence, not via an AI model. Spend model calls (if ever) on the
 *visibility narrative*, not on trying to out-predict a structurally unpredictable surge.
 
 ### 10.7 Is the arithmetic fragile across models? — made self-calibrating + stress-tested (2026-07-07)
@@ -506,8 +508,9 @@ and still doubles the static version**, and the confidence/flag signals correctl
 by 5 new unit tests (`forecast.test.ts`, 11 total green). **Caveat:** these are one dev's sessions
 transformed — real multi-user data is the final proof, but the design no longer hard-codes anything
 model-specific. **How it "tracks" a new model:** it reads that model's real metered tokens + limit
-from disk and self-calibrates; a brand-new model's *first* summarization reset is the only thing it
-can't preempt (nothing on disk predicts it yet) — after one, it learns that model's trigger.
+from disk and self-calibrates its point estimate and interval. An observed reset can inform the
+proximity threshold, but the July 16 expanded corpus shows that this does **not** make the
+reset-zone indicator a reliable classifier.
 
 ### 10.8 Deep accuracy analysis — how far can the point estimate go? (2026-07-08)
 
@@ -540,7 +543,8 @@ back to the plain median when tool data isn't supplied. Backward compatible.
 content; there is no tool-result event. Tool **count** is only a weak proxy (r=0.20, R²~4%), because
 one `read_file` of a huge file dwarfs ten `grep`s. So no free method can meaningfully predict a
 surge's magnitude before it happens. **Conclusion:** the point estimate is at its achievable ceiling
-(~3.3% median, free); for surges the **calibrated interval + reset flag are the honest answer**, not
+(~3.3% median in that dated benchmark, free); for surges the **calibrated interval and confidence
+are the honest answer**, not
 a falsely-confident number. An AI model can't help here either — it would need the tool outputs,
 which don't exist until the turn runs. The remaining accuracy story is *presentation* (lead with the
 interval, hedge on low confidence), not a better predictor.
@@ -586,3 +590,436 @@ tool output remains structurally unpredictable, even with the URIs.
 That's enough — the model adapts to MCP-heavy usage by learning the per-tool rate, and flags the
 extra uncertainty; it does not need to measure MCP output to stay honest. Real MCP-user data is the
 outstanding validation.
+
+---
+
+## 11. What the exploration became — shipped through 0.8.3
+
+The product that survived the evidence is not a token-saving coach. It is a
+**private personal AI usage ledger with a live Copilot instrument panel**:
+
+> See what the current AI interaction is carrying and costing, retain an honest
+> local record across chats, understand which applications/models/projects drive
+> usage, and export the facts when the user chooses.
+
+The product deliberately separates four things that are often blurred together:
+
+1. **Measured facts** — source-written input/output tokens, native charges, model,
+   timestamps, tool metadata, and coverage status.
+2. **Local projections** — configured dollar cost and next-turn forecast, always
+   labelled rather than presented as provider billing.
+3. **Optional attribution** — evidence-based Profiles layered onto whole requests;
+   they never rewrite the underlying ledger facts.
+4. **Unavailable evidence** — missing source meters are visible as coverage gaps,
+   never silently estimated into authoritative totals.
+
+### 11.1 Release path
+
+| Stage | What changed | Why it mattered |
+| --- | --- | --- |
+| Original prototype | TokenScore, coaching, rewriting, sustainability, and a tamagotchi world | Established the first hypothesis: behavior change could reduce token spend. |
+| Evidence phase | Real Copilot ingestion plus synthetic, historical, human-behavior, cache, context, and forecast probes | Replaced intuition with measured constraints; most direct-savings claims failed. |
+| 0.5–0.6 | Removed scoring/pet/coaching runtime and shipped live cost visibility, context breakdown, Turns, and forecast | Focused the product on the value that remained true without behavior change. |
+| 0.7.0–0.7.3 | Added optional business-tool Profiles, configurable groups/rates, FD&E HQ attribution, and honest partial usage | Tested whether whole-request usage could evaluate workflows without fabricating per-tool tokens. |
+| 0.8.0 | Added the source-neutral append-only personal ledger, Overview, revisions, deduplication, export, retention, and adapter contract | Turned a live Copilot panel into durable personal accounting that can support future sources. |
+| 0.8.1 | Made Live the daily entry point and condensed the in-product manual | Clarified the product story and kept advanced controls out of the main path. |
+| 0.8.2 | Added explicit metering states and corrected request/transcript reconciliation | Stopped completed source gaps from being mislabeled as pending. |
+| 0.8.3 | Added direct Overview export, explicit CSV status, and collapsed cross-chat Recent Activity | Made personal portability discoverable while keeping Overview focused. |
+
+### 11.2 What is core, secondary, and advanced
+
+- **Core:** Live, Overview, Turns, capture privacy control, measured units,
+  coverage, source health, and the local ledger.
+- **Useful secondary:** calibrated forecast interval/accuracy, experimental reset-zone indicator,
+  pin/unpin, configured cost basis, Recent Activity, and manual export.
+- **Advanced:** Profiles, custom tool groups, external allocation rates, rebuild,
+  clear, diagnostics, and self-test.
+- **Deferred:** cloud sync, managed team views, a second application adapter,
+  exact per-MCP usage, invoice reconciliation, and automated chargeback.
+
+## 12. Complete current feature inventory
+
+This section is the canonical product-level inventory. The user manual explains
+operation in more detail; this section explains what exists and what each feature
+can truthfully claim.
+
+### 12.1 Live — current Copilot instrument panel
+
+| Feature | What it does | Measurement boundary |
+| --- | --- | --- |
+| Active chat identity | Shows the current or pinned chat and turn count. | Transient source state; not a durable content field. |
+| Last metered input | Shows the latest completed input-token measurement. | Requires source-written input metering. |
+| Next-turn forecast | Predicts next input tokens with a calibrated range, confidence, and optional AIC estimate. | Pure local arithmetic; a forecast, not provider metering. |
+| In-flight estimate | Temporarily targets one genuinely current unmatched request. | Completed requests with no meter become unavailable, not pending. |
+| Forecast accuracy | Scores prior predictions against real measured turns. | Only appears when measured samples exist. |
+| Reset-zone indicator | Marks model-relative proximity where summarization may occur. | Experimental: current corpus recall/precision are poor; never present it as reliable reset prediction. |
+| Context weight | Shows current carried context against the source-reported model limit. | Fully metered input is required. |
+| Context trend | Shows per-turn growth and summarization drops. | Uses active-chat measurements; it is not durable prompt history. |
+| Where tokens go | Shows source-reported system, tool, history, message, and file categories for this prompt, this chat, and all chats in scope. | Categories are request-level aggregates, not exact individual-tool splits. |
+| Total cost | Switches among workspace, active chat, and today for measured tokens, Copilot AICs, and configured USD. | USD is a local projection; incomplete inputs are labelled measured/known. |
+| Live Copilot data | Shows model and reasoning effort when recorded. | Blank means the source did not record it. |
+| Capture state | Shows live/stale/paused state and lets the user stop automatic source reads. | Existing ledger data remains readable when capture is off. |
+
+### 12.2 Overview — durable personal accounting
+
+| Feature | What it does | Measurement boundary |
+| --- | --- | --- |
+| Time scopes | Today, 7 days, 30 days, and All. | Local calendar windows over retained records. |
+| Personal totals | Measured input/output/total tokens, native AICs, and configured USD. | Totals include only independently measured directions. |
+| Explicit coverage | Separates fully metered, input-only, output-only, in-flight, and unavailable requests. | Missing evidence remains visible rather than being invented. |
+| Applications | Ranks source applications by known tokens/cost. | GitHub Copilot Chat is the only adapter in 0.8.3. |
+| Providers and models | Shows provider/model drivers when source metadata exists. | Unknown source fields remain unknown. |
+| Projects | Uses a pseudonymous key plus local folder/workspace alias. | Raw workspace paths are not persisted. |
+| Source health | Shows adapter readiness, chat count, and capabilities such as token/per-tool metering. | Capability flags prevent unsupported claims. |
+| Recent Activity | Collapsed metadata-only timeline across all retained chats. | No prompt or response text; unlike Turns, this survives chat switches. |
+| Local diagnostics | Record/observation/file counts, bytes, malformed lines, duplicates, conflicts, and retention. | Support metadata only. |
+| Export all | Saves every retained record as versioned JSON or flat CSV to a user-selected destination. | Manual only; selected time range does not filter export; no automatic upload. |
+
+### 12.3 Turns — active-chat evidence
+
+- Newest-first transient turn list.
+- Turn number and prompt excerpt for orientation.
+- Fully metered token value and change from the previous turn.
+- Explicit **input measured**, **output measured**, **in flight**, or **usage
+  unavailable** status when full metering is absent.
+- Summarization drops remain visible as negative deltas.
+- Prompt excerpts are held in memory from the active source. They are never
+  written to the durable ledger or export.
+
+### 12.4 Profiles — optional workflow and tool attribution
+
+- Off by default and independent of core ledger capture.
+- Built-in **FD&E HQ** and **All MCP tools** groups.
+- Schema-validated custom groups based on workflow names and service identifiers;
+  user regular expressions are not executed.
+- Workspace, active-chat, and today scopes.
+- Request-level buckets are mutually exclusive: explicit workflow (high
+  confidence), selected-tool associated (medium), mixed selected groups (low),
+  and Other Copilot (unattributed).
+- Whole-request measured tokens/cost, turn count, MCP call count, and share of
+  known spend per bucket.
+- Service call count, success/failure, observed duration, and optional configured
+  per-call/per-minute allocation.
+- Workflow envelope combining measured Copilot cost and known configured external
+  allocation.
+- Profiles correlate evidence; they do not prove causal per-tool spend and cannot
+  split request tokens among individual MCP calls.
+
+### 12.5 Info — in-product measurement contract
+
+The Info tab is the condensed, current manual for:
+
+- tab purposes and quick start;
+- exact number/status meanings;
+- Live-card interpretation;
+- capture, export, rebuild, clear, and support controls;
+- core/useful/advanced/deferred capability tiers;
+- privacy exclusions and known source limits.
+
+### 12.6 Commands
+
+| Command | Purpose |
+| --- | --- |
+| Open dashboard | Focus Token Lens. |
+| Toggle passive capture | Start or stop automatic read-only Copilot ingestion. |
+| Pin to this chat / Unpin chat | Resolve same-folder multi-window ambiguity for Live. |
+| Export local usage ledger | Invoke the same all-record JSON/CSV flow as Overview's Export all. |
+| Clear local usage ledger | Delete Token Lens metadata and write a watermark; never alter Copilot files. |
+| Rebuild local usage ledger | Remove the watermark, clear derived metadata, and rescan all available local Copilot workspaces. |
+| Show capture diagnostics | Report source scope, active chat, watcher, and ledger counts. |
+| Capture self-test | Verify active source parsing and metering. |
+| Show local ledger diagnostics | Report ledger health, size, conflicts, malformed partitions, and adapter capabilities. |
+
+### 12.7 Settings
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `tokenlens.passiveCapture.enabled` | `true` | Global privacy boundary for automatic reads. |
+| `tokenlens.capture.scope` | `window` | Keep normal Live capture isolated or deliberately follow all windows. |
+| `tokenlens.impact.usdPerMillionTokens` | `0.58` | Local blended USD projection per million measured tokens. |
+| `tokenlens.impact.usdPerCredit` | `0` | AIC-rate fallback when the token rate is disabled. |
+| `tokenlens.businessTools.enabled` | `false` | Enable optional Profiles. |
+| `tokenlens.businessTools.enabledGroups` | `[]` | Select built-in/custom groups. |
+| `tokenlens.businessTools.customGroups` | `{}` | Define reusable workflow/service match groups. |
+| `tokenlens.businessTools.rates` | `{}` | Define optional external allocation assumptions. |
+
+## 13. Architecture and truth model
+
+### 13.1 Data flow
+
+```text
+VS Code Copilot local files (read-only)
+  → parser + request/transcript reconciler
+  → transient PromptEvent (may contain active prompt/response context)
+  → Copilot source adapter privacy projection
+  → content-free UsageObservation revisions
+  → append-only monthly local JSONL partitions
+  → deduplication + materialization
+  → Overview queries / Profiles / manual JSON or CSV export
+
+The active PromptEvent also drives Live and Turns without entering the ledger.
+```
+
+### 13.2 Source ingestion
+
+The Copilot adapter combines three local source shapes:
+
+- transcripts for user turns, assistant activity, and tool execution metadata;
+- chat-session patch logs for logical requests, stable request IDs, completion,
+  token usage, native AICs, selected model, and category breakdowns;
+- the model catalog for provider/model labels, limits, and capabilities.
+
+The reconciler does not assume request arrays and transcript turns remain
+index-aligned. It matches source requests to transcript evidence, preserves the
+omitted first prompt, ignores automatic continuation controls, and permits at
+most one recent unmatched request to be in flight.
+
+### 13.3 Durable record contract
+
+Each `UsageObservation` contains only accounting metadata:
+
+- deterministic logical source identity and revision fingerprint;
+- occurred/observed time;
+- application/provider/model and optional reasoning effort;
+- pseudonymous project/session identity plus a local project alias;
+- independent input/output quantities and provenance;
+- explicit metering status;
+- provider-native charges;
+- content-free tool name/kind/status/duration;
+- explicit workflow evidence.
+
+It has no field for prompt text, response text, code/document content, tool
+arguments, raw paths, raw source-session IDs, user IDs, or machine IDs.
+
+### 13.4 Revision, deduplication, and repair
+
+- The same logical request may arrive as unavailable, partial, and fully metered
+  evidence over time.
+- Canonical observation fingerprints make unchanged rescans idempotent.
+- Materialization prefers source-metered facts over estimates, preserves each
+  independently metered direction, and reports conflicting metered revisions.
+- Separate writer partitions avoid cross-window write contention; query-time
+  materialization deduplicates equivalent evidence across writers.
+- Rebuild is the safe migration/repair mechanism when parser or projection
+  semantics change. It replaces only derived Token Lens metadata.
+
+### 13.5 Source-neutral adapter boundary
+
+The ledger, query, export, and most Overview UI are not Copilot-specific. A future
+adapter must provide stable identities, explicit capabilities, field provenance,
+health diagnostics, a privacy projection, and conformance tests. The first goal of
+a second adapter is architectural validation, not a claim that every AI tool exposes
+the same fidelity.
+
+## 14. Every major path explored and its verdict
+
+| Path | Hypothesis | Evidence / result | Verdict now |
+| --- | --- | --- | --- |
+| Pet and gamification | A visible companion would change prompting habits. | Engaging metaphor, but no evidence it moves structural spend; it obscured the measurement product. | Removed from runtime. |
+| TokenScore/waste detectors | Prompt-quality scoring would identify meaningful savings. | Prompt text is a tiny share of agentic cost; score did not map cleanly to billed usage. | Removed. |
+| Prompt compression/rewriting | Shorter prompts would materially lower usage. | Approximately zero session-level impact because carried context dominates. | Rejected as a savings thesis. |
+| Retry avoidance | Better first asks prevent costly re-asks. | Real but modest, roughly 5–10% potential and strongly adoption-gated. | Valid research result; not current product. |
+| Model right-sizing | Route easy work to cheaper models/effort. | Looked large in simulation but overlapped Copilot Auto and fought users who intentionally choose premium models. | Removed as a headline lever. |
+| Conversation compaction | Reduce the largest cost: re-sent history. | Largest raw lever but lossy summaries can cause wrong answers/retries and Copilot already summarizes. | Not shipped; capability risk too high. |
+| Sustainability estimates | Convert tokens into energy/carbon impact. | Depended on weak assumptions and distracted from source-measured units. | Removed. |
+| Outcomes/adoption loop | Prove coaching reduces retries net of its own cost. | Correct evaluation idea, but depended on a coaching product whose value was too small. | Removed from runtime; outcome-based evaluation remains a future principle. |
+| Tool trimming | Disable bloated/unused tool definitions re-sent every turn. | Theoretically capability-safe for truly unused servers, but highly user/config dependent; built-in tools are functional, not waste. | Potential niche advisory, not core. |
+| Pre-send context-load optimizer | More specific prompts would cause less exploration/context loading. | Two probes found wording had near-zero relation to tokens; discovery was only about 10–12% of tool calls and users named target files only about 3% of file-touching turns. | Rejected before UI build. |
+| Org/FinOps dashboard | Aggregate structural AI spend by team/repository/workflow. | Potentially valuable, but GitHub owns much org usage/billing data and a central product raises governance/platform risk. | Conditional future, not local 0.8.3. |
+| Live visibility | Developers need a running meter, context view, and per-turn evidence while working. | Survived every probe because it is descriptive, useful without behavior change, and absent from the normal Copilot UX. | Shipped core. |
+| Precognition | Recent measured structure can forecast the next turn. | About 3–4% median error on tested steady data; calibrated interval handles volatility honestly at zero model-token cost. | Shipped core. |
+| Business-tool/FD&E attribution | Whole-request usage plus tool/workflow evidence can evaluate business-tool envelopes. | Feasible at request/workflow level; impossible to claim exact per-MCP tokens from current source events. | Shipped as optional Profiles with explicit boundaries. |
+| Custom Profiles | Microsoft-specific toolsets should be configurable rather than hard-coded. | Built-in FD&E HQ could be generalized into selected/custom groups without changing immutable facts. | Shipped advanced feature. |
+| Local personal ledger | Durable cross-chat accounting can outlive the active Copilot view and support more applications later. | Source-neutral contract, revisions, deduplication, privacy projection, queries, and export all validated locally. | Shipped product foundation. |
+
+The repeated lesson is consistent: **do not sell control where only observation is
+available.** Measure source facts, expose structural drivers, and make uncertainty a
+first-class field.
+
+## 15. What has been achieved
+
+### 15.1 Product outcomes
+
+- Pivoted from an unsubstantiated savings/gamification thesis to an evidence-led
+  measurement product.
+- Preserved the differentiated live forecast while removing runtime features that
+  could not support their claims.
+- Expanded from one active chat to a durable, local, source-neutral personal ledger.
+- Made Microsoft/FD&E use cases optional Profiles instead of product-wide assumptions.
+- Added user-controlled data portability without adding an account, service, or
+  automatic upload.
+
+### 15.2 Data-fidelity outcomes
+
+- Reconstructed Copilot append/patch semantics instead of treating request-array
+  appends as replacements.
+- Recovered omitted first prompts and stable source request IDs when available.
+- Reconciled source requests with transcript turns instead of relying on fragile
+  positional alignment.
+- Separated full, input-only, output-only, in-flight, and unavailable states.
+- Preserved completion-only measurements that earlier implementations dropped.
+- Added deterministic identity, revision materialization, cross-window duplicate
+  suppression, malformed-partition diagnostics, conflict reporting, and rebuild.
+
+### 15.3 Forecast evidence
+
+- Initial real-history validation: roughly 3.6% median absolute percentage error
+  and about 89% of turns within ±20% in the original corpus.
+- July 16 expanded-corpus validation: 4.3% overall median error; segmented steady
+  turns at 2.7%, surges at 13.0%, and resets remain
+  the irreducible failure modes.
+- The current emitted interval covered 88% of all evaluated turns. The
+  reset-zone indicator caught only 1/10 resets with 24 false alarms and is
+  therefore explicitly experimental.
+- Tool-count-aware growth improved the median point estimate without model calls.
+- Model/tokenizer/window stress transforms showed the adaptive formulation remained
+  scale-independent; real multi-user validation is still required.
+- Runtime cost is local arithmetic rather than another LLM request.
+
+These figures are engineering validation on limited local history, not a universal
+accuracy guarantee.
+
+### 15.4 Ledger and quality evidence
+
+- Synthetic ledger benchmark: 100,000 observations / 50,000 logical records;
+  materialization and warm Overview query remained comfortably sub-second on the
+  measured development machine.
+- The 0.8.3 release candidate passes strict TypeScript checking, production bundle
+  activation smoke testing, and 135 tests across extension-host and webview logic.
+- Test coverage includes parsers, reconciliation, token provenance, cost, forecast,
+  attribution, canonicalization, validation, persistence, retention, materialization,
+  query coverage, export privacy, and UI pending classification.
+- Visual preview checks cover narrow-sidebar Live, Overview, Turns, Profiles, and Info
+  behavior with explicit status fixtures.
+
+### 15.5 Privacy and trust outcomes
+
+- Source reads are local and read-only.
+- Durable records and exports are metadata-only by contract.
+- Capture can be paused independently of reading existing ledger history.
+- Clear/rebuild affect Token Lens metadata only.
+- No telemetry, account, cloud sync, or automatic export exists.
+- Coverage and capability flags prevent missing source evidence from becoming a
+  fabricated precision claim.
+
+## 16. Application potential from here
+
+### 16.1 Highest-priority next validation
+
+**Build one second local application adapter.** This is the most informative next
+step because it tests whether the source-neutral contract is truly portable. The
+candidate should expose enough stable identity and usage evidence to be useful; an
+activity-only adapter must declare that tokens are unavailable rather than estimate
+them as authoritative.
+
+Potential candidates include another local AI assistant, Agency Copilot CLI if its
+storage gains usage fields, or a first-party application instrumented with standard
+GenAI telemetry. Adapter value depends on the source data, not parser effort alone.
+
+### 16.2 Personal product potential
+
+- Cross-application local usage accounting in one Overview.
+- User-controlled export into Excel, Power BI, notebooks, or personal FinOps analysis.
+- Better model/project/workflow comparisons as more measured sources appear.
+- Optional goals or budgets based on measured units, provided they remain personal
+  and do not turn into performance scoring.
+- Outcome-linked workflow evaluation when a defensible outcome identifier and cost
+  source exist.
+- Local import/merge and multi-device portability, with explicit conflict/privacy
+  behavior, if users need it.
+
+### 16.3 Business-tool and Microsoft potential
+
+- Reusable organization-specific Profiles without product forks.
+- Compare known workflow cost envelopes, service participation, reliability, and
+  duration for repeated business outcomes.
+- Join exported metadata with governed external outcome data outside Token Lens.
+- Add provider-native service charges when an authoritative source emits them.
+- Evaluate FD&E HQ or another toolset without claiming all workspace activity belongs
+  to that group.
+
+### 16.4 Team and organizational potential — conditional
+
+A managed team view could expose structural drivers that individuals cannot see:
+model defaults, MCP/tool-definition footprint, cache behavior, project mix, and
+workflow cost. It should be pursued only with:
+
+- explicit opt-in and a clear governance model;
+- aggregate reporting rather than people-level rankings;
+- source-authoritative organization data or a controlled ingestion contract;
+- retention, access, deletion, and sensitivity controls;
+- a demonstrated gap not already solved by GitHub/Microsoft billing analytics.
+
+The local extension should not quietly evolve into employee surveillance.
+
+### 16.5 Portability potential
+
+The query, materialization, identity, export, and web UI concepts are portable.
+Each IDE/application still needs a source adapter, and some will not expose
+request-level tokens. Visual Studio, JetBrains, browser assistants, and CLI agents are
+therefore data-source investigations first and UI ports second.
+
+### 16.6 Capabilities blocked on upstream evidence
+
+These become legitimate only if a source starts emitting the required fields:
+
+- exact tokens or charges per individual MCP/tool call;
+- authoritative Agency CLI/Scout usage;
+- provider invoice reconciliation;
+- exact cache read/write economics;
+- causal workflow ROI rather than correlation;
+- reliable cross-device record identity.
+
+## 17. Product principles and decision guardrails
+
+1. **Measured beats modeled.** Preserve provider/source facts separately from local
+   projections.
+2. **Unknown is a valid result.** Use explicit coverage states instead of filling gaps.
+3. **No capability sacrifice for lower tokens.** Necessary context is not waste.
+4. **Local by default.** Reading, retention, and export remain user controlled.
+5. **No content ledger.** Durable accounting does not require prompts, responses,
+   code, documents, arguments, or raw paths.
+6. **No causal attribution without causal evidence.** Profiles label whole requests
+   from observable signals.
+7. **No individual performance ranking.** Usage is not productivity or quality.
+8. **Validate before UI.** The rejected context optimizer demonstrates why probes
+   must precede product claims.
+9. **Source capability defines product fidelity.** An adapter cannot recover fields
+   its application never records.
+10. **Export is explicit.** Portability is a feature; silent exfiltration is not.
+
+### 17.1 Current north star
+
+Token Lens succeeds when a user can answer, without surrendering source content:
+
+- What is my current AI interaction carrying and likely to cost next?
+- What measured AI usage have I accumulated over time?
+- Which applications, models, and projects drive it?
+- How complete is the evidence?
+- Which workflows/tools are associated, and at what confidence?
+- Can I take the metadata with me for my own analysis?
+
+It does **not** need to claim that fewer tokens always means better work, predict an
+invoice it cannot observe, or tell a developer how productive they are.
+
+## 18. Documentation map
+
+- [TOKEN-LENS-ONE-PAGER.md](TOKEN-LENS-ONE-PAGER.md) — concise leadership and
+  pilot pitch: problem, product, differentiation, proof, audience, and ask.
+- [USER-MANUAL.md](USER-MANUAL.md) — complete daily-use reference for tabs,
+  labels, controls, settings, privacy, and limits.
+- [FEATURES.md](FEATURES.md) — concise current feature reference.
+- [LOCAL-LEDGER.md](LOCAL-LEDGER.md) — durable contract, storage, revisions,
+  query, export, adapter, and performance specification.
+- [BUSINESS-TOOLS.md](BUSINESS-TOOLS.md) — Profiles, FD&E HQ, attribution
+  boundaries, custom groups, and configured allocations.
+- [KNOWN-ISSUES.md](KNOWN-ISSUES.md) — current source limitations and workarounds.
+- [PITCH-FEATURE-AUDIT.md](https://github.com/t-richarli_microsoft/tokentama/blob/main/docs/PITCH-FEATURE-AUDIT.md) — what to lead with, defer,
+  or keep for Q&A.
+- [tokentama-decision-brief.md](https://github.com/t-richarli_microsoft/tokentama/blob/main/docs/tokentama-decision-brief.md) — the original
+  senior-review evidence and strategic alternatives.
+- [../CHANGELOG.md](../CHANGELOG.md) — release-by-release factual history.
+
+This document is the single narrative entry point: **what we tried, what the data
+rejected, what survived, what shipped, what it can honestly claim, and where the
+application can go next.**

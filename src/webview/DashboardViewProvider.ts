@@ -5,7 +5,11 @@ import { buildDashboardHtml } from './html';
 
 export interface DashboardHandlers {
   toggleCapture: () => Promise<void>;
+  exportLedger: () => Promise<void>;
   refresh: () => void;
+  openBusinessToolSettings: () => void;
+  setBusinessToolTracking: (enabled: boolean) => Promise<void>;
+  setBusinessToolGroup: (groupId: string, enabled: boolean) => Promise<void>;
 }
 
 /** Sidebar webview that renders the Token Lens cost + forecast dashboard. */
@@ -72,6 +76,27 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider, vscode
           this.post({ type: 'busy', busy: false });
         }
         break;
+      case 'exportLedger':
+        await this.withBusy(this.handlers.exportLedger);
+        break;
+      case 'openBusinessToolSettings':
+        this.handlers.openBusinessToolSettings();
+        break;
+      case 'setBusinessToolTracking':
+        await this.withBusy(() => this.handlers.setBusinessToolTracking(msg.enabled));
+        break;
+      case 'setBusinessToolGroup':
+        await this.withBusy(() => this.handlers.setBusinessToolGroup(msg.groupId, msg.enabled));
+        break;
+    }
+  }
+
+  private async withBusy(action: () => Promise<void>): Promise<void> {
+    this.post({ type: 'busy', busy: true });
+    try {
+      await action();
+    } finally {
+      this.post({ type: 'busy', busy: false });
     }
   }
 

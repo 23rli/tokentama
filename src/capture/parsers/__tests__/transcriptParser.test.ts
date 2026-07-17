@@ -25,13 +25,22 @@ describe('parseTranscript', () => {
         type: 'assistant.message',
         data: {
           content: 'Hello',
-          toolRequests: [{ toolCallId: 't1', name: 'read_file', type: 'function' }],
+          toolRequests: [{
+            toolCallId: 't1',
+            name: 'read_file',
+            type: 'function',
+            arguments: JSON.stringify({ filePath: '.github/skills/fde-hq/SKILL.md' }),
+          }],
         },
         timestamp: '2026-06-22T01:00:02.000Z',
       }),
       line({
         type: 'tool.execution_start',
-        data: { toolCallId: 't1', toolName: 'read_file' },
+        data: {
+          toolCallId: 't1',
+          toolName: 'read_file',
+          arguments: { filePath: '.github/skills/fde-hq/SKILL.md' },
+        },
         timestamp: '2026-06-22T01:00:02.500Z',
       }),
       line({
@@ -63,6 +72,8 @@ describe('parseTranscript', () => {
     expect(turn.toolCalls[0]!.toolName).toBe('read_file');
     expect(turn.toolCalls[0]!.success).toBe(true);
     expect(turn.toolCalls[0]!.durationMs).toBe(500);
+    expect(turn.toolCalls[0]!.toolKind).toBe('local');
+    expect(turn.toolCalls[0]!.loadedSkills).toEqual(['fde-hq']);
   });
 
   it('separates turns by user message and ignores malformed lines', () => {

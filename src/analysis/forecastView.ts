@@ -1,7 +1,7 @@
 import type { Forecast } from './forecast';
 import type { ForecastAccuracy } from './forecastService';
 import type { ForecastView } from '../webview/contract';
-import type { PromptEvent, ContextSlice } from '@tokentama/shared-types';
+import type { PromptEvent, ContextSlice, UsageMeteringStatus } from '@tokentama/shared-types';
 import { estimateCredits } from '@tokentama/scoring-engine';
 
 export interface ForecastViewExtras {
@@ -26,18 +26,30 @@ export interface ForecastViewExtras {
   chatSessionCount?: number;
   aggregateScope?: ForecastView['aggregateScope'];
   chatTotalTokens?: number;
+  chatTokensPartial?: boolean;
   chatCredits?: number;
   chatCreditsEstimated?: boolean;
   chatCostUsd?: number;
+  chatCostPartial?: boolean;
   sessionTotalTokens?: number;
+  sessionTokensPartial?: boolean;
   sessionCredits?: number;
   sessionCreditsEstimated?: boolean;
   sessionCostUsd?: number;
+  sessionCostPartial?: boolean;
   todayTotalTokens?: number;
+  todayTokensPartial?: boolean;
   todayCredits?: number;
   todayCreditsEstimated?: boolean;
   todayCostUsd?: number;
-  allTurns?: { prompt: string; tokens: number; metered: boolean }[];
+  todayCostPartial?: boolean;
+  allTurns?: {
+    prompt: string;
+    tokens: number;
+    metered: boolean;
+    partial?: boolean;
+    status: UsageMeteringStatus;
+  }[];
 }
 
 /**
@@ -110,17 +122,23 @@ export function buildForecastView(
     chatSessionCount: extras.chatSessionCount,
     aggregateScope: extras.aggregateScope,
     chatTotalTokens: extras.chatTotalTokens,
+    chatTokensPartial: extras.chatTokensPartial,
     chatCredits: extras.chatCredits,
     chatCreditsEstimated: extras.chatCreditsEstimated,
     chatCostUsd: extras.chatCostUsd,
+    chatCostPartial: extras.chatCostPartial,
     sessionTotalTokens: extras.sessionTotalTokens,
+    sessionTokensPartial: extras.sessionTokensPartial,
     sessionCredits: extras.sessionCredits,
     sessionCreditsEstimated: extras.sessionCreditsEstimated,
     sessionCostUsd: extras.sessionCostUsd,
+    sessionCostPartial: extras.sessionCostPartial,
     todayTotalTokens: extras.todayTotalTokens,
+    todayTokensPartial: extras.todayTokensPartial,
     todayCredits: extras.todayCredits,
     todayCreditsEstimated: extras.todayCreditsEstimated,
     todayCostUsd: extras.todayCostUsd,
+    todayCostPartial: extras.todayCostPartial,
     allTurns: extras.allTurns,
   };
 }
