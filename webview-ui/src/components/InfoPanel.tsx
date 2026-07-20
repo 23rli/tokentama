@@ -55,11 +55,11 @@ export function InfoPanel() {
         <summary>Controls and commands</summary>
         <ul class="info-list">
           <li><b>Capture on/off</b>: controls new source reads. Existing ledger history remains available when paused.</li>
-          <li><b>Pin to this chat / Unpin</b>: resolves two-window or same-folder ambiguity for the Live view.</li>
-          <li><b>Rebuild local usage ledger</b>: explicitly rescan all available local Copilot history.</li>
+          <li><b>Manage…</b>: one searchable hub for pin/unpin, export, rebuild, clear, settings, self-test, and diagnostics.</li>
+          <li><b>Rebuild from available local history</b>: rescan Copilot history still available on this machine; it cannot restore source files Copilot already removed.</li>
           <li><b>Export all</b>: from Overview, choose metadata-only JSON or CSV and a local destination. It exports all retained records, not only the selected time range.</li>
           <li><b>Clear local usage ledger</b>: confirmed deletion of Token Lens metadata only; Copilot source files are untouched.</li>
-          <li><b>Diagnostics / self-test</b>: support tools in the Command Palette, not normal workflow steps.</li>
+          <li><b>Diagnostics / self-test</b>: support actions inside Manage, not normal workflow steps.</li>
         </ul>
       </details>
 

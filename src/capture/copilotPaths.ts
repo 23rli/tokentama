@@ -5,7 +5,8 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 export interface CopilotSessionPaths {
   sessionId: string;
   workspaceHash: string;
-  transcriptPath: string;
+  /** Copilot can create `chatSessions` before (or without) a transcript. */
+  transcriptPath?: string;
   chatSessionPath?: string;
   modelsJsonPath?: string;
   modifiedMs: number;
@@ -14,8 +15,11 @@ export interface CopilotSessionPaths {
 /** Root of VS Code per-workspace storage (stable build). Override via env or arg. */
 export function getWorkspaceStorageRoot(override?: string): string {
   if (override) return override;
-  if (process.env.ECO_COPILOT_WORKSPACE_STORAGE) {
-    return process.env.ECO_COPILOT_WORKSPACE_STORAGE;
+  const configuredRoot =
+    process.env.TOKENLENS_COPILOT_WORKSPACE_STORAGE ??
+    process.env.ECO_COPILOT_WORKSPACE_STORAGE;
+  if (configuredRoot) {
+    return configuredRoot;
   }
   if (process.platform === 'darwin') {
     return join(homedir(), 'Library', 'Application Support', 'Code', 'User', 'workspaceStorage');
@@ -49,7 +53,7 @@ function findModelsJson(root: string, hash: string, sessionId: string): string |
   return existsSync(p) ? p : undefined;
 }
 
-/** Enumerate all Copilot chat sessions on disk, newest transcript first. */
+/** Enumerate all Copilot chat sessions on disk, newest source file first. */
 export function listCopilotSessions(
   root = getWorkspaceStorageRoot(),
   onlyHash?: string,
@@ -60,24 +64,30 @@ export function listCopilotSessions(
   for (const hash of safeReaddir(root)) {
     if (onlyHash && hash !== onlyHash) continue;
     const transcriptsDir = join(root, hash, 'GitHub.copilot-chat', 'transcripts');
-    if (!existsSync(transcriptsDir)) continue;
     const chatSessionsDir = join(root, hash, 'chatSessions');
+    const files = new Set([
+      ...safeReaddir(transcriptsDir),
+      ...safeReaddir(chatSessionsDir),
+    ]);
 
-    for (const file of safeReaddir(transcriptsDir)) {
+    for (const file of files) {
       if (!file.endsWith('.jsonl')) continue;
       const sessionId = file.replace(/\.jsonl$/, '');
       const transcriptPath = join(transcriptsDir, file);
       const chatSessionPath = join(chatSessionsDir, file);
+      const hasTranscript = existsSync(transcriptPath);
+      const hasChatSession = existsSync(chatSessionPath);
+      if (!hasTranscript && !hasChatSession) continue;
       const modelsJsonPath = findModelsJson(root, hash, sessionId);
       sessions.push({
         sessionId,
         workspaceHash: hash,
-        transcriptPath,
-        chatSessionPath: existsSync(chatSessionPath) ? chatSessionPath : undefined,
+        transcriptPath: hasTranscript ? transcriptPath : undefined,
+        chatSessionPath: hasChatSession ? chatSessionPath : undefined,
         modelsJsonPath,
         modifiedMs: Math.max(
-          safeMtime(transcriptPath),
-          safeMtime(chatSessionPath),
+          hasTranscript ? safeMtime(transcriptPath) : 0,
+          hasChatSession ? safeMtime(chatSessionPath) : 0,
           modelsJsonPath ? safeMtime(modelsJsonPath) : 0,
         ),
       });

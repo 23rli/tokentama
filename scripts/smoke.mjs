@@ -2,7 +2,7 @@
 // verify its public commands/status entry point, then dispose every resource.
 import Module from 'node:module';
 import path from 'node:path';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 
@@ -106,6 +106,7 @@ Module._load = function (request, parent, isMain) {
 };
 
 const ext = require(path.resolve('dist/extension.js'));
+const manifest = JSON.parse(readFileSync(path.resolve('package.json'), 'utf8'));
 
 const memState = () => {
   const m = new Map();
@@ -133,7 +134,9 @@ console.log('initial status:', statusItem.text);
 
 const expectedCommands = [
   'tokenlens.openDashboard',
+  'tokenlens.manage',
   'tokenlens.toggleCapture',
+  'tokenlens.togglePinChat',
   'tokenlens.pinChat',
   'tokenlens.unpinChat',
   'tokenlens.diagnostics',
@@ -149,12 +152,29 @@ for (const id of expectedCommands) {
     process.exitCode = 1;
   }
 }
+const publicCommands = manifest.contributes.commands.map((entry) => entry.command);
+if (
+  JSON.stringify(publicCommands) !==
+  JSON.stringify([
+    'tokenlens.openDashboard',
+    'tokenlens.toggleCapture',
+    'tokenlens.togglePinChat',
+    'tokenlens.exportLedger',
+    'tokenlens.rebuildLedger',
+    'tokenlens.manage',
+  ])
+) {
+  console.error(`SMOKE FAIL: unexpected public commands: ${publicCommands.join(', ')}`);
+  process.exitCode = 1;
+}
 if (statusItem.text !== '$(debug-pause) Token Lens') {
   console.error(`SMOKE FAIL: unexpected initial status: ${statusItem.text}`);
   process.exitCode = 1;
 }
 
 await commands.get('tokenlens.openDashboard')();
+quickPickResult = { label: 'Open dashboard', command: 'tokenlens.openDashboard' };
+await commands.get('tokenlens.manage')();
 // Let the async empty-ledger initialization settle before lifecycle cleanup.
 await new Promise((resolve) => setTimeout(resolve, 50));
 

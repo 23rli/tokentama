@@ -2,7 +2,7 @@
   "name": "tokentama",
   "displayName": "Token Lens",
   "description": "A private, local ledger for your personal AI usage: measured tokens, native charges, costs, models, projects, data coverage, and live GitHub Copilot forecasting.",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "publisher": "tokentama",
   "license": "MIT",
   "repository": {
@@ -68,47 +68,27 @@
       },
       {
         "command": "tokenlens.toggleCapture",
-        "title": "Toggle passive capture",
+        "title": "Toggle capture",
         "category": "Token Lens"
       },
       {
-        "command": "tokenlens.pinChat",
-        "title": "Pin to this chat",
-        "category": "Token Lens"
-      },
-      {
-        "command": "tokenlens.unpinChat",
-        "title": "Unpin chat",
-        "category": "Token Lens"
-      },
-      {
-        "command": "tokenlens.diagnostics",
-        "title": "Show capture diagnostics",
-        "category": "Token Lens"
-      },
-      {
-        "command": "tokenlens.captureSelfTest",
-        "title": "Capture self-test",
+        "command": "tokenlens.togglePinChat",
+        "title": "Pin or unpin current chat",
         "category": "Token Lens"
       },
       {
         "command": "tokenlens.exportLedger",
-        "title": "Export local usage ledger",
-        "category": "Token Lens"
-      },
-      {
-        "command": "tokenlens.clearLedger",
-        "title": "Clear local usage ledger",
+        "title": "Export usage ledger",
         "category": "Token Lens"
       },
       {
         "command": "tokenlens.rebuildLedger",
-        "title": "Rebuild local usage ledger from all Copilot history",
+        "title": "Rebuild from available local history",
         "category": "Token Lens"
       },
       {
-        "command": "tokenlens.ledgerDiagnostics",
-        "title": "Show local ledger diagnostics",
+        "command": "tokenlens.manage",
+        "title": "Manage data and diagnostics…",
         "category": "Token Lens"
       }
     ],
@@ -253,9 +233,6 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bench": "node scripts/run-bench.mjs",
-    "bench:history": "node scripts/run-bench.mjs bench-history.ts",
-    "bench:human": "node scripts/run-bench.mjs bench-human.ts",
     "bench:cache": "node scripts/run-bench.mjs bench-cache.ts",
     "bench:forecast": "node scripts/run-bench.mjs bench-forecast.ts",
     "bench:forecast:lab": "node scripts/run-bench.mjs bench-forecast-lab.ts",

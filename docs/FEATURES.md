@@ -110,15 +110,14 @@ A compact in-product manual: quick start, tab guide, number definitions, card gu
 | Command | What it does |
 |---|---|
 | **Open dashboard** | Reveal/focus the dashboard view. |
-| **Toggle passive capture** | Start/stop reading Copilot sessions on disk. |
-| **Pin to this chat** | Lock tracking onto the current chat so Token Lens keeps showing it even if a newer chat appears (useful when two windows share a folder). |
-| **Unpin chat** | Clear the pin and follow the newest chat again. |
-| **Show capture diagnostics** | Print scope, active-chat, and watcher details to Output → Token Lens. |
-| **Capture self-test** | Verify that the active chat can be parsed and report how many turns are metered. |
-| **Export local usage ledger** | The Overview **Export all** action and Command Palette entry explicitly save every retained record as metadata-only, versioned JSON or flat CSV. |
-| **Clear local usage ledger** | Confirm and clear Token Lens metadata only; Copilot source files remain untouched. A local watermark prevents old source history from immediately returning. |
-| **Rebuild local usage ledger** | Confirm, remove the clear watermark, and rescan all currently available local Copilot workspaces. |
-| **Show local ledger diagnostics** | Print storage root, records, observations, bytes, duplicates, malformed partitions, conflicts, retention, and source capabilities. |
+| **Toggle capture** | Pause or resume automatic read-only Copilot capture. |
+| **Pin or unpin current chat** | Keep Live attached to the intended chat when windows share storage, or resume following the newest chat. |
+| **Export usage ledger** | Save every retained metadata-only record as JSON or CSV. |
+| **Rebuild from available local history** | Clear derived metadata and rescan Copilot files still available on this machine. |
+| **Manage data and diagnostics…** | Open one searchable hub that also contains clear, settings, self-test, and diagnostics. |
+
+Separate legacy pin/unpin and support command IDs remain registered for
+compatibility with existing keybindings and automation.
 
 ---
 
@@ -143,7 +142,7 @@ Token Lens began as a prompt-efficiency **scoring + tamagotchi** tool, then pivo
 pure cost visibility + forecasting. As of the v0.5.0 cleanup, the legacy subsystems are
 **fully removed** from the codebase: the prompt scoring service, the rewriter, the
 training corpus, the live LLM/heuristic coach, telemetry, the pet health/world model, and
-~11 unused webview components. A rewrite helper remains only for reproducible historical
-benchmarks. The
-state contract (`TamaState`) now carries `{ personalLedger, metrics, model, captureEnabled, businessTools, forecast }`.
+~11 unused webview components. The remaining dead contracts and savings-era benchmark
+entry points were removed in the current cleanup. The state contract
+(`TokenLensState`) carries `{ personalLedger, hasUsdRate, model, captureEnabled, businessTools, forecast }`.
 Overview is driven by the persistent local ledger; Live remains driven by the current source-specific forecast.

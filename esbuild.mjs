@@ -6,11 +6,10 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const watch = process.argv.includes('--watch');
 const production = process.argv.includes('--production');
 
-/** Map the legacy workspace package names to the flattened src/ locations. */
+/** Map the remaining flattened internal package names to their src locations. */
 const alias = {
   '@tokentama/shared-types': path.join(root, 'src/types/index.ts'),
   '@tokentama/scoring-engine': path.join(root, 'src/scoring/index.ts'),
-  '@tokentama/llm-adapters': path.join(root, 'src/coaching/index.ts'),
   '@tokentama/ingestion': path.join(root, 'src/capture/parsers/index.ts'),
 };
 

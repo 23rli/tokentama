@@ -1,4 +1,4 @@
-import type { TamaState } from '../../../src/webview/contract';
+import type { TokenLensState } from '../../../src/webview/contract';
 import { fmtNum } from '../format';
 import { Tip } from './Tip';
 
@@ -7,7 +7,7 @@ import { Tip } from './Tip';
  * live in this session. Cost/token numbers live in the forecast + session-cost
  * cards, so they're deliberately NOT repeated here.
  */
-export function LiveData({ state }: { state: TamaState }) {
+export function LiveData({ state }: { state: TokenLensState }) {
   const m = state.model;
   // Only show the reasoning effort when the session ACTUALLY recorded which one
   // was selected. Never show the supported range (e.g. "low–max") — that reads

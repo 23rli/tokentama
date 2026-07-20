@@ -17,7 +17,6 @@
     "paths": {
       "@tokentama/shared-types": ["./src/types/index.ts"],
       "@tokentama/scoring-engine": ["./src/scoring/index.ts"],
-      "@tokentama/llm-adapters": ["./src/coaching/index.ts"],
       "@tokentama/ingestion": ["./src/capture/parsers/index.ts"]
     }
   },

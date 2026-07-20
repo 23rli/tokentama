@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 import type { ModelInfo, PersonalLedgerOverview } from '@tokentama/shared-types';
 import type {
-  TamaState,
+  TokenLensState,
   ForecastView,
-  SuccessMetrics,
   BusinessActivityScopes,
 } from '../webview/contract';
 import { createBusinessToolRegistry } from '../analysis/businessToolGroups';
@@ -11,11 +10,10 @@ import { createBusinessToolRegistry } from '../analysis/businessToolGroups';
 /**
  * Minimal state carrier for Token Lens. Holds the capture toggle, the active
  * model, and the live disk-read forecast, and emits a full snapshot to the
- * webview + status bar on every change. (The pre-pivot pet/health/scoring state
- * has been removed — the dashboard is driven entirely by the on-disk forecast.)
+ * webview + status bar on every change.
  */
-export class TamaStore implements vscode.Disposable {
-  private readonly _onDidChange = new vscode.EventEmitter<TamaState>();
+export class TokenLensStore implements vscode.Disposable {
+  private readonly _onDidChange = new vscode.EventEmitter<TokenLensState>();
   readonly onDidChange = this._onDidChange.event;
 
   private _captureEnabled: boolean;
@@ -48,7 +46,7 @@ export class TamaStore implements vscode.Disposable {
     this.emit();
   }
 
-  /** Update the live next-turn forecast (precognition) + active model; refresh UI. */
+  /** Update the live next-turn forecast + active model; refresh UI. */
   setForecast(
     forecast: ForecastView,
     model?: ModelInfo,
@@ -86,22 +84,13 @@ export class TamaStore implements vscode.Disposable {
     this.emit();
   }
 
-  getState(): TamaState {
+  getState(): TokenLensState {
     const tokenRate = vscode.workspace
       .getConfiguration('tokenlens.impact')
       .get<number>('usdPerMillionTokens', 0.58);
     const creditRate = vscode.workspace
       .getConfiguration('tokenlens.impact')
       .get<number>('usdPerCredit', 0);
-    // Zero-state fallback metrics; ImpactTrio prefers the whole-chat forecast
-    // totals when present, so these only show before a forecast lands.
-    const metrics: SuccessMetrics = {
-      totalTokens: 0,
-      totalCostUsd: 0,
-      totalCredits: 0,
-      totalCreditsEstimated: true,
-      hasUsdRate: tokenRate > 0 || creditRate > 0,
-    };
     const businessConfig = vscode.workspace.getConfiguration('tokenlens.businessTools');
     const businessRegistry = createBusinessToolRegistry(
       businessConfig.get('enabled', false),
@@ -109,7 +98,7 @@ export class TamaStore implements vscode.Disposable {
       businessConfig.get('customGroups', {}),
     );
     return {
-      metrics,
+      hasUsdRate: tokenRate > 0 || creditRate > 0,
       model: this.model,
       captureEnabled: this._captureEnabled,
       personalLedger: this.personalLedger,

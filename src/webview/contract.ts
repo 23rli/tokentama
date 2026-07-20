@@ -30,20 +30,8 @@ export type {
   UsageMeteringStatus,
 } from '@tokentama/shared-types';
 
-/** The headline cost tiles' zero-state fallback (the forecast's whole-chat totals are preferred). */
-export interface SuccessMetrics {
-  totalTokens: number;
-  totalCostUsd: number;
-  /** Sum of Copilot credits (AICs). */
-  totalCredits: number;
-  /** True when totalCredits is estimated (no real metered credits yet). */
-  totalCreditsEstimated: boolean;
-  /** True when a $ rate is configured (so $ figures are meaningful). */
-  hasUsdRate: boolean;
-}
-
 /**
- * Live cost forecast for the NEXT turn ("precognition") plus the real numbers to
+ * Live cost forecast for the next turn plus the real numbers to
  * compare it against and the system's self-measured accuracy. Everything here is
  * either REAL (metered, `real*` fields) or PREDICTED (`predicted*`/interval) — the
  * UI must label which is which.
@@ -62,8 +50,6 @@ export interface ForecastView {
   confidence: number;
   /** 'high' when a summarization reset is likely (point estimate unreliable). */
   resetRisk: 'low' | 'high';
-  /** The biggest contributor to the next turn's cost ("what's hungry"). */
-  hungriest: 'carriedContext' | 'growth' | 'draft';
 
   /** REAL input tokens metered on the last completed turn. */
   realLastInputTokens?: number;
@@ -83,14 +69,14 @@ export interface ForecastView {
   /** Fraction of real turns whose actual landed inside the predicted interval. */
   intervalCoverage: number;
 
-  /** Current carried context (re-sent every turn) — the sustainability driver. */
+  /** Current carried context, re-sent every turn. */
   contextTokens: number;
   /** The model's input limit, when known. */
   contextLimit?: number;
   /** contextTokens / contextLimit, 0..1 (undefined if no limit known). */
   loadFraction?: number;
-  /** Coarse sustainability band derived from load + reset risk. */
-  sustainability: 'light' | 'moderate' | 'heavy' | 'critical' | 'overloaded';
+  /** Coarse context-load band derived from load + reset risk. */
+  contextBand: 'light' | 'moderate' | 'heavy' | 'critical' | 'overloaded';
 
   /** Short id of the session being tracked, so the user knows WHICH chat. */
   sessionShortId?: string;
@@ -164,9 +150,9 @@ export interface ForecastView {
 }
 
 /** Snapshot pushed to the webview + status bar. */
-export interface TamaState {
-  /** Zero-state cost fallback; the forecast's whole-chat totals are preferred. */
-  metrics: SuccessMetrics;
+export interface TokenLensState {
+  /** True when a local token or AIC dollar rate is configured. */
+  hasUsdRate: boolean;
   /** The active session's model + pricing/capabilities, when known. */
   model?: ModelInfo;
   captureEnabled: boolean;
@@ -174,19 +160,20 @@ export interface TamaState {
   personalLedger?: PersonalLedgerOverview;
   /** Independently configurable business-tool groups and their local activity. */
   businessTools: BusinessToolsState;
-  /** Live next-turn cost forecast + accuracy (precognition). */
+  /** Live next-turn cost forecast + accuracy. */
   forecast?: ForecastView;
 }
 
 /** Messages sent host → webview. */
 export type HostMessage =
-  | { type: 'state'; state: TamaState }
+  | { type: 'state'; state: TokenLensState }
   | { type: 'busy'; busy: boolean };
 
 /** Messages sent webview → host. */
 export type WebviewMessage =
   | { type: 'ready' }
   | { type: 'toggleCapture' }
+  | { type: 'manage' }
   | { type: 'exportLedger' }
   | { type: 'openBusinessToolSettings' }
   | { type: 'setBusinessToolTracking'; enabled: boolean }

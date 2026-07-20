@@ -1,8 +1,8 @@
 import type { JSX } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { TamaState, HostMessage } from '../../src/webview/contract';
+import type { TokenLensState, HostMessage } from '../../src/webview/contract';
 import { post } from './vscodeApi';
-import { SustainabilityGauge } from './components/SustainabilityGauge';
+import { ContextWeightPanel } from './components/ContextWeightPanel';
 import { ForecastPanel } from './components/ForecastPanel';
 import { ContextPanel } from './components/ContextPanel';
 import { ImpactTrio } from './components/ImpactTrio';
@@ -13,7 +13,7 @@ import { BusinessToolsView } from './components/BusinessToolsView';
 import { PersonalLedgerView } from './components/PersonalLedgerView';
 
 export function App() {
-  const [state, setState] = useState<TamaState | null>(null);
+  const [state, setState] = useState<TokenLensState | null>(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<'live' | 'overview' | 'history' | 'profiles' | 'info'>('live');
   const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
@@ -139,7 +139,7 @@ export function App() {
       {tab === 'live' ? (
         <div class="app-main" id="panel-live" role="tabpanel" aria-labelledby="tab-live">
           <ForecastPanel forecast={state.forecast} />
-          <SustainabilityGauge forecast={state.forecast} />
+          <ContextWeightPanel forecast={state.forecast} />
           <ContextPanel
             breakdown={state.forecast?.contextBreakdown}
             inputTokens={state.forecast?.contextInputTokens}
@@ -150,7 +150,7 @@ export function App() {
             chatSessionCount={state.forecast?.chatSessionCount}
             aggregateScope={state.forecast?.aggregateScope}
           />
-          <ImpactTrio metrics={state.metrics} forecast={state.forecast} />
+          <ImpactTrio hasUsdRate={state.hasUsdRate} forecast={state.forecast} />
           <LiveData state={state} />
         </div>
       ) : tab === 'overview' ? (
@@ -188,6 +188,13 @@ export function App() {
           onClick={() => post({ type: 'toggleCapture' })}
         >
           {state.captureEnabled ? '◉ Capture on' : '○ Capture off'}
+        </button>
+        <button
+          class="ghost"
+          disabled={busy}
+          onClick={() => post({ type: 'manage' })}
+        >
+          Manage…
         </button>
       </div>
     </div>

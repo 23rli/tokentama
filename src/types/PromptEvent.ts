@@ -1,5 +1,5 @@
 /** Where a captured prompt/turn originated. */
-export type IngestionSource = 'transcript' | 'chat-session' | 'manual' | 'scripted';
+export type IngestionSource = 'github-copilot-chat';
 
 /** A single tool/function invocation observed during a turn. */
 export interface ToolCallInfo {
@@ -72,7 +72,8 @@ export interface ContextSlice {
 }
 
 /**
- * The normalized unit produced by every ingestion adapter and fed into scoring.
+ * The transient normalized unit read from a source before content-free ledger
+ * projection and live forecasting.
  * One PromptEvent ≈ one user turn (prompt + resulting assistant response + tools).
  */
 export interface PromptEvent {
@@ -92,8 +93,4 @@ export interface PromptEvent {
   tokens?: TokenEstimate;
   /** Source lifecycle/coverage, distinct from local token estimates. */
   meteringStatus?: 'metered' | 'input-only' | 'output-only' | 'pending' | 'unavailable';
-  /** Number of near-duplicate retries detected earlier in this session. */
-  retryCountInSession?: number;
-  /** Whether the user adopted the previous coaching suggestion (behavioral hint). */
-  adoptedPreviousTip?: boolean;
 }

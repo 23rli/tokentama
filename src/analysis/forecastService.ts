@@ -38,7 +38,7 @@ export interface ForecastAccuracy {
  * Accuracy is scored the same way as `bench:forecast`: when a real turn N lands,
  * we re-derive what we WOULD have predicted from turns 0..N-1 plus turn N's own
  * prompt text, and compare to the real `promptTokens[N]`. This is independent of
- * whatever draft the compose box was showing, so it's an honest measure.
+ * whatever draft text was supplied, so it's an honest measure.
  */
 export class ForecastService {
   private history: TurnHistory[] = [];
@@ -102,7 +102,7 @@ export class ForecastService {
     });
   }
 
-  /** Forecast the next turn, optionally conditioned on a compose-box draft. */
+  /** Forecast the next turn, optionally conditioned on draft text. */
   forecastNext(draftPrompt = ''): Forecast {
     return forecastTurn({ history: this.history, draftPrompt, model: this.model });
   }

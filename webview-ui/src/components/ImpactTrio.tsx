@@ -1,6 +1,6 @@
 import type { JSX } from 'preact';
 import { useRef, useState } from 'preact/hooks';
-import type { SuccessMetrics, ForecastView } from '../../../src/webview/contract';
+import type { ForecastView } from '../../../src/webview/contract';
 import { fmtNum, fmtUsd } from '../format';
 import { Tip } from './Tip';
 
@@ -26,12 +26,18 @@ const SCOPES: { key: Scope; label: string; tip: string }[] = [
   },
 ];
 
-export function ImpactTrio({ metrics, forecast }: { metrics: SuccessMetrics; forecast?: ForecastView }) {
+export function ImpactTrio({
+  hasUsdRate: usdRateConfigured,
+  forecast,
+}: {
+  hasUsdRate: boolean;
+  forecast?: ForecastView;
+}) {
   const [scope, setScope] = useState<Scope>('workspace');
   const scopeRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const f = forecast;
-  // Whole-workspace totals come straight from disk; fall back to the zero-state
-  // metrics only until that disk aggregate lands.
+  // Whole-workspace totals come straight from disk. Before that aggregate lands,
+  // render a neutral zero state rather than carrying a second metrics system.
   const hasChat = f?.chatTotalTokens != null;
 
   const picked =
@@ -54,16 +60,16 @@ export function ImpactTrio({ metrics, forecast }: { metrics: SuccessMetrics; for
             costPartial: !!f?.todayCostPartial,
           }
         : {
-            tokens: hasChat ? f!.chatTotalTokens! : metrics.totalTokens,
+            tokens: hasChat ? f!.chatTotalTokens! : 0,
             tokensPartial: hasChat ? !!f!.chatTokensPartial : false,
-            credits: hasChat ? f!.chatCredits ?? 0 : metrics.totalCredits,
-            creditsEstimated: hasChat ? !!f!.chatCreditsEstimated : metrics.totalCreditsEstimated,
-            cost: hasChat ? f!.chatCostUsd : metrics.totalCostUsd,
+            credits: hasChat ? f!.chatCredits ?? 0 : 0,
+            creditsEstimated: hasChat ? !!f!.chatCreditsEstimated : true,
+            cost: hasChat ? f!.chatCostUsd : undefined,
             costPartial: hasChat ? !!f!.chatCostPartial : false,
           };
 
   const hasUsdRate =
-    picked.cost != null || (scope === 'workspace' && !hasChat && metrics.hasUsdRate);
+    picked.cost != null || (scope === 'workspace' && !hasChat && usdRateConfigured);
 
   // The delta is the most recent turn's contribution — it belongs to the active
   // chat and is dated today, so it's meaningful under every scope.

@@ -1,6 +1,6 @@
 # Local personal AI usage ledger
 
-Token Lens 0.8.3 stores a private, append-only metadata ledger under VS Code's
+Token Lens 0.8.4 stores a private, append-only metadata ledger under VS Code's
 extension global storage. It is designed for one developer's usage on the local
 machine/profile. It does not provide cloud sync, accounts, automatic uploads, or
 a team dashboard.
@@ -99,8 +99,8 @@ rewrite measured source facts.
 
 Export is explicit and secondary:
 
-- Select **Export all** in Overview, or run **Token Lens: Export local usage
-  ledger** from the Command Palette.
+- Select **Export all** in Overview, or run **Token Lens: Export usage ledger**
+  from the Command Palette.
 - Export includes all retained records; the Overview time selector does not
   filter the file.
 - JSON preserves versioned content-free materialized records and coverage.
@@ -115,7 +115,7 @@ appropriate access.
 
 ## Adapter contract
 
-Version 0.8.3 ships one adapter: VS Code GitHub Copilot Chat. Future adapters
+Version 0.8.4 ships one adapter: VS Code GitHub Copilot Chat. Future adapters
 must provide:
 
 1. a stable adapter and application ID;

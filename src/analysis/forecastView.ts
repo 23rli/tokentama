@@ -54,8 +54,8 @@ export interface ForecastViewExtras {
 
 /**
  * Assemble the webview forecast view-model: the PREDICTED next turn (+ interval,
- * reset risk, hungriest part), the REAL last turn to compare against, the live
- * self-measured accuracy, and the context-load / sustainability band. Predicted
+ * reset risk), the REAL last turn to compare against, the live
+ * self-measured accuracy, and the context-load band. Predicted
  * credits price the fresh (growth+draft) portion at the input rate and treat
  * carried context as cached. Pure (no VS Code / disk) so it's unit-testable.
  */
@@ -75,7 +75,7 @@ export function buildForecastView(
     ? estimateCredits(f.predictedInputTokens, expectedOutput, event.model, contextTokens)
     : undefined;
 
-  const sustainability: ForecastView['sustainability'] =
+  const contextBand: ForecastView['contextBand'] =
     f.resetRisk === 'high' || (loadFraction ?? 0) >= 0.9
       ? 'overloaded'
       : (loadFraction ?? 0) >= 0.75
@@ -94,7 +94,6 @@ export function buildForecastView(
     predictedCredits,
     confidence: f.confidence,
     resetRisk: f.resetRisk,
-    hungriest: f.hungriest,
     realLastInputTokens: extras.realLastInputTokens,
     realLastTotalTokens: extras.realLastTotalTokens,
     realLastCredits: extras.realLastCredits,
@@ -106,7 +105,7 @@ export function buildForecastView(
     contextTokens,
     contextLimit: limit,
     loadFraction,
-    sustainability,
+    contextBand,
     sessionShortId: extras.sessionShortId,
     sessionTitle: extras.sessionTitle,
     lastPromptPreview: extras.lastPromptPreview,

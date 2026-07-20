@@ -1,9 +1,9 @@
 /**
- * Turn-cost FORECASTER (the "precognition" core).
+ * Turn-cost forecaster.
  *
  * Goal: given a draft prompt + the session so far + the model, best-estimate the
  * INPUT tokens (and therefore the credits) the NEXT turn will cost — and show
- * WHERE that cost comes from ("what's going to be hungry"). We do NOT claim to
+ * where that cost comes from. We do NOT claim to
  * reduce it; this is honest forecasting/visibility only.
  *
  * The structural fact this leans on (see docs §3.6, §9): a turn's input is
@@ -62,8 +62,6 @@ export interface Forecast {
   /** Calibrated prediction interval — the honest "right every time" band. */
   interval: { low: number; high: number };
   breakdown: ForecastBreakdown;
-  /** The single largest contributor — the "hungry" part. */
-  hungriest: keyof ForecastBreakdown;
   /** 'structural' once we have history; 'coldstart' for the first turn. */
   basis: 'structural' | 'coldstart';
   /** 0..1 — rises with history length, falls with growth variance / reset risk. */
@@ -240,7 +238,6 @@ export function forecastTurn(input: ForecastInput): Forecast {
         high: Math.round(predicted * DEFAULT_INTERVAL_HIGH),
       },
       breakdown: { carriedContext: COLD_START_OVERHEAD, growth: 0, draft },
-      hungriest: 'carriedContext',
       basis: 'coldstart',
       confidence: 0.2,
       resetRisk: 'low',
@@ -253,9 +250,6 @@ export function forecastTurn(input: ForecastInput): Forecast {
 
   const breakdown: ForecastBreakdown = { carriedContext, growth, draft };
   const point = Math.round(carriedContext + growth + draft);
-
-  const entries = Object.entries(breakdown) as [keyof ForecastBreakdown, number][];
-  const hungriest = entries.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 
   // Reset detection: model-relative trigger, not a hardcoded ceiling.
   const trigger = resetTrigger(history, input.model);
@@ -285,7 +279,6 @@ export function forecastTurn(input: ForecastInput): Forecast {
     predictedInputTokens: point,
     interval: { low, high },
     breakdown,
-    hungriest,
     basis: 'structural',
     confidence,
     resetRisk,

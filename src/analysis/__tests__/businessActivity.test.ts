@@ -12,7 +12,7 @@ function event(overrides: Partial<PromptEvent> = {}): PromptEvent {
     sessionId: 'session-1',
     userId: 'local',
     turnIndex: 0,
-    source: 'transcript',
+    source: 'github-copilot-chat',
     timestamp: '2026-07-15T12:00:00.000Z',
     promptText: 'Run the intake',
     toolCalls: [],

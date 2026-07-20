@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'node:path';
-import { TamaStore } from './state/tamaStore';
+import { TokenLensStore } from './state/tokenLensStore';
 import { CopilotWatcher } from './capture/CopilotWatcher';
 import { getWorkspaceStorageRoot, listCopilotSessions } from './capture/copilotPaths';
 import {
@@ -45,7 +45,7 @@ const FORECAST_HISTORY_LIMIT = 200;
 const LEDGER_CLEARED_BEFORE_KEY = 'tokenlens.ledger.clearedBefore';
 
 export function activate(context: vscode.ExtensionContext): void {
-  const store = new TamaStore();
+  const store = new TokenLensStore();
   context.subscriptions.push(store);
   // When this window's extension started — used to scope EMPTY windows (which have
   // no workspace hash) to chats touched since the window opened, so they don't
@@ -116,6 +116,9 @@ export function activate(context: vscode.ExtensionContext): void {
           const appended = await usageLedger.append(eligible);
           sourceHealth = [scan.health];
           ledgerSourceSignature = signature;
+          if (forceScan || scanAllLocal) {
+            log(`ledger: scanned ${sessions.length} local session file${sessions.length === 1 ? '' : 's'} and projected ${scan.observations.length} usage record${scan.observations.length === 1 ? '' : 's'}.`);
+          }
           if (appended.appended > 0) {
             log(`ledger: appended ${appended.appended} content-free observation${appended.appended === 1 ? '' : 's'}.`);
           }
@@ -155,7 +158,7 @@ export function activate(context: vscode.ExtensionContext): void {
     return ledgerSyncInFlight;
   };
 
-  // Precognition core: rebuild the live forecast from the ACTIVE session on disk
+  // Rebuild the live forecast from the active chat on disk
   // (which carries real metered tokens for every completed turn), so it appears
   // immediately and never depends on lagging forward-only capture. Model-agnostic
   // and free (pure arithmetic). Refreshed on each capture event + on a timer.
@@ -517,11 +520,11 @@ export function activate(context: vscode.ExtensionContext): void {
     const scope = normalizeCaptureScope(captureCfg.get('scope', 'window'));
     const hashScope = scope !== 'all' && workspaceHash ? workspaceHash : undefined;
     watcher = new CopilotWatcher((event, meta) => {
+      // A preliminary event is exactly when the just-sent prompt should appear
+      // in Live. Durable ledger sync still waits for final source evidence.
+      refreshForecast();
       if (!meta?.preliminary) {
         log(`capture: chat ${event.sessionId.slice(0, 8)}, turn ${event.turnIndex}`);
-        // Precognition: rebuild the next-turn forecast from the active session's
-        // real metered tokens and refresh the panel (skeletons fill in).
-        refreshForecast();
         void syncPersonalLedger(true);
       }
     }, hashScope, workspaceStorageRoot);
@@ -555,8 +558,86 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   };
 
+  type ManageItem = vscode.QuickPickItem & {
+    command: string;
+    args?: unknown[];
+  };
+  const showManageMenu = async (): Promise<void> => {
+    const pinned = getPinnedSessionId();
+    const items: ManageItem[] = [
+      {
+        label: store.captureEnabled ? '$(debug-pause) Pause capture' : '$(play) Resume capture',
+        description: 'Privacy',
+        detail: store.captureEnabled
+          ? 'Stop automatic reads; retained metadata remains available.'
+          : 'Resume read-only local Copilot capture.',
+        command: 'tokenlens.toggleCapture',
+      },
+      {
+        label: '$(export) Export usage ledger',
+        description: 'Data',
+        detail: 'Save all retained metadata-only records as JSON or CSV.',
+        command: 'tokenlens.exportLedger',
+      },
+      {
+        label: '$(sync) Rebuild from available local history',
+        description: 'Data',
+        detail: 'Clear derived metadata and rescan Copilot files still on this machine.',
+        command: 'tokenlens.rebuildLedger',
+      },
+      {
+        label: pinned ? '$(pinned) Unpin current chat' : '$(pin) Pin current chat',
+        description: 'Live',
+        detail: pinned
+          ? `Release chat ${pinned.slice(0, 8)} and follow the newest chat again.`
+          : 'Keep Live attached to the current chat when windows share storage.',
+        command: pinned ? 'tokenlens.unpinChat' : 'tokenlens.pinChat',
+      },
+      {
+        label: '$(settings-gear) Open Token Lens settings',
+        description: 'Configuration',
+        command: 'workbench.action.openSettings',
+        args: ['@ext:tokentama.tokentama'],
+      },
+      {
+        label: '$(pulse) Check capture health',
+        description: 'Support',
+        detail: 'Show scope, active-chat, watcher, and ledger details.',
+        command: 'tokenlens.diagnostics',
+      },
+      {
+        label: '$(beaker) Test current chat capture',
+        description: 'Support',
+        detail: 'Verify parsing and report metering coverage for the active chat.',
+        command: 'tokenlens.captureSelfTest',
+      },
+      {
+        label: '$(database) Inspect ledger health',
+        description: 'Support',
+        detail: 'Show records, observations, storage, conflicts, and malformed data.',
+        command: 'tokenlens.ledgerDiagnostics',
+      },
+      {
+        label: '$(trash) Clear local usage ledger',
+        description: 'Data',
+        detail: 'Delete Token Lens metadata only; Copilot source files are untouched.',
+        command: 'tokenlens.clearLedger',
+      },
+    ];
+    const selected = await vscode.window.showQuickPick(items, {
+      title: 'Token Lens',
+      placeHolder: 'Choose a data, live, configuration, or support action',
+      matchOnDescription: true,
+      matchOnDetail: true,
+    });
+    if (selected) {
+      await vscode.commands.executeCommand(selected.command, ...(selected.args ?? []));
+    }
+  };
+
   const provider = new DashboardViewProvider(context.extensionUri, store, {
     toggleCapture,
+    manage: showManageMenu,
     exportLedger: async () => {
       await vscode.commands.executeCommand('tokenlens.exportLedger');
     },
@@ -592,7 +673,15 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tokenlens.openDashboard', () =>
       vscode.commands.executeCommand('tokenlens.dashboard.focus'),
     ),
+    vscode.commands.registerCommand('tokenlens.manage', showManageMenu),
     vscode.commands.registerCommand('tokenlens.toggleCapture', toggleCapture),
+    vscode.commands.registerCommand('tokenlens.togglePinChat', () =>
+      vscode.commands.executeCommand(
+        getPinnedSessionId() ? 'tokenlens.unpinChat' : 'tokenlens.pinChat',
+      ),
+    ),
+    // Separate pin/unpin and support command IDs remain registered for existing
+    // keybindings and automation, but are consolidated in the public UI.
     vscode.commands.registerCommand('tokenlens.pinChat', async () => {
       try {
         const scope = normalizeCaptureScope(
@@ -757,7 +846,7 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
       }
       const confirmed = await vscode.window.showWarningMessage(
-        'Rebuild Token Lens local usage metadata from all currently available local Copilot workspaces? Source files are read-only.',
+        'Rebuild Token Lens local usage metadata from all currently available local Copilot workspaces? Source files are read-only. Chats Copilot no longer retains on this machine cannot be restored.',
         { modal: true },
         'Rebuild local ledger',
       );
@@ -767,7 +856,21 @@ export function activate(context: vscode.ExtensionContext): void {
       await context.globalState.update(LEDGER_CLEARED_BEFORE_KEY, undefined);
       ledgerSourceSignature = '';
       await syncPersonalLedger(true, true);
-      void vscode.window.showInformationMessage('Token Lens local usage ledger rebuilt.');
+      if (lastLedgerError) {
+        void vscode.window.showErrorMessage(
+          `Token Lens could not complete the local ledger rebuild: ${lastLedgerError.split('\n')[0]}`,
+        );
+        return;
+      }
+      const rebuilt = store.getState().personalLedger;
+      const sessionCount = sourceHealth[0]?.sessionCount ?? 0;
+      const recordCount = rebuilt?.diagnostics.recordCount ?? 0;
+      const message = `Token Lens rebuilt ${recordCount} usage record${recordCount === 1 ? '' : 's'} from ${sessionCount} local Copilot session file${sessionCount === 1 ? '' : 's'}.`;
+      if (sourceHealth[0]?.status === 'error') {
+        void vscode.window.showWarningMessage(`${message} Some session files could not be read; see Token Lens diagnostics.`);
+      } else {
+        void vscode.window.showInformationMessage(message);
+      }
     }),
     vscode.commands.registerCommand('tokenlens.ledgerDiagnostics', async () => {
       await syncPersonalLedger(false);

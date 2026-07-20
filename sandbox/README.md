@@ -10,6 +10,7 @@ capture to **this** window only.
 1. Open **Copilot Chat** in this window and send a normal prompt.
 2. Open the **Token Lens** activity-bar view.
 3. The turn appears as pending, then fills with its metered token and AIC totals.
-4. Use **Token Lens: Capture self-test** if no data appears.
+4. If no data appears, open **Token Lens: Manage data and diagnostics…** and run
+	**Test current chat capture**.
 
 Watch **View → Output → Token Lens** to see capture happen live.

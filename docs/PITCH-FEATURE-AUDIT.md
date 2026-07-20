@@ -70,10 +70,10 @@ Everything else supports those claims or belongs in Q&A.
   output-only, or unavailable label only if it appears.
 - Do not dwell on the live status-dot animation or tooltip implementation.
 
-## Dead or inert cleanup after pitch
+## Dead or inert cleanup status
 
-These files remain from the retired prompt-scoring/pet/coaching product and are
-not part of the 0.8.3 runtime pitch:
+The retired prompt-scoring/pet/coaching source contracts and savings-era
+benchmark entry points were removed in the post-pitch cleanup, including:
 
 - `src/types/PetWorldState.ts`
 - `src/types/Score.ts`
@@ -81,12 +81,10 @@ not part of the 0.8.3 runtime pitch:
 - `src/types/SessionSummary.ts`
 - `src/types/Telemetry.ts`
 - `src/capture/parsers/sessionTracker.ts`
-- most of `src/coaching/heuristicCoach.ts`
-- old pet/scoring/coaching CSS blocks in `webview-ui/src/styles.css`
+- `src/coaching/*`
 
-They should be removed in a dedicated post-pitch cleanup with import/test review.
-They do not need to block tomorrow because esbuild tree-shakes unreachable code
-from the packaged runtime.
+Old pet/scoring/coaching CSS blocks remain non-runtime stylesheet debt and should
+be pruned only with dedicated visual regression coverage.
 
 ## Pitch order
 

@@ -12,7 +12,6 @@ function mkForecast(over: Partial<Forecast> = {}): Forecast {
     predictedInputTokens: 100_000,
     interval: { low: 90_000, high: 120_000 },
     breakdown: { carriedContext: 500_000, growth: 5_000, draft: 200 },
-    hungriest: 'carriedContext',
     basis: 'structural',
     confidence: 0.8,
     resetRisk: 'low',
@@ -59,12 +58,12 @@ describe('buildForecastView', () => {
     [100_000, 'light'],
   ] as const)('maps load %i tokens to the "%s" band', (carried, band) => {
     const v = buildForecastView(mkForecast({ breakdown: { carriedContext: carried, growth: 0, draft: 0 } }), acc, mkEvent(model), extras);
-    expect(v.sustainability).toBe(band);
+    expect(v.contextBand).toBe(band);
   });
 
   it('forces the "overloaded" band when a reset is likely, regardless of load', () => {
     const v = buildForecastView(mkForecast({ resetRisk: 'high', breakdown: { carriedContext: 50_000, growth: 0, draft: 0 } }), acc, mkEvent(model), extras);
-    expect(v.sustainability).toBe('overloaded');
+    expect(v.contextBand).toBe('overloaded');
   });
 
   it('has no limit/fraction/credits when the model is unknown, and stays "light"', () => {
@@ -72,7 +71,7 @@ describe('buildForecastView', () => {
     expect(v.contextLimit).toBeUndefined();
     expect(v.loadFraction).toBeUndefined();
     expect(v.predictedCredits).toBeUndefined();
-    expect(v.sustainability).toBe('light');
+    expect(v.contextBand).toBe('light');
   });
 
   it('derives a numeric credit estimate when the model is known', () => {

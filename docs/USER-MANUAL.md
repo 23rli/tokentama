@@ -1,6 +1,6 @@
 # Token Lens user manual
 
-_Last updated for Token Lens 0.8.3, July 16, 2026._
+_Last updated for Token Lens 0.8.4, July 19, 2026._
 
 Token Lens combines two local views:
 
@@ -8,7 +8,7 @@ Token Lens combines two local views:
 2. **A durable personal usage ledger** containing content-free metadata retained
    on this machine until explicitly cleared.
 
-GitHub Copilot Chat is the only source adapter in 0.8.3. Future AI applications
+GitHub Copilot Chat is the only source adapter in 0.8.4. Future AI applications
 can implement the same ledger contract, but they are not currently measured.
 
 ## Quick start
@@ -19,8 +19,10 @@ can implement the same ledger contract, but they are not currently measured.
 4. Open Token Lens from the activity bar.
 5. Use **Live** for the current conversation.
 6. Use **Overview** for durable personal history.
-7. For a complete historical backfill, run **Token Lens: Rebuild local usage
-   ledger from all Copilot history** once before the pitch or first evaluation.
+7. For the best available local backfill, run **Token Lens: Rebuild local usage
+  ledger from all Copilot history** once before the pitch or first evaluation.
+  It can recover only Copilot source files still retained on this machine; it
+  is not a remote account-history restore.
 
 ## Tabs
 
@@ -107,29 +109,29 @@ Advanced, or Deferred.
 - **Capture on/off**: privacy boundary for new source reads. Existing ledger data
   remains available while paused.
 - **Open dashboard**: focuses Token Lens.
-- **Pin to this chat / Unpin**: resolves same-folder/multi-window ambiguity for
-  Live.
+- **Toggle capture**, **Pin or unpin current chat**, **Export usage ledger**, and
+  **Rebuild from available local history** remain directly searchable in the
+  Command Palette because they are useful normal/recovery actions.
+- **Manage…** in the dashboard footer, or **Token Lens: Manage data and
+  diagnostics…** in the Command Palette, opens every action in one searchable
+  menu, including destructive and support-only operations.
 
-### Secondary lifecycle controls
+### Management hub
 
-- **Export local usage ledger**: the same action as Overview's **Export all**;
-  manually save every retained record as metadata-only JSON or CSV.
-- **Clear local usage ledger**: confirmed deletion of Token Lens metadata only.
-  Copilot files are not changed. A watermark prevents old history from
-  immediately returning.
-- **Rebuild local usage ledger from all Copilot history**: removes the watermark
-  and explicitly rescans all currently available local Copilot workspaces. Run
-  this once after upgrading from 0.8.1 so old derived status labels are replaced.
-
-### Support controls
-
-- **Capture self-test**: confirms the active chat parser and reports full/partial
-  metering.
-- **Show capture diagnostics**: current scope, sessions, watcher, and ledger
-  counts.
-- **Show local ledger diagnostics**: local root, observations, records, files,
-  bytes, duplicates, malformed partitions, conflicts, retention, and adapter
-  capabilities.
+- **Pin current chat / Unpin current chat** resolves same-folder/multi-window
+  ambiguity for Live.
+- **Export usage ledger** is the same all-record JSON/CSV flow as Overview's
+  **Export all**.
+- **Rebuild from available local history** clears derived metadata and rescans
+  all currently available local Copilot workspaces. The completion message
+  reports recovered session-file and usage-record counts. Chats already removed
+  from Copilot's local storage cannot be reconstructed.
+- **Clear local usage ledger** deletes Token Lens metadata only. Copilot files
+  are unchanged, and a watermark prevents old history from immediately returning.
+- **Check capture health**, **Test current chat capture**, and **Inspect ledger
+  health** provide the former diagnostics and self-test functions without adding
+  separate Command Palette entries.
+- **Open Token Lens settings** opens all extension configuration in one place.
 
 ## Settings
 
@@ -168,7 +170,7 @@ view, or cloud sync.
 
 - Exact tokens per individual MCP call are unavailable because current Copilot
   tool events contain no per-call token meter.
-- Agency Copilot CLI and Microsoft Scout are not adapters in 0.8.3.
+- Agency Copilot CLI and Microsoft Scout are not adapters in 0.8.4.
 - Visual Studio, JetBrains, and other assistants are not measured.
 - Some completed requests expose only input or output metering; Token Lens keeps
   the available direction and labels the result partial.

@@ -2,6 +2,34 @@
 
 All notable changes to the Token Lens extension are documented here.
 
+## [0.8.4] - 2026-07-19
+
+### Changed
+
+- Reduced ten Command Palette entries to six useful actions: open, capture,
+  pin/unpin, export, rebuild, and **Manage data and diagnostics…**. Destructive
+  clear and support-only diagnostics/self-test actions live in the management
+  hub; legacy command IDs remain registered for keybindings and automation.
+- Renamed the remaining `TamaStore` / `TamaState` runtime symbols to Token Lens
+  terminology.
+
+### Fixed
+
+- Discover Copilot sessions from both `chatSessions` and `transcripts`, so a
+  first prompt can appear before Copilot creates its transcript and rebuild can
+  include locally retained chat-session-only records.
+- Refresh Live immediately for preliminary turns and shorten the polling
+  fallback, rather than waiting for finalized metering before updating the UI.
+- Report rebuild session/record counts and failures instead of claiming an
+  unconditional complete rebuild.
+
+### Removed
+
+- Removed retired pet, prompt-scoring, coaching, telemetry, and session-tracker
+  contracts plus three broken savings-era benchmark commands.
+- Removed stale EcoPrompt backend/LLM environment variables, monorepo lockfile
+  entries, and persistent generated benchmark bundles.
+
 ## [0.8.3] - 2026-07-16
 
 ### Added

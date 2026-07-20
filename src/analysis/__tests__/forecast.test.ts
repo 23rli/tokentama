@@ -31,14 +31,15 @@ describe('forecastTurn', () => {
     expect(f.predictedInputTokens).toBeGreaterThan(13_700);
   });
 
-  it('identifies the hungriest contributor (carried context dominates in agent mode)', () => {
+  it('returns an additive breakdown without a redundant derived contributor field', () => {
     const history: TurnHistory[] = [
       { promptTokens: 300_000, completionTokens: 2_000, promptText: 'hi' },
       { promptTokens: 320_000, completionTokens: 2_000, promptText: 'hi' },
     ];
     const f = forecastTurn({ history, draftPrompt: 'short ask' });
-    expect(f.hungriest).toBe('carriedContext');
-    // A short prompt is a rounding error against carried context — the honest point.
+    expect(f.predictedInputTokens).toBe(
+      Math.round(f.breakdown.carriedContext + f.breakdown.growth + f.breakdown.draft),
+    );
     expect(f.breakdown.draft).toBeLessThan(f.breakdown.carriedContext / 100);
   });
 

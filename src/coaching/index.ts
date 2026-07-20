@@ -1,1 +1,0 @@
-export { leanRewrite } from './heuristicCoach';

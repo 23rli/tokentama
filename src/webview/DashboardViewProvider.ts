@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
-import type { TamaStore } from '../state/tamaStore';
+import type { TokenLensStore } from '../state/tokenLensStore';
 import type { HostMessage, WebviewMessage } from './contract';
 import { buildDashboardHtml } from './html';
 
 export interface DashboardHandlers {
   toggleCapture: () => Promise<void>;
+  manage: () => Promise<void>;
   exportLedger: () => Promise<void>;
   refresh: () => void;
   openBusinessToolSettings: () => void;
@@ -22,7 +23,7 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider, vscode
 
   constructor(
     private readonly extensionUri: vscode.Uri,
-    private readonly store: TamaStore,
+    private readonly store: TokenLensStore,
     private readonly handlers: DashboardHandlers,
   ) {
     this.storeSubscription = this.store.onDidChange((state) =>
@@ -75,6 +76,9 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider, vscode
         } finally {
           this.post({ type: 'busy', busy: false });
         }
+        break;
+      case 'manage':
+        await this.withBusy(this.handlers.manage);
         break;
       case 'exportLedger':
         await this.withBusy(this.handlers.exportLedger);

@@ -2,37 +2,34 @@ import type { ForecastView } from '../../../src/webview/contract';
 import { fmtNum } from '../format';
 import { Tip } from './Tip';
 
-/** Visuals per sustainability band — light (healthy) → overloaded (blows up). */
+/** Visuals for each context-load band. */
 const BANDS: Record<
-  ForecastView['sustainability'],
-  { label: string; caption: string; color: string; emoji: string }
+  ForecastView['contextBand'],
+  { label: string; caption: string; color: string }
 > = {
-  light: { label: 'Light', caption: 'Plenty of headroom.', color: '#3fb950', emoji: '🟢' },
-  moderate: { label: 'Moderate', caption: 'Building up.', color: '#57ab5a', emoji: '🟢' },
-  heavy: { label: 'Heavy', caption: 'Costs climbing.', color: '#d29922', emoji: '🟡' },
-  critical: { label: 'Critical', caption: 'Very heavy — consider a fresh chat.', color: '#f0883e', emoji: '🟠' },
-  overloaded: { label: 'Overloaded', caption: 'Near a possible reset zone.', color: '#f85149', emoji: '🔴' },
+  light: { label: 'Light', caption: 'Plenty of headroom.', color: '#3fb950' },
+  moderate: { label: 'Moderate', caption: 'Building up.', color: '#57ab5a' },
+  heavy: { label: 'Heavy', caption: 'Costs climbing.', color: '#d29922' },
+  critical: { label: 'Critical', caption: 'Very heavy — consider a fresh chat.', color: '#f0883e' },
+  overloaded: { label: 'Overloaded', caption: 'Near a possible reset zone.', color: '#f85149' },
 };
 
 /**
- * Context-weight card (the repurposed "health"). Shows how heavy the session has
- * become: a load bar that fills and reddens toward the model's limit, a per-turn
- * bar graph of context growth (with summarization drops visible), and — at the top
- * — an "overloaded" state signalling very high carried context. Flat,
- * business style. Always renders (skeleton before data) so the layout never shifts.
+ * Shows current context load, growth across turns, and visible summarization
+ * drops. Always renders a zero state before data so the layout does not shift.
  */
-export function SustainabilityGauge({ forecast }: { forecast?: ForecastView }) {
+export function ContextWeightPanel({ forecast }: { forecast?: ForecastView }) {
   const f = forecast;
-  const band = f ? BANDS[f.sustainability] : BANDS.light;
+  const band = f ? BANDS[f.contextBand] : BANDS.light;
   const fill = !f ? 0 : f.loadFraction != null ? Math.min(1, f.loadFraction) : Math.min(1, f.contextTokens / 400_000);
-  const blown = f?.sustainability === 'overloaded';
+  const blown = f?.contextBand === 'overloaded';
   const series = f?.contextSeries ?? [];
   const prompts = f?.turnPrompts ?? [];
   const peak = series.length ? Math.max(...series) : 1;
   const resets = series.reduce((n, v, i) => (i > 0 && v < series[i - 1] * 0.6 ? n + 1 : n), 0);
   const pct = f?.loadFraction != null ? Math.round(f.loadFraction * 100) : undefined;
 
-  // Downsample the BARS so a long chat doesn't turn into unreadable slivers; the
+  // Downsample the bars so a long chat does not turn into unreadable slivers; the
   // trend line still uses the full series, so the true shape is preserved.
   const MAX_BARS = 44;
   const bars: { v: number; turn: number; prompt?: string }[] =

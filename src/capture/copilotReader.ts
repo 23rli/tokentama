@@ -75,7 +75,7 @@ export function readSessionEvents(paths: CopilotSessionPaths, userId = 'local-us
         : undefined;
     events.push(
       buildPromptEvent({
-        source: 'transcript',
+        source: 'github-copilot-chat',
         sessionId,
         sourceRequestId: request.requestId,
         userId,
@@ -101,7 +101,7 @@ export function readSessionEvents(paths: CopilotSessionPaths, userId = 'local-us
     const turnIndex = Math.max(-1, ...chatSession.requests.map((request) => request.turnIndex)) + 1;
     events.push(
       buildPromptEvent({
-        source: 'transcript',
+        source: 'github-copilot-chat',
         sessionId,
         userId,
         turnIndex,

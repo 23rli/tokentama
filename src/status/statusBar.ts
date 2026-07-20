@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { TamaState } from '../webview/contract';
+import type { TokenLensState } from '../webview/contract';
 
 /**
  * Status-bar entry point to the Token Lens dashboard. Shows the live context load
@@ -17,7 +17,7 @@ export class StatusBar implements vscode.Disposable {
     this.item.show();
   }
 
-  update(state: TamaState): void {
+  update(state: TokenLensState): void {
     if (!state.captureEnabled) {
       this.item.text = '$(debug-pause) Token Lens';
       this.item.tooltip = 'Token Lens — capture is off';

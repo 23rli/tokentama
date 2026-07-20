@@ -35,7 +35,50 @@ describe('listCopilotSessions freshness', () => {
 
     const found = listCopilotSessions(root, hash);
     expect(found).toHaveLength(1);
+    expect(found[0].transcriptPath).toBe(transcript);
+    expect(found[0].chatSessionPath).toBe(chat);
     expect(found[0].modelsJsonPath).toBe(models);
     expect(found[0].modifiedMs).toBe(fresh.getTime());
+  });
+
+  it('discovers a new chatSession before its transcript exists', () => {
+    const root = mkdtempSync(join(tmpdir(), 'tokenlens-paths-'));
+    dirs.push(root);
+    const hash = 'workspace';
+    const session = 'new-session';
+    const chatDir = join(root, hash, 'chatSessions');
+    mkdirSync(chatDir, { recursive: true });
+    const chat = join(chatDir, `${session}.jsonl`);
+    writeFileSync(chat, '{}\n');
+    const modified = new Date('2026-07-19T10:05:00.000Z');
+    utimesSync(chat, modified, modified);
+
+    const found = listCopilotSessions(root, hash);
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({
+      sessionId: session,
+      workspaceHash: hash,
+      transcriptPath: undefined,
+      chatSessionPath: chat,
+      modifiedMs: modified.getTime(),
+    });
+  });
+
+  it('deduplicates a session found in both source directories', () => {
+    const root = mkdtempSync(join(tmpdir(), 'tokenlens-paths-'));
+    dirs.push(root);
+    const hash = 'workspace';
+    const session = 'shared-session';
+    const transcriptDir = join(root, hash, 'GitHub.copilot-chat', 'transcripts');
+    const chatDir = join(root, hash, 'chatSessions');
+    mkdirSync(transcriptDir, { recursive: true });
+    mkdirSync(chatDir, { recursive: true });
+    writeFileSync(join(transcriptDir, `${session}.jsonl`), '{}\n');
+    writeFileSync(join(chatDir, `${session}.jsonl`), '{}\n');
+
+    const found = listCopilotSessions(root, hash);
+    expect(found).toHaveLength(1);
+    expect(found[0].transcriptPath).toBeDefined();
+    expect(found[0].chatSessionPath).toBeDefined();
   });
 });

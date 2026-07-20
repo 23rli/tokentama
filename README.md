@@ -53,11 +53,11 @@ GitHub Copilot Chat is the first source adapter. The ledger contract is source-n
 
 ## Privacy
 
-100% local and read-only. Token Lens never sends prompts, code, or usage anywhere. Turning **Capture off** stops source reads while the already-persisted metadata ledger remains available. Records are retained until **Token Lens: Clear local usage ledger** is explicitly confirmed.
+100% local and read-only. Token Lens never sends prompts, code, or usage anywhere. Turning **Capture off** stops source reads while the already-persisted metadata ledger remains available. Records are retained until clearing the ledger is explicitly confirmed from **Token Lens: Manage data and diagnostics…**.
 
 Profiles are off by default and can be changed without rewriting ledger facts.
 Export is manual, metadata-only, and deliberately secondary. Select **Export all**
-in Overview (or run **Token Lens: Export local usage ledger**), choose JSON or
+in Overview (or run **Token Lens: Export usage ledger**), choose JSON or
 CSV, and select a local destination. All retained records are exported; nothing
 is uploaded automatically.
 
@@ -78,26 +78,25 @@ feature inventory, what has been achieved, and the application's future potentia
 For a concise leadership or pilot pitch, use the
 [Token Lens sales one-pager](docs/TOKEN-LENS-ONE-PAGER.md).
 
-Version 0.8.3 ships one adapter: VS Code GitHub Copilot Chat. Other AI applications are future adapters, not implicit claims of current support.
+Version 0.8.4 ships one adapter: VS Code GitHub Copilot Chat. Other AI applications are future adapters, not implicit claims of current support.
 
 ## Troubleshooting
 
 If no data appears:
 
-- Confirm **Token Lens: Toggle passive capture** is on.
+- Confirm the dashboard footer says **Capture on**.
 - Send at least one Copilot Chat prompt in the same VS Code window.
-- Run **Token Lens: Capture self-test**.
-- Run **Token Lens: Show capture diagnostics** and inspect **Output → Token Lens**.
+- Open **Token Lens: Manage data and diagnostics…**, then run **Test current
+  chat capture** and **Check capture health**. Inspect **Output → Token Lens**.
 - After installing a new VSIX, run **Developer: Reload Window**.
 
-Two VS Code windows opened on the same folder share Copilot's on-disk workspace storage. Use **Token Lens: Pin to this chat** if both windows are active. See [`docs/KNOWN-ISSUES.md`](docs/KNOWN-ISSUES.md) for remaining data-source limitations.
+Two VS Code windows opened on the same folder share Copilot's on-disk workspace storage. Run **Token Lens: Pin or unpin current chat** if both windows are active. See [`docs/KNOWN-ISSUES.md`](docs/KNOWN-ISSUES.md) for remaining data-source limitations.
 
 ## Methodology & reproducible benchmarks
 
 Every number in the docs is reproducible locally on your own data:
 
 ```
-npm run bench:history        # real sessions — cost breakdown in billed AICs
 npm run bench:cache          # cache/pricing structure of the bill
 npm run bench:forecast       # forecaster accuracy vs real metered tokens
 npm run bench:forecast:lab   # error by turn type + interval calibration

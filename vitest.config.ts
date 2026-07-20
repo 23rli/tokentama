@@ -8,7 +8,6 @@ export default defineConfig({
     alias: {
       '@tokentama/shared-types': r('src/types/index.ts'),
       '@tokentama/scoring-engine': r('src/scoring/index.ts'),
-      '@tokentama/llm-adapters': r('src/coaching/index.ts'),
       '@tokentama/ingestion': r('src/capture/parsers/index.ts'),
     },
   },

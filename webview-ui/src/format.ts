@@ -1,13 +1,3 @@
-export function fmtPctSigned(n: number): string {
-  const v = Math.round(n);
-  return `${v > 0 ? '+' : ''}${v}%`;
-}
-
-export function fmtSigned(n: number): string {
-  const v = Math.round(n * 10) / 10;
-  return `${v > 0 ? '+' : ''}${v}`;
-}
-
 export function fmtNum(n: number): string {
   if (!Number.isFinite(n)) return '—';
   const abs = Math.abs(n);
@@ -33,11 +23,4 @@ function formatCompact(n: number): string {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
-}
-
-export function fmtWasteCategory(category: string): string {
-  return category
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, (c) => c.toUpperCase())
-    .trim();
 }

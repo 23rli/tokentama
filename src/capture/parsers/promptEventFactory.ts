@@ -19,8 +19,6 @@ export interface BuildPromptEventInput {
   toolCalls?: ToolCallInfo[];
   model?: ModelInfo;
   modelFamily?: string;
-  retryCountInSession?: number;
-  adoptedPreviousTip?: boolean;
   timestamp?: string;
   /** Use a real token count when available (e.g. chatSession completionTokens). */
   inputTokensOverride?: number;
@@ -92,7 +90,5 @@ export function buildPromptEvent(input: BuildPromptEventInput): PromptEvent {
       contextBreakdown: input.contextBreakdown,
     },
     meteringStatus,
-    retryCountInSession: input.retryCountInSession,
-    adoptedPreviousTip: input.adoptedPreviousTip,
   };
 }

@@ -10,6 +10,44 @@ afterEach(() => {
 });
 
 describe('readSessionEvents', () => {
+  it('surfaces the first prompt from chatSessions before a transcript exists', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'tokenlens-reader-'));
+    tempDirs.push(dir);
+    const chatSessionPath = join(dir, 'session.jsonl');
+    writeFileSync(
+      chatSessionPath,
+      JSON.stringify({
+        kind: 0,
+        v: {
+          sessionId: 'chat-early',
+          requests: [
+            {
+              requestId: 'request-early',
+              timestamp: '2026-07-19T10:00:00.000Z',
+              message: { text: 'First prompt' },
+            },
+          ],
+        },
+      }),
+    );
+
+    const events = readSessionEvents({
+      sessionId: 'chat-early',
+      workspaceHash: 'hash',
+      chatSessionPath,
+      modifiedMs: Date.parse('2026-07-19T10:00:00.000Z'),
+    });
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      sessionId: 'chat-early',
+      sourceRequestId: 'request-early',
+      promptText: 'First prompt',
+      timestamp: '2026-07-19T10:00:00.000Z',
+      meteringStatus: 'pending',
+    });
+  });
+
   it('dates an omitted first user message from session.start, not mutable file mtime', () => {
     const dir = mkdtempSync(join(tmpdir(), 'tokenlens-reader-'));
     tempDirs.push(dir);

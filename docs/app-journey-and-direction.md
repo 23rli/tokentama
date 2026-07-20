@@ -1,6 +1,6 @@
 # Token Lens — Product Journey, Complete Feature Map & Direction
 
-_Last updated: 2026-07-16 · package version 0.8.3_
+_Last updated: 2026-07-19 · package version 0.8.4_
 
 > **Start with §§11–17 for the shipped product, complete feature inventory,
 > architecture, achievements, boundaries, and future potential.** §§1–10 preserve
@@ -593,7 +593,7 @@ outstanding validation.
 
 ---
 
-## 11. What the exploration became — shipped through 0.8.3
+## 11. What the exploration became — shipped through 0.8.4
 
 The product that survived the evidence is not a token-saving coach. It is a
 **private personal AI usage ledger with a live Copilot instrument panel**:
@@ -625,6 +625,7 @@ The product deliberately separates four things that are often blurred together:
 | 0.8.1 | Made Live the daily entry point and condensed the in-product manual | Clarified the product story and kept advanced controls out of the main path. |
 | 0.8.2 | Added explicit metering states and corrected request/transcript reconciliation | Stopped completed source gaps from being mislabeled as pending. |
 | 0.8.3 | Added direct Overview export, explicit CSV status, and collapsed cross-chat Recent Activity | Made personal portability discoverable while keeping Overview focused. |
+| 0.8.4 | Captured chat-session-only first turns, improved rebuild coverage/reporting, consolidated commands without hiding useful recovery actions, and removed retired scoring/pet/coaching systems | Made live capture faster, local rebuild more honest, and the extension surface match the current product. |
 
 ### 11.2 What is core, secondary, and advanced
 
@@ -667,7 +668,7 @@ can truthfully claim.
 | Time scopes | Today, 7 days, 30 days, and All. | Local calendar windows over retained records. |
 | Personal totals | Measured input/output/total tokens, native AICs, and configured USD. | Totals include only independently measured directions. |
 | Explicit coverage | Separates fully metered, input-only, output-only, in-flight, and unavailable requests. | Missing evidence remains visible rather than being invented. |
-| Applications | Ranks source applications by known tokens/cost. | GitHub Copilot Chat is the only adapter in 0.8.3. |
+| Applications | Ranks source applications by known tokens/cost. | GitHub Copilot Chat is the only adapter in 0.8.4. |
 | Providers and models | Shows provider/model drivers when source metadata exists. | Unknown source fields remain unknown. |
 | Projects | Uses a pseudonymous key plus local folder/workspace alias. | Raw workspace paths are not persisted. |
 | Source health | Shows adapter readiness, chat count, and capabilities such as token/per-tool metering. | Capability flags prevent unsupported claims. |
@@ -721,14 +722,14 @@ The Info tab is the condensed, current manual for:
 | Command | Purpose |
 | --- | --- |
 | Open dashboard | Focus Token Lens. |
-| Toggle passive capture | Start or stop automatic read-only Copilot ingestion. |
-| Pin to this chat / Unpin chat | Resolve same-folder multi-window ambiguity for Live. |
-| Export local usage ledger | Invoke the same all-record JSON/CSV flow as Overview's Export all. |
-| Clear local usage ledger | Delete Token Lens metadata and write a watermark; never alter Copilot files. |
-| Rebuild local usage ledger | Remove the watermark, clear derived metadata, and rescan all available local Copilot workspaces. |
-| Show capture diagnostics | Report source scope, active chat, watcher, and ledger counts. |
-| Capture self-test | Verify active source parsing and metering. |
-| Show local ledger diagnostics | Report ledger health, size, conflicts, malformed partitions, and adapter capabilities. |
+| Toggle capture | Pause or resume automatic read-only Copilot ingestion. |
+| Pin or unpin current chat | Resolve same-folder multi-window ambiguity for Live. |
+| Export usage ledger | Invoke the same all-record JSON/CSV flow as Overview's Export all. |
+| Rebuild from available local history | Clear derived metadata and rescan locally retained Copilot files. |
+| Manage data and diagnostics… | Searchable hub that also provides clear, settings, self-test, and source/ledger diagnostics. |
+
+Separate legacy pin/unpin and support command IDs remain runtime compatibility
+aliases for existing keybindings and automation.
 
 ### 12.7 Settings
 
@@ -825,7 +826,7 @@ the same fidelity.
 | Outcomes/adoption loop | Prove coaching reduces retries net of its own cost. | Correct evaluation idea, but depended on a coaching product whose value was too small. | Removed from runtime; outcome-based evaluation remains a future principle. |
 | Tool trimming | Disable bloated/unused tool definitions re-sent every turn. | Theoretically capability-safe for truly unused servers, but highly user/config dependent; built-in tools are functional, not waste. | Potential niche advisory, not core. |
 | Pre-send context-load optimizer | More specific prompts would cause less exploration/context loading. | Two probes found wording had near-zero relation to tokens; discovery was only about 10–12% of tool calls and users named target files only about 3% of file-touching turns. | Rejected before UI build. |
-| Org/FinOps dashboard | Aggregate structural AI spend by team/repository/workflow. | Potentially valuable, but GitHub owns much org usage/billing data and a central product raises governance/platform risk. | Conditional future, not local 0.8.3. |
+| Org/FinOps dashboard | Aggregate structural AI spend by team/repository/workflow. | Potentially valuable, but GitHub owns much org usage/billing data and a central product raises governance/platform risk. | Conditional future, not local 0.8.4. |
 | Live visibility | Developers need a running meter, context view, and per-turn evidence while working. | Survived every probe because it is descriptive, useful without behavior change, and absent from the normal Copilot UX. | Shipped core. |
 | Precognition | Recent measured structure can forecast the next turn. | About 3–4% median error on tested steady data; calibrated interval handles volatility honestly at zero model-token cost. | Shipped core. |
 | Business-tool/FD&E attribution | Whole-request usage plus tool/workflow evidence can evaluate business-tool envelopes. | Feasible at request/workflow level; impossible to claim exact per-MCP tokens from current source events. | Shipped as optional Profiles with explicit boundaries. |
@@ -884,8 +885,8 @@ accuracy guarantee.
 - Synthetic ledger benchmark: 100,000 observations / 50,000 logical records;
   materialization and warm Overview query remained comfortably sub-second on the
   measured development machine.
-- The 0.8.3 release candidate passes strict TypeScript checking, production bundle
-  activation smoke testing, and 135 tests across extension-host and webview logic.
+- The 0.8.4 release candidate passes strict TypeScript checking, production bundle
+  activation smoke testing, and 138 tests across extension-host and webview logic.
 - Test coverage includes parsers, reconciliation, token provenance, cost, forecast,
   attribution, canonicalization, validation, persistence, retention, materialization,
   query coverage, export privacy, and UI pending classification.
@@ -1018,7 +1019,7 @@ invoice it cannot observe, or tell a developer how productive they are.
   or keep for Q&A.
 - [tokentama-decision-brief.md](https://github.com/t-richarli_microsoft/tokentama/blob/main/docs/tokentama-decision-brief.md) — the original
   senior-review evidence and strategic alternatives.
-- [../CHANGELOG.md](../CHANGELOG.md) — release-by-release factual history.
+- [CHANGELOG.md](https://github.com/t-richarli_microsoft/tokentama/blob/main/CHANGELOG.md) — release-by-release factual history.
 
 This document is the single narrative entry point: **what we tried, what the data
 rejected, what survived, what shipped, what it can honestly claim, and where the

@@ -8,7 +8,6 @@ const repo = path.join(here, '..');
 const alias = {
   '@tokentama/shared-types': path.join(repo, 'src/types/index.ts'),
   '@tokentama/scoring-engine': path.join(repo, 'src/scoring/index.ts'),
-  '@tokentama/llm-adapters': path.join(repo, 'src/coaching/index.ts'),
   '@tokentama/ingestion': path.join(repo, 'src/capture/parsers/index.ts'),
 };
 

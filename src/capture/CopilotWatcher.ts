@@ -68,7 +68,10 @@ export class CopilotWatcher implements vscode.Disposable {
       /* watcher unavailable — polling still covers us */
     }
 
-    this.poll = setInterval(() => this.refresh(), 1500);
+    // The external file watcher is not reliable on every VS Code host. Keep the
+    // polling fallback quick enough to surface a just-sent first prompt before
+    // the user is already writing the second one.
+    this.poll = setInterval(() => this.refresh(), 750);
   }
 
   private scheduleRefresh(): void {
